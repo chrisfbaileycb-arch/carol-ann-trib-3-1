@@ -1,0 +1,142 @@
+/**
+ * Bright welcome layer — white + sage canvas with purple lining.
+ *
+ * This layer NEVER changes a single stored value: every theme, accent colour and
+ * agent skin the operator picked stays exactly as saved. It only re-paints the
+ * shell surfaces so the first experience reads bright and welcoming. Turning
+ * "Bright canvas" off in AI settings removes `.m-bright` and the original
+ * midnight architecture returns untouched.
+ */
+
+.m-bright {
+  --m-bright-ink: #2C2740;
+  --m-bright-ink-soft: #5B5473;
+  --m-bright-ink-faint: #857EA0;
+  --m-bright-sage: #E9F1E8;
+  --m-bright-sage-deep: #D6E6D4;
+  --m-bright-panel: #FFFFFF;
+  --m-bright-line: rgba(124, 58, 237, 0.18);
+  --m-bright-line-strong: rgba(124, 58, 237, 0.32);
+}
+
+.m-bright body,
+.m-bright .maggie-root {
+  background-color: #FBFDFA !important;
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(214, 230, 212, 0.85), transparent 42%),
+    radial-gradient(circle at 88% 4%, rgba(196, 181, 253, 0.35), transparent 40%),
+    radial-gradient(circle at 70% 96%, rgba(233, 241, 232, 0.9), transparent 45%) !important;
+  color: var(--m-bright-ink);
+}
+
+/* ---------- panels: every dark hex surface becomes white / sage ---------- */
+.m-bright [class*="bg-[#101118]"],
+.m-bright [class*="bg-[#0F1016]"],
+.m-bright [class*="bg-[#0E0F14]"],
+.m-bright [class*="bg-[#0B0C11]"],
+.m-bright [class*="bg-[#0A0B0F]"],
+.m-bright [class*="bg-[#0D0E14]"] {
+  background-color: #F6FAF5 !important;
+}
+
+.m-bright [class*="bg-[#15161C]"],
+.m-bright [class*="bg-[#16171F]"],
+.m-bright [class*="bg-[#14151C]"],
+.m-bright [class*="bg-[#13141B]"],
+.m-bright [class*="bg-[#131319]"],
+.m-bright [class*="bg-[#1B1C24]"],
+.m-bright [class*="bg-[#1F2029]"],
+.m-bright [class*="bg-[#1D1E28]"] {
+  background-color: #FFFFFF !important;
+}
+
+.m-bright [class*="bg-white/"],
+.m-bright [class*="bg-white/[0."] {
+  background-color: rgba(214, 230, 212, 0.4) !important;
+}
+
+.m-bright [class*="bg-black/"] {
+  background-color: rgba(255, 255, 255, 0.72) !important;
+}
+
+/* Scrim behind modals stays a soft sage wash instead of a black-out. */
+.m-bright .fixed[class*="bg-black/"] {
+  background-color: rgba(44, 39, 64, 0.28) !important;
+}
+
+/* ---------- lining: purple architecture ---------- */
+.m-bright [class*="border-white/"] {
+  border-color: var(--m-bright-line) !important;
+}
+
+.m-bright [class*="divide-white/"] > * + * {
+  border-color: var(--m-bright-line) !important;
+}
+
+.m-bright [class*="border-dashed"][class*="border-white/"] {
+  border-color: var(--m-bright-line-strong) !important;
+}
+
+/* ---------- ink ---------- */
+.m-bright [class*="text-white"] {
+  color: var(--m-bright-ink) !important;
+}
+
+.m-bright [class*="text-white/1"],
+.m-bright [class*="text-white/2"],
+.m-bright [class*="text-white/3"] {
+  color: var(--m-bright-ink-faint) !important;
+}
+
+.m-bright [class*="text-white/4"],
+.m-bright [class*="text-white/5"],
+.m-bright [class*="text-white/6"] {
+  color: var(--m-bright-ink-soft) !important;
+}
+
+.m-bright [class*="placeholder:text-white"]::placeholder,
+.m-bright input::placeholder,
+.m-bright textarea::placeholder {
+  color: var(--m-bright-ink-faint) !important;
+}
+
+/* Gradient buttons keep white ink so they stay readable. */
+.m-bright .m-gradient-bg,
+.m-bright .m-gradient-bg [class*="text-white"] {
+  color: #FFFFFF !important;
+}
+
+/* Accent chips read purple rather than washed out. */
+.m-bright [class*="text-[var(--m-accent-soft)]"] {
+  color: #7C3AED !important;
+}
+
+/* Status colours nudged darker so they survive a white background. */
+.m-bright .text-emerald-300,
+.m-bright [class*="text-emerald-3"],
+.m-bright [class*="text-emerald-4"] {
+  color: #157F52 !important;
+}
+
+.m-bright [class*="text-rose-3"],
+.m-bright [class*="text-rose-4"] {
+  color: #BE123C !important;
+}
+
+.m-bright [class*="text-amber-3"],
+.m-bright [class*="text-amber-4"] {
+  color: #B45309 !important;
+}
+
+.m-bright [class*="text-sky-3"] {
+  color: #0369A1 !important;
+}
+
+.m-bright select option {
+  color: #2C2740;
+  background: #FFFFFF;
+}
+
+.m-bright .m-scroll::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.28);
+}

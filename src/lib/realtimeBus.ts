@@ -7,7 +7,9 @@ export type BusEventType =
   | 'vision'
   | 'checkin'
   | 'coach'
+  | 'copilot'
   | 'presence';
+
 
 /** Where an event originated. `cloud` = injected by the scheduled-command sweep. */
 export type BusSource = 'desktop' | 'mobile' | 'cloud';

@@ -1,6 +1,7 @@
 import React from 'react';
-import { Cpu, Clock, Brain, Volume2, ShieldCheck, Gauge, PanelRight } from 'lucide-react';
-import { MODEL_OPTIONS, type AISettings, detectTimeZone, timeZoneLabel } from '@/lib/agentStore';
+import { Cpu, Clock, Brain, Volume2, ShieldCheck, Gauge, PanelRight, Sun } from 'lucide-react';
+import { MODEL_OPTIONS, type AISettings, detectTimeZone, timeZoneLabel, applyBrightCanvas } from '@/lib/agentStore';
+
 
 /** Left rail of the chat hub: the ordinary AI settings, kept out of the work area. */
 const AISettingsPanel: React.FC<{
@@ -104,11 +105,22 @@ const AISettingsPanel: React.FC<{
       />
       <Toggle
         label="Browser sandbox pane"
-        hint="Show the agent sandbox on the right."
+        hint="Show the co-pilot + sandbox on the right."
         icon={PanelRight}
         value={settings.sandboxOpen}
         onToggle={() => onChange({ sandboxOpen: !settings.sandboxOpen })}
       />
+      <Toggle
+        label="Bright canvas"
+        hint="White + sage welcome with purple lining. Turn off for the midnight build — your themes stay saved either way."
+        icon={Sun}
+        value={settings.brightCanvas}
+        onToggle={() => {
+          applyBrightCanvas(!settings.brightCanvas);
+          onChange({ brightCanvas: !settings.brightCanvas });
+        }}
+      />
+
 
       {/* Time zone */}
       <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">

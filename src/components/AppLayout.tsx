@@ -7,6 +7,7 @@ import MobileRemote from '@/pages/MobileRemote';
 import Onboarding from '@/pages/Onboarding';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { initBus } from '@/lib/realtimeBus';
+import { applyBrightCanvas, loadAISettings } from '@/lib/agentStore';
 
 type Surface = 'desktop' | 'remote';
 
@@ -23,6 +24,8 @@ const MaggieShell: React.FC = () => {
 
   useEffect(() => {
     initBus();
+    // Bright white + sage welcome canvas (purely visual — every saved theme value stays intact).
+    applyBrightCanvas(loadAISettings().brightCanvas);
   }, []);
 
   // On phones, drop straight into the one-handed remote surface (once).
@@ -32,6 +35,7 @@ const MaggieShell: React.FC = () => {
       setAutoSwitched(true);
     }
   }, [isMobile, autoSwitched]);
+
 
   if (showIntake) {
     return (

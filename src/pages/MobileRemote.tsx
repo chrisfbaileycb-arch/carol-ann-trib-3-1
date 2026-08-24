@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Mic, MicOff, Camera, X, Monitor, Zap, ClipboardCheck, ShoppingBag, Dumbbell,
-  ChevronUp, Send, Radio, Check, Trash2, LogIn, ShieldCheck,
+  ChevronUp, Send, Radio, Check, Trash2, LogIn, ShieldCheck, Bot,
 } from 'lucide-react';
 import { useMaggie } from '@/contexts/MaggieContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,7 +9,8 @@ import AuthModal from '@/components/auth/AuthModal';
 import { publishBus, subscribeBus, isCloudBusLive, pullBusNow } from '@/lib/realtimeBus';
 import SavedShortcuts from '@/components/shortcuts/SavedShortcuts';
 import MobileAgentDock from '@/components/agents/MobileAgentDock';
-
+import CopilotChat from '@/components/command/CopilotChat';
+import { subscribeCopilot, pendingStep, getActiveTask } from '@/lib/copilotSession';
 
 import { CHAIN_LIST, parseIntent } from '@/lib/browserAgent';
 import { uid } from '@/lib/memoryStore';
@@ -35,9 +36,21 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
   const recogRef = useRef<any>(null);
 
   const [relayLive, setRelayLive] = useState(false);
+  const [copilotOpen, setCopilotOpen] = useState(false);
+  const [needsPermission, setNeedsPermission] = useState(false);
 
   useEffect(() => subscribeBus(() => undefined), []);
   useEffect(() => () => streamRef.current?.getTracks().forEach((t) => t.stop()), []);
+
+  // Watch the shared co-pilot session so a permission asked for on the desktop
+  // (or by a scheduled run) surfaces here as a badge on the phone.
+  useEffect(
+    () =>
+      subscribeCopilot(() => {
+        setNeedsPermission(!!pendingStep(getActiveTask()));
+      }),
+    [],
+  );
 
   // Cross-device relay heartbeat: poll bus_events so a phone on another network stays in sync.
   useEffect(() => {
@@ -46,6 +59,7 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
     const t = window.setInterval(() => setRelayLive(isCloudBusLive()), 2500);
     return () => window.clearInterval(t);
   }, [user]);
+
 
 
   const flash = (m: string) => { setToast(m); window.setTimeout(() => setToast(''), 2200); };
@@ -216,7 +230,8 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
         </div>
 
         {/* Agent roster — same little agents as the desktop studio */}
-        <MobileAgentDock className="mt-5" />
+        <MobileAgentDock className="mt-5" onHandOff={() => setCopilotOpen(true)} />
+
 
         {/* Saved one-tap shortcuts (synced from Remote activity) */}
         <SavedShortcuts
@@ -280,12 +295,37 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
           {listening ? <MicOff className="h-7 w-7 text-white" /> : <Mic className="h-7 w-7 text-white" />}
         </button>
         <button
-          onClick={() => setDrawerOpen((v) => !v)}
-          className="pointer-events-auto grid h-14 w-14 place-items-center rounded-full border border-white/15 bg-[#1D1E28]/90 backdrop-blur"
+          onClick={() => setCopilotOpen(true)}
+          className="pointer-events-auto relative grid h-14 w-14 place-items-center rounded-full border border-white/15 bg-[#1D1E28]/90 backdrop-blur"
+          title="Browser co-pilot"
         >
-          <span className="text-sm font-bold text-white/70">{queue.length}</span>
+          <Bot className="h-5 w-5 text-white/70" />
+          {needsPermission && (
+            <span className="absolute -right-0.5 -top-0.5 grid h-5 w-5 place-items-center rounded-full bg-[var(--m-accent)] text-[10px] font-bold text-white">
+              !
+            </span>
+          )}
         </button>
       </div>
+
+      {/* Browser co-pilot sheet — the same thread the desktop rail shows */}
+      {copilotOpen && (
+        <div className="fixed inset-0 z-[75] flex flex-col bg-[#101118]">
+          <div className="flex items-center justify-between border-b border-white/8 px-4 py-3">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/35">Browser co-pilot</p>
+              <p className="text-[13px] font-semibold text-white">Booking runs here — step by step</p>
+            </div>
+            <button onClick={() => setCopilotOpen(false)} className="rounded-full border border-white/15 p-2 text-white/60">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="min-h-0 flex-1">
+            <CopilotChat surface="mobile" />
+          </div>
+        </div>
+      )}
+
 
       {/* Camera sheet */}
       {sheetOpen && (

@@ -192,6 +192,8 @@ export interface AISettings {
   timeZone: string;
   sandboxOpen: boolean;
   confirmBeforeSubmit: boolean;
+  /** Bright white + sage canvas with purple lining (welcome default). */
+  brightCanvas: boolean;
 }
 
 export const MODEL_OPTIONS = [
@@ -211,7 +213,15 @@ export const defaultAISettings = (): AISettings => ({
   timeZone: detectTimeZone(),
   sandboxOpen: true,
   confirmBeforeSubmit: true,
+  brightCanvas: true,
 });
+
+/** Push (or remove) the bright canvas class on the document root. */
+export const applyBrightCanvas = (on: boolean) => {
+  if (typeof document === 'undefined') return;
+  document.documentElement.classList.toggle('m-bright', on);
+};
+
 
 export const loadAISettings = (): AISettings => {
   const s = read<Partial<AISettings>>(AI_KEY, {});
