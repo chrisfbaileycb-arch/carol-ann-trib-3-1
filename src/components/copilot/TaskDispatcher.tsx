@@ -8,7 +8,10 @@ import { useMaggie } from '@/contexts/MaggieContext';
 import { uid } from '@/lib/memoryStore';
 import { publishBus } from '@/lib/realtimeBus';
 import SavedShortcuts from '@/components/shortcuts/SavedShortcuts';
+import ScheduleManager from '@/components/shortcuts/ScheduleManager';
+import type { SavedCommand } from '@/lib/savedCommands';
 import type { ErrandTask } from '@/data/schemas';
+
 
 type Tab = 'errands' | 'code' | 'terminal';
 
@@ -18,7 +21,9 @@ export const TaskDispatcher: React.FC<{ open: boolean; onClose: () => void; onRu
 }) => {
   const { errands, upsertErrand } = useMaggie();
   const [tab, setTab] = useState<Tab>('errands');
+  const [scheduleDraft, setScheduleDraft] = useState<SavedCommand | null>(null);
   const [, force] = useState(0);
+
   const [newItem, setNewItem] = useState('');
   const [scratch, setScratch] = useState(
     '// Architecture scratchpad\nconst pipeline = {\n  ingest: "phone.vision",\n  route: "cloud.runner",\n  persist: "local -> supabase"\n};\n',
@@ -139,7 +144,12 @@ export const TaskDispatcher: React.FC<{ open: boolean; onClose: () => void; onRu
                 variant="list"
                 title="Saved shortcuts"
                 onDispatch={(c) => runShortcut(c.text, c.chainKey)}
+                onSchedule={(c) => setScheduleDraft(c)}
               />
+
+              {/* Recurring schedules — dispatched hourly by the cloud sweep */}
+              <ScheduleManager draft={scheduleDraft} onClearDraft={() => setScheduleDraft(null)} />
+
 
               {errands.map((e) => {
                 const chain = chainForTarget(e.target);

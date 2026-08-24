@@ -9,13 +9,17 @@ export type BusEventType =
   | 'coach'
   | 'presence';
 
+/** Where an event originated. `cloud` = injected by the scheduled-command sweep. */
+export type BusSource = 'desktop' | 'mobile' | 'cloud';
+
 export interface BusEvent {
   id: string;
   type: BusEventType;
   payload: Record<string, unknown>;
-  source: 'desktop' | 'mobile';
+  source: BusSource;
   ts: string;
 }
+
 
 type Handler = (e: BusEvent) => void;
 
@@ -125,7 +129,8 @@ const pollCloud = async () => {
         id: row.id,
         type: (row.type as BusEventType) ?? 'command',
         payload,
-        source: (row.source as 'desktop' | 'mobile') ?? 'mobile',
+        source: (row.source as BusSource) ?? 'mobile',
+
         ts: row.created_at,
       });
     });
@@ -222,8 +227,9 @@ export const subscribeBus = (fn: Handler) => {
 export const publishBus = (
   type: BusEventType,
   payload: Record<string, unknown>,
-  source: 'desktop' | 'mobile',
+  source: BusSource,
 ) => {
+
   initBus();
   const evt: BusEvent = { id: uid('bus'), type, payload, source, ts: new Date().toISOString() };
   seen.add(evt.id);

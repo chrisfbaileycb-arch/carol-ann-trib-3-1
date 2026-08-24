@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { BusEventType } from './realtimeBus';
+import type { BusEventType, BusSource } from './realtimeBus';
 
 /**
  * Read/maintain layer for the `bus_events` relay ledger.
@@ -11,9 +11,10 @@ export interface BusActivityRow {
   id: string;
   type: BusEventType;
   payload: Record<string, unknown>;
-  source: 'desktop' | 'mobile';
+  source: BusSource;
   createdAt: string;
 }
+
 
 export interface ActivityDay {
   key: string;
@@ -154,7 +155,8 @@ export const fetchBusActivity = async (
       id: String(r.id),
       type: isType(r.type) ? r.type : 'command',
       payload: (r.payload as Record<string, unknown>) ?? {},
-      source: r.source === 'desktop' ? 'desktop' : 'mobile',
+      source: r.source === 'desktop' || r.source === 'cloud' ? (r.source as BusSource) : 'mobile',
+
       createdAt: typeof r.created_at === 'string' ? r.created_at : new Date().toISOString(),
     }));
 

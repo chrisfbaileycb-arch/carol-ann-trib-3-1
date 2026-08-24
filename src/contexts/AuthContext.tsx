@@ -205,6 +205,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await supabase.from('bus_events').delete().eq('user_id', user.id);
       await supabase.from('saved_commands').delete().eq('user_id', user.id);
+      await supabase.from('scheduled_commands').delete().eq('user_id', user.id);
+
     } catch {
       /* best-effort */
     }

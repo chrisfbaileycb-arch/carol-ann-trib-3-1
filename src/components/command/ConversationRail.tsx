@@ -44,13 +44,20 @@ export const ConversationRail: React.FC<{ onOpenAgent?: () => void }> = ({ onOpe
 
   useEffect(() => {
     return subscribeBus((e) => {
-      if (e.source !== 'mobile') return;
+      // Phone pushes AND cloud-scheduled dispatches both drive the desktop rail.
+      if (e.source !== 'mobile' && e.source !== 'cloud') return;
       if (e.type === 'command' || e.type === 'voice') {
         const text = String(e.payload.text ?? '');
         if (!text) return;
         addMessage({ domain: (e.payload.domain as DomainId) ?? 'core', role: 'user', content: text, source: 'mobile' });
-        pushLog(`Remote injection received from phone: "${text}"`, 'action');
+        pushLog(
+          e.source === 'cloud'
+            ? `Scheduled command fired: "${text}"`
+            : `Remote injection received from phone: "${text}"`,
+          'action',
+        );
       }
+
       if (e.type === 'vision') {
         addMessage({
           domain: 'family',

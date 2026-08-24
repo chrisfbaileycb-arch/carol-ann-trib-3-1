@@ -61,9 +61,11 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
 
   useEffect(() => {
     return subscribeBus((e) => {
-      if (e.source !== 'mobile') return;
+      // Phone pushes and cloud-scheduled dispatches both raise the beacon.
+      if (e.source !== 'mobile' && e.source !== 'cloud') return;
       setRemoteBeacon(String(e.payload.text ?? e.type));
       window.setTimeout(() => setRemoteBeacon(null), 4200);
+
       if (e.type === 'command' || e.type === 'voice') {
         const intent = parseIntent(String(e.payload.text ?? ''));
         if (intent) {

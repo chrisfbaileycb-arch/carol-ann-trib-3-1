@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   RefreshCw, Trash2, Play, Loader2, Radio, Smartphone, Monitor, ShieldAlert, Inbox, CloudOff,
-  Search, CalendarRange, ChevronDown, Bookmark, X,
+  Search, CalendarRange, ChevronDown, Bookmark, X, CloudCog,
 } from 'lucide-react';
+
 import { useAuth } from '@/contexts/AuthContext';
 import {
   fetchBusActivity, fetchTypeCounts, deleteBusEvent, clearBusActivity, groupByDay,
@@ -379,7 +380,8 @@ const RemoteActivity: React.FC<Props> = ({ onOpenAgent, onSignIn }) => {
                       const meta = EVENT_TYPE_META[row.type];
                       const text = commandText(row);
                       const canRerun = RERUNNABLE.includes(row.type) && !!text;
-                      const SourceIcon = row.source === 'mobile' ? Smartphone : Monitor;
+                      const SourceIcon = row.source === 'mobile' ? Smartphone : row.source === 'cloud' ? CloudCog : Monitor;
+
                       return (
                         <li
                           key={row.id}
