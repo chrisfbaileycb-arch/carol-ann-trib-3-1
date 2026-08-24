@@ -1,0 +1,6 @@
+{
+  "name": "Maggie: Women's Lifestyle OS",
+  "description": "A privacy-first lifestyle operating system tailored for women, offering customized dashboards, physical coaching, and autonomous task management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

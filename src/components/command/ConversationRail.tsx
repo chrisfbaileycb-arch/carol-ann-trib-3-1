@@ -22,6 +22,22 @@ const VoiceWave: React.FC<{ active: boolean }> = ({ active }) => (
   </div>
 );
 
+interface SpeechRecognitionInstance {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((ev: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+
+interface WindowWithSpeech extends Window {
+  SpeechRecognition?: new () => SpeechRecognitionInstance;
+  webkitSpeechRecognition?: new () => SpeechRecognitionInstance;
+}
+
 export const ConversationRail: React.FC<{ onOpenAgent?: () => void }> = ({ onOpenAgent }) => {
   const { messages, addMessage, profile, memories, clearDomain } = useMaggie();
   const [domain, setDomain] = useState<DomainId>('core');
@@ -31,7 +47,7 @@ export const ConversationRail: React.FC<{ onOpenAgent?: () => void }> = ({ onOpe
   const [filter, setFilter] = useState<'all' | DomainId>('all');
   const [pinned, setPinned] = useState<string[]>(() => loadSaved().map((s) => s.messageId));
   const scrollRef = useRef<HTMLDivElement>(null);
-  const recogRef = useRef<any>(null);
+  const recogRef = useRef<SpeechRecognitionInstance | null>(null);
 
   const visible = useMemo(
     () => (filter === 'all' ? messages : messages.filter((m) => m.domain === filter)),
@@ -119,7 +135,8 @@ export const ConversationRail: React.FC<{ onOpenAgent?: () => void }> = ({ onOpe
   };
 
   const toggleVoice = () => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const win = window as WindowWithSpeech;
+    const SR = win.SpeechRecognition || win.webkitSpeechRecognition;
     if (!SR) {
       addMessage({ domain, role: 'system', content: 'Voice capture is not supported in this browser. Use the phone remote for continuous voice.', source: 'desktop' });
       return;
@@ -133,8 +150,8 @@ export const ConversationRail: React.FC<{ onOpenAgent?: () => void }> = ({ onOpe
     r.continuous = false;
     r.interimResults = false;
     r.lang = 'en-US';
-    r.onresult = (ev: any) => {
-      const t = ev.results[0][0].transcript as string;
+    r.onresult = (ev) => {
+      const t = ev.results[0][0].transcript;
       setInput(t);
       send(t);
     };

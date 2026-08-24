@@ -18,6 +18,33 @@ import { uid } from '@/lib/memoryStore';
 
 interface QueueItem { id: string; text: string; state: 'queued' | 'sent'; }
 
+interface SpeechRecognitionEventLike {
+  resultIndex: number;
+  results: {
+    length: number;
+    [index: number]: {
+      [index: number]: { transcript: string };
+      isFinal?: boolean;
+    };
+  };
+}
+
+interface SpeechRecognitionInstance {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((ev: SpeechRecognitionEventLike) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+
+interface WindowWithSpeech extends Window {
+  SpeechRecognition?: new () => SpeechRecognitionInstance;
+  webkitSpeechRecognition?: new () => SpeechRecognitionInstance;
+}
+
 export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBackToDesktop }) => {
   const { profile, theme, addMessage, addCheckIn } = useMaggie();
   const { user } = useAuth();
@@ -33,7 +60,7 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const recogRef = useRef<any>(null);
+  const recogRef = useRef<SpeechRecognitionInstance | null>(null);
 
   const [relayLive, setRelayLive] = useState(false);
   const [copilotOpen, setCopilotOpen] = useState(false);
@@ -76,14 +103,15 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
   };
 
   const toggleVoice = () => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const win = window as WindowWithSpeech;
+    const SR = win.SpeechRecognition || win.webkitSpeechRecognition;
     if (!SR) { flash('Voice not supported in this browser'); return; }
     if (listening) { recogRef.current?.stop(); setListening(false); return; }
     const r = new SR();
     r.continuous = true;
     r.interimResults = true;
     r.lang = 'en-US';
-    r.onresult = (ev: any) => {
+    r.onresult = (ev) => {
       let text = '';
       for (let i = ev.resultIndex; i < ev.results.length; i += 1) text += ev.results[i][0].transcript;
       setTranscript(text);

@@ -48,7 +48,6 @@ export const TaskDispatcher: React.FC<{ open: boolean; onClose: () => void; onRu
 
   const validate = () => {
     try {
-      // eslint-disable-next-line no-new-func
       new Function(scratch);
       setValidation({ ok: true, msg: 'Syntax valid — no parse errors detected.' });
     } catch (e) {
