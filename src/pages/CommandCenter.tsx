@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Sparkles, LayoutDashboard, Globe, Users, Package, Bot, Smartphone, Dumbbell,
-  Cloud, Loader2, Wifi, LogIn, LogOut, ShieldCheck, UserCircle2, Settings, CloudCog,
+  Cloud, Loader2, Wifi, LogIn, LogOut, ShieldCheck, UserCircle2, Settings, CloudCog, Radio,
 } from 'lucide-react';
 import ConversationRail from '@/components/command/ConversationRail';
 import BrowserViewport from '@/components/command/BrowserViewport';
+import RemoteActivity from '@/components/command/RemoteActivity';
 import PersonalSpace from '@/components/canvas/PersonalSpace';
 import SkillsEngine from '@/components/skills/SkillsEngine';
 import AgentStackStore from '@/components/skills/AgentStackStore';
@@ -19,15 +20,17 @@ import { startRun, pushLog } from '@/lib/agentRunner';
 import { parseIntent } from '@/lib/browserAgent';
 
 
-type TabId = 'dashboard' | 'agent' | 'skills' | 'store' | 'coach';
+type TabId = 'dashboard' | 'agent' | 'activity' | 'skills' | 'store' | 'coach';
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'agent', label: 'Cloud Browser Agent', icon: Globe },
+  { id: 'activity', label: 'Remote Activity', icon: Radio },
   { id: 'skills', label: 'Family & Life Skills', icon: Users },
   { id: 'store', label: 'Agent Stack Store', icon: Package },
   { id: 'coach', label: 'Gym Coach', icon: Dumbbell },
 ];
+
 
 export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRemote }) => {
   const { profile, theme, syncToCloud, syncing, lastSync, syncError, addCheckIn } = useMaggie();
@@ -248,10 +251,14 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
         <main className="min-h-0 flex-1 overflow-hidden bg-[#101118]">
           {tab === 'dashboard' && <PersonalSpace />}
           {tab === 'agent' && <BrowserViewport />}
+          {tab === 'activity' && (
+            <RemoteActivity onOpenAgent={openAgent} onSignIn={() => setAuthOpen(true)} />
+          )}
           {tab === 'skills' && <SkillsEngine onRunAgent={openAgent} />}
           {tab === 'store' && <AgentStackStore />}
           {tab === 'coach' && <GymCoach />}
         </main>
+
       </div>
 
       <TaskDispatcher open={copilotOpen} onClose={() => setCopilotOpen(false)} onRunStarted={openAgent} />
