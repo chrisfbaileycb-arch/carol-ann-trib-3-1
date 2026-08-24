@@ -2,13 +2,16 @@ import React, { useEffect, useState } from 'react';
 import {
   X, Bot, Play, ShoppingBag, Plus, Trash2, Code2, TerminalSquare, CheckCircle2, AlertTriangle,
 } from 'lucide-react';
-import { CHAIN_LIST, chainForTarget } from '@/lib/browserAgent';
-import { startRun, subscribeRunner, getRunnerState } from '@/lib/agentRunner';
+import { CHAIN_LIST, chainForTarget, parseIntent } from '@/lib/browserAgent';
+import { startRun, subscribeRunner, getRunnerState, pushLog } from '@/lib/agentRunner';
 import { useMaggie } from '@/contexts/MaggieContext';
 import { uid } from '@/lib/memoryStore';
+import { publishBus } from '@/lib/realtimeBus';
+import SavedShortcuts from '@/components/shortcuts/SavedShortcuts';
 import type { ErrandTask } from '@/data/schemas';
 
 type Tab = 'errands' | 'code' | 'terminal';
+
 
 export const TaskDispatcher: React.FC<{ open: boolean; onClose: () => void; onRunStarted?: () => void }> = ({
   open, onClose, onRunStarted,
@@ -77,7 +80,22 @@ export const TaskDispatcher: React.FC<{ open: boolean; onClose: () => void; onRu
     setCmd('');
   };
 
+  // One-tap saved shortcut: resolve its chain (or parse the text) and dispatch.
+  const runShortcut = (text: string, chainKey: string | null) => {
+    const chain = chainKey ? CHAIN_LIST.find((x) => x.key === chainKey) : parseIntent(text);
+    if (!chain) {
+      pushLog(`No dispatch chain matched shortcut “${text.slice(0, 60)}”.`, 'warn');
+      setTermLines((prev) => [...prev, `maggie@sovereign:~$ shortcut "${text}"`, 'no matching chain'].slice(-60));
+      return;
+    }
+    startRun(chain.key);
+    publishBus('command', { text, origin: 'saved-shortcut' }, 'desktop');
+    pushLog(`Saved shortcut dispatched → ${chain.title}`, 'action');
+    onRunStarted?.();
+  };
+
   return (
+
     <>
       <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <aside className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-white/10 bg-[#15161C] shadow-2xl">
@@ -115,6 +133,14 @@ export const TaskDispatcher: React.FC<{ open: boolean; onClose: () => void; onRu
         <div className="m-scroll min-h-0 flex-1 overflow-y-auto p-4">
           {tab === 'errands' && (
             <div className="space-y-3">
+              {/* One-tap saved shortcuts (shared with the phone remote) */}
+              <SavedShortcuts
+                className="rounded-xl border border-white/10 bg-white/[0.03] p-3"
+                variant="list"
+                title="Saved shortcuts"
+                onDispatch={(c) => runShortcut(c.text, c.chainKey)}
+              />
+
               {errands.map((e) => {
                 const chain = chainForTarget(e.target);
                 return (

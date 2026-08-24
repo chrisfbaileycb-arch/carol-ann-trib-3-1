@@ -90,22 +90,67 @@ export const groupByDay = (rows: BusActivityRow[]): ActivityDay[] => {
   return Array.from(map.values());
 };
 
-/** Fetch the signed-in user's relay ledger, newest first. */
+/** Server-side query options for the relay ledger. */
+export interface ActivityQuery {
+  /** Keyword matched server-side against payload text/label and the type column. */
+  keyword?: string;
+  /** ISO date (yyyy-mm-dd) — inclusive lower bound on created_at. */
+  from?: string;
+  /** ISO date (yyyy-mm-dd) — inclusive upper bound on created_at. */
+  to?: string;
+  /** Restrict to these event types (server-side `in` filter). */
+  types?: BusEventType[];
+  /** Row offset for "Load older events" pagination. */
+  offset?: number;
+  limit?: number;
+}
+
+export const ACTIVITY_PAGE = 60;
+
+const escapeKeyword = (kw: string) => kw.replace(/[,()*]/g, ' ').trim();
+
+/**
+ * Fetch a page of the signed-in user's relay ledger, newest first.
+ * Keyword + date range + type filters are all applied server-side so the user
+ * can dig well past the most recent window.
+ */
 export const fetchBusActivity = async (
   userId: string,
-  limit = 120,
-): Promise<{ rows: BusActivityRow[]; error: string | null }> => {
+  query: ActivityQuery = {},
+): Promise<{ rows: BusActivityRow[]; error: string | null; hasMore: boolean }> => {
+  const limit = query.limit ?? ACTIVITY_PAGE;
+  const offset = query.offset ?? 0;
   try {
-    const { data, error } = await supabase
+    let q = supabase
       .from('bus_events')
       .select('id,type,payload,source,created_at')
-      .eq('user_id', userId)
+      .eq('user_id', userId);
+
+    if (query.types?.length) q = q.in('type', query.types);
+    if (query.from) q = q.gte('created_at', `${query.from}T00:00:00.000Z`);
+    if (query.to) q = q.lte('created_at', `${query.to}T23:59:59.999Z`);
+
+    const kw = escapeKeyword(query.keyword ?? '');
+    if (kw) {
+      q = q.or(
+        [
+          `payload->>text.ilike.%${kw}%`,
+          `payload->>label.ilike.%${kw}%`,
+          `payload->>action.ilike.%${kw}%`,
+          `type.ilike.%${kw}%`,
+          `source.ilike.%${kw}%`,
+        ].join(','),
+      );
+    }
+
+    const { data, error } = await q
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .range(offset, offset + limit - 1);
 
-    if (error) return { rows: [], error: error.message };
+    if (error) return { rows: [], error: error.message, hasMore: false };
 
-    const rows: BusActivityRow[] = ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+    const raw = (data ?? []) as Record<string, unknown>[];
+    const rows: BusActivityRow[] = raw.map((r) => ({
       id: String(r.id),
       type: isType(r.type) ? r.type : 'command',
       payload: (r.payload as Record<string, unknown>) ?? {},
@@ -113,11 +158,27 @@ export const fetchBusActivity = async (
       createdAt: typeof r.created_at === 'string' ? r.created_at : new Date().toISOString(),
     }));
 
-    return { rows, error: null };
+    return { rows, error: null, hasMore: raw.length === limit };
   } catch (e) {
-    return { rows: [], error: e instanceof Error ? e.message : 'Relay ledger unreachable.' };
+    return {
+      rows: [],
+      error: e instanceof Error ? e.message : 'Relay ledger unreachable.',
+      hasMore: false,
+    };
   }
 };
+
+/** Per-type totals for the current filter window (counts only, no payloads). */
+export const fetchTypeCounts = async (
+  userId: string,
+  query: Omit<ActivityQuery, 'types' | 'offset' | 'limit'> = {},
+): Promise<Record<string, number>> => {
+  const { rows } = await fetchBusActivity(userId, { ...query, limit: 300, offset: 0 });
+  const counts: Record<string, number> = {};
+  rows.forEach((r) => { counts[r.type] = (counts[r.type] ?? 0) + 1; });
+  return counts;
+};
+
 
 export const deleteBusEvent = async (id: string): Promise<string | null> => {
   try {

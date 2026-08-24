@@ -7,9 +7,11 @@ import { useMaggie } from '@/contexts/MaggieContext';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/auth/AuthModal';
 import { publishBus, subscribeBus, isCloudBusLive, pullBusNow } from '@/lib/realtimeBus';
+import SavedShortcuts from '@/components/shortcuts/SavedShortcuts';
 
 import { CHAIN_LIST, parseIntent } from '@/lib/browserAgent';
 import { uid } from '@/lib/memoryStore';
+
 
 interface QueueItem { id: string; text: string; state: 'queued' | 'sent'; }
 
@@ -211,6 +213,14 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
           ))}
         </div>
 
+        {/* Saved one-tap shortcuts (synced from Remote activity) */}
+        <SavedShortcuts
+          className="mt-5"
+          variant="pills"
+          title="Saved shortcuts"
+          onDispatch={(c) => dispatch(c.text)}
+        />
+
         {/* Chain shortcuts */}
         <p className="mt-5 text-[10px] uppercase tracking-[0.18em] text-white/30">Dispatch to cloud runner</p>
         <div className="mt-2 flex flex-wrap gap-2 pb-40">
@@ -224,6 +234,7 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
             </button>
           ))}
         </div>
+
       </div>
 
       {/* Command queue drawer */}

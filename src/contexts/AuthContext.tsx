@@ -201,12 +201,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // The cross-device relay is part of the cloud footprint too.
+    // The relay ledger and saved shortcuts are part of the cloud footprint too.
     try {
       await supabase.from('bus_events').delete().eq('user_id', user.id);
+      await supabase.from('saved_commands').delete().eq('user_id', user.id);
     } catch {
       /* best-effort */
     }
+
 
     return { error: failure, deleted };
   }, [user]);

@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import {
   X, Loader2, User, Mail, Lock, ShieldCheck, Trash2, AlertTriangle, Database, LogOut,
+  Download, FileJson, FileSpreadsheet,
 } from 'lucide-react';
 import { useAuth, LEDGER_TABLES } from '@/contexts/AuthContext';
 import { clearLocalLedger } from '@/lib/memoryStore';
+import {
+  runDataExport, downloadExportFiles, EXPORT_TABLES, type ExportProgress,
+} from '@/lib/dataExport';
 
 export const AccountSettings: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
   const { user, updateAccount, updatePassword, deleteLedger, signOut } = useAuth();
@@ -18,7 +22,32 @@ export const AccountSettings: React.FC<{ open: boolean; onClose: () => void }> =
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
+  // Data export state
+  const [exporting, setExporting] = useState(false);
+  const [progress, setProgress] = useState<ExportProgress | null>(null);
+  const [exportSummary, setExportSummary] = useState<string>('');
+
   if (!open || !user) return null;
+
+  const runExport = async () => {
+    setError('');
+    setNotice('');
+    setExportSummary('');
+    setExporting(true);
+    setProgress({ table: EXPORT_TABLES[0], index: 0, total: EXPORT_TABLES.length, rows: 0, done: false });
+
+    const res = await runDataExport(user.id, user.email, (p) => setProgress(p));
+    downloadExportFiles(res.files);
+    setExporting(false);
+
+    const rows = Object.values(res.counts).reduce((a, b) => a + b, 0);
+    setExportSummary(
+      `${rows} rows across ${EXPORT_TABLES.length} tables · ${res.files.length} files (1 JSON + ${res.files.length - 1} CSV).`,
+    );
+    if (res.errors.length) setError(`Some tables could not be read: ${res.errors.join(' | ')}`);
+    else setNotice('Export complete — check your downloads folder.');
+  };
+
 
   const saveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,6 +188,54 @@ export const AccountSettings: React.FC<{ open: boolean; onClose: () => void }> =
               {savingPassword && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Change password
             </button>
           </form>
+          {/* Data export */}
+          <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/55">
+              <Download className="h-3.5 w-3.5" /> Export my data
+            </p>
+            <p className="text-[11.5px] leading-relaxed text-white/50">
+              Pull every row you own across the ledger and relay tables. You get one combined JSON
+              bundle plus a CSV per table.
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {EXPORT_TABLES.map((t) => (
+                <span key={t} className="flex items-center gap-1 rounded-md bg-black/40 px-2 py-1 font-mono text-[10px] text-white/45">
+                  <Database className="h-3 w-3" /> {t}
+                </span>
+              ))}
+            </div>
+
+            {exporting && progress && (
+              <div>
+                <div className="flex items-center justify-between text-[10.5px] text-white/50">
+                  <span className="font-mono">{progress.table}</span>
+                  <span>{progress.index}/{progress.total}</span>
+                </div>
+                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full m-gradient-bg transition-all duration-300"
+                    style={{ width: `${Math.round((progress.index / progress.total) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {exportSummary && (
+              <p className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[11px] text-white/60">
+                <FileJson className="h-3.5 w-3.5 text-[var(--m-accent)]" /> {exportSummary}
+              </p>
+            )}
+
+            <button
+              onClick={() => void runExport()}
+              disabled={exporting}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 py-2.5 text-[12.5px] font-semibold text-white/80 transition hover:border-[var(--m-accent)]/55 hover:text-white disabled:opacity-60"
+            >
+              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+              {exporting ? 'Exporting…' : 'Download JSON + CSV export'}
+            </button>
+          </div>
+
 
           {/* Danger zone */}
           <div className="space-y-3 rounded-xl border border-rose-400/25 bg-rose-500/[0.06] p-4">
