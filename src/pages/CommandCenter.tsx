@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Sparkles, LayoutDashboard, Globe, Users, Package, Bot, Smartphone, Dumbbell,
-  Cloud, Loader2, Wifi, LogIn, LogOut, ShieldCheck, UserCircle2,
+  Cloud, Loader2, Wifi, LogIn, LogOut, ShieldCheck, UserCircle2, Settings, CloudCog,
 } from 'lucide-react';
 import ConversationRail from '@/components/command/ConversationRail';
 import BrowserViewport from '@/components/command/BrowserViewport';
@@ -11,9 +11,10 @@ import AgentStackStore from '@/components/skills/AgentStackStore';
 import GymCoach from '@/components/coach/GymCoach';
 import TaskDispatcher from '@/components/copilot/TaskDispatcher';
 import AuthModal from '@/components/auth/AuthModal';
+import AccountSettings from '@/components/auth/AccountSettings';
 import { useMaggie } from '@/contexts/MaggieContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { subscribeBus } from '@/lib/realtimeBus';
+import { subscribeBus, isCloudBusLive, pullBusNow } from '@/lib/realtimeBus';
 import { startRun, pushLog } from '@/lib/agentRunner';
 import { parseIntent } from '@/lib/browserAgent';
 
@@ -36,10 +37,23 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [relayLive, setRelayLive] = useState(false);
   const [remoteBeacon, setRemoteBeacon] = useState<string | null>(null);
   const dragging = useRef(false);
 
   const openAgent = useCallback(() => setTab('agent'), []);
+
+  // Reflect the cross-device relay status (bus_events polling) in the header.
+  useEffect(() => {
+    if (!user) {
+      setRelayLive(false);
+      return;
+    }
+    const tick = window.setInterval(() => setRelayLive(isCloudBusLive()), 2000);
+    void pullBusNow();
+    return () => window.clearInterval(tick);
+  }, [user]);
 
 
   useEffect(() => {
@@ -111,9 +125,19 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
             <span className="hidden items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/8 px-2.5 py-1 text-[10px] font-semibold text-emerald-300 md:flex">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" /> Runner online
             </span>
+            {user && (
+              <button
+                onClick={() => void pullBusNow()}
+                title="Pull remote events queued by your phone (cross-device relay)"
+                className={`hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold transition md:flex ${relayLive ? 'border-sky-400/30 bg-sky-400/10 text-sky-300' : 'border-white/12 text-white/40 hover:text-white'}`}
+              >
+                <CloudCog className="h-3 w-3" /> {relayLive ? 'Relay live' : 'Relay idle'}
+              </button>
+            )}
             <button
               onClick={() => (user ? void syncToCloud() : setAuthOpen(true))}
               title={user ? 'Push an encrypted snapshot to your private ledger' : 'Sign in to enable cloud sync'}
+
               className="flex items-center gap-1.5 rounded-lg border border-white/12 px-2.5 py-1.5 text-[11px] font-medium text-white/60 transition hover:border-white/30 hover:text-white"
             >
               {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Cloud className="h-3.5 w-3.5" />}
@@ -142,7 +166,7 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
                   <span className="max-w-[130px] truncate">{user.email ?? 'Account'}</span>
                 </button>
                 {accountOpen && (
-                  <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-xl border border-white/12 bg-[#1B1C24] p-3 shadow-2xl">
+                  <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-xl border border-white/12 bg-[#1B1C24] p-3 shadow-2xl">
                     <p className="flex items-center gap-1.5 text-[11px] font-semibold text-white">
                       <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Private ledger active
                     </p>
@@ -150,16 +174,23 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
                       Row-level security scopes every journal entry, check-in, memory, and errand to this account alone.
                     </p>
                     <p className="mt-2 truncate rounded-lg bg-black/30 px-2 py-1.5 font-mono text-[10px] text-white/45">
-                      {user.email}
+                      {user.name ? `${user.name} · ` : ''}{user.email}
                     </p>
                     <button
+                      onClick={() => { setAccountOpen(false); setSettingsOpen(true); }}
+                      className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-white/12 py-2 text-[11px] font-medium text-white/75 transition hover:border-[var(--m-accent)]/50 hover:text-white"
+                    >
+                      <Settings className="h-3.5 w-3.5" /> Account settings
+                    </button>
+                    <button
                       onClick={async () => { setAccountOpen(false); await signOut(); }}
-                      className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-white/12 py-2 text-[11px] font-medium text-white/65 transition hover:border-rose-400/40 hover:text-rose-300"
+                      className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-white/12 py-2 text-[11px] font-medium text-white/65 transition hover:border-rose-400/40 hover:text-rose-300"
                     >
                       <LogOut className="h-3.5 w-3.5" /> Sign out
                     </button>
                   </div>
                 )}
+
               </div>
             ) : (
               <button
@@ -225,6 +256,7 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
 
       <TaskDispatcher open={copilotOpen} onClose={() => setCopilotOpen(false)} onRunStarted={openAgent} />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+      <AccountSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
 
   );

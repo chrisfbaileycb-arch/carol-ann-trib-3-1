@@ -146,6 +146,25 @@ export const saveSaved = (s: SavedMessage[]) => write(KEYS.saved, s);
 export const loadFeedback = (): FeedbackEntry[] => read<FeedbackEntry[]>(KEYS.feedback, []);
 export const saveFeedback = (f: FeedbackEntry[]) => write(KEYS.feedback, f);
 
+/**
+ * Wipe every local ledger key on this device. The device key itself is kept so
+ * the surfaces can keep pairing, but all personal content is destroyed.
+ */
+export const clearLocalLedger = () => {
+  const wipe = [
+    KEYS.profile, KEYS.sessions, KEYS.checkIns, KEYS.memories, KEYS.messages,
+    KEYS.errands, KEYS.saved, KEYS.feedback, KEYS.canvas, KEYS.skills,
+  ];
+  wipe.forEach((k) => {
+    try {
+      localStorage.removeItem(k);
+    } catch {
+      /* noop */
+    }
+  });
+};
+
+
 // --- Sovereign export --------------------------------------------------------
 
 export interface SovereignArchive {

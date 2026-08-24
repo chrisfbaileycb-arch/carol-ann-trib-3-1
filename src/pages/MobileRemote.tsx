@@ -6,7 +6,8 @@ import {
 import { useMaggie } from '@/contexts/MaggieContext';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/auth/AuthModal';
-import { publishBus, subscribeBus } from '@/lib/realtimeBus';
+import { publishBus, subscribeBus, isCloudBusLive, pullBusNow } from '@/lib/realtimeBus';
+
 import { CHAIN_LIST, parseIntent } from '@/lib/browserAgent';
 import { uid } from '@/lib/memoryStore';
 
@@ -29,8 +30,19 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
   const streamRef = useRef<MediaStream | null>(null);
   const recogRef = useRef<any>(null);
 
+  const [relayLive, setRelayLive] = useState(false);
+
   useEffect(() => subscribeBus(() => undefined), []);
   useEffect(() => () => streamRef.current?.getTracks().forEach((t) => t.stop()), []);
+
+  // Cross-device relay heartbeat: poll bus_events so a phone on another network stays in sync.
+  useEffect(() => {
+    if (!user) { setRelayLive(false); return; }
+    void pullBusNow();
+    const t = window.setInterval(() => setRelayLive(isCloudBusLive()), 2500);
+    return () => window.clearInterval(t);
+  }, [user]);
+
 
   const flash = (m: string) => { setToast(m); window.setTimeout(() => setToast(''), 2200); };
 
@@ -134,9 +146,10 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
         <span className="flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/8 px-2.5 py-1 text-[10px] font-semibold text-emerald-300">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" /> Paired to canvas
         </span>
-        <span className="flex items-center gap-1.5 rounded-full border border-white/12 px-2.5 py-1 text-[10px] text-white/45">
-          <Radio className="h-3 w-3" /> Realtime channel
+        <span className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] ${relayLive ? 'border-sky-400/30 bg-sky-400/10 text-sky-300' : 'border-white/12 text-white/45'}`}>
+          <Radio className="h-3 w-3" /> {relayLive ? 'Cross-device relay live' : user ? 'Relay connecting…' : 'Local channel'}
         </span>
+
         {user ? (
           <span className="flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/8 px-2.5 py-1 text-[10px] font-semibold text-emerald-300">
             <ShieldCheck className="h-3 w-3" /> {user.email?.split('@')[0] ?? 'Account'}
