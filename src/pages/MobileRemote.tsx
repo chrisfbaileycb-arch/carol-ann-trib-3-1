@@ -8,6 +8,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/auth/AuthModal';
 import { publishBus, subscribeBus, isCloudBusLive, pullBusNow } from '@/lib/realtimeBus';
 import SavedShortcuts from '@/components/shortcuts/SavedShortcuts';
+import MobileAgentDock from '@/components/agents/MobileAgentDock';
+
 
 import { CHAIN_LIST, parseIntent } from '@/lib/browserAgent';
 import { uid } from '@/lib/memoryStore';
@@ -213,6 +215,9 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
           ))}
         </div>
 
+        {/* Agent roster — same little agents as the desktop studio */}
+        <MobileAgentDock className="mt-5" />
+
         {/* Saved one-tap shortcuts (synced from Remote activity) */}
         <SavedShortcuts
           className="mt-5"
@@ -220,6 +225,7 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
           title="Saved shortcuts"
           onDispatch={(c) => dispatch(c.text)}
         />
+
 
         {/* Chain shortcuts */}
         <p className="mt-5 text-[10px] uppercase tracking-[0.18em] text-white/30">Dispatch to cloud runner</p>

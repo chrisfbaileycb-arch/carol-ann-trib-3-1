@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Sparkles, LayoutDashboard, Globe, Users, Package, Bot, Smartphone, Dumbbell,
   Cloud, Loader2, Wifi, LogIn, LogOut, ShieldCheck, UserCircle2, Settings, CloudCog, Radio,
+  MessagesSquare, Plug,
 } from 'lucide-react';
 import ConversationRail from '@/components/command/ConversationRail';
 import BrowserViewport from '@/components/command/BrowserViewport';
@@ -13,6 +14,9 @@ import GymCoach from '@/components/coach/GymCoach';
 import TaskDispatcher from '@/components/copilot/TaskDispatcher';
 import AuthModal from '@/components/auth/AuthModal';
 import AccountSettings from '@/components/auth/AccountSettings';
+import ChatHub from '@/components/hub/ChatHub';
+import AgentStudio from '@/components/agents/AgentStudio';
+import ConnectionsHub from '@/components/connections/ConnectionsHub';
 import { useMaggie } from '@/contexts/MaggieContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { subscribeBus, isCloudBusLive, pullBusNow } from '@/lib/realtimeBus';
@@ -20,9 +24,17 @@ import { startRun, pushLog } from '@/lib/agentRunner';
 import { parseIntent } from '@/lib/browserAgent';
 
 
-type TabId = 'dashboard' | 'agent' | 'activity' | 'skills' | 'store' | 'coach';
+type TabId =
+  | 'hub' | 'agents' | 'connect'
+  | 'dashboard' | 'agent' | 'activity' | 'skills' | 'store' | 'coach';
+
+/** Tabs that own the full width (no conversation rail) so the work area stays calm. */
+const FULL_WIDTH_TABS: TabId[] = ['hub', 'agents', 'connect'];
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
+  { id: 'hub', label: 'Chat Hub', icon: MessagesSquare },
+  { id: 'agents', label: 'Agent Studio', icon: Users },
+  { id: 'connect', label: 'Connections & Skills', icon: Plug },
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'agent', label: 'Cloud Browser Agent', icon: Globe },
   { id: 'activity', label: 'Remote Activity', icon: Radio },
@@ -32,10 +44,13 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
 ];
 
 
+
 export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRemote }) => {
   const { profile, theme, syncToCloud, syncing, lastSync, syncError, addCheckIn } = useMaggie();
   const { user, signOut } = useAuth();
-  const [tab, setTab] = useState<TabId>('dashboard');
+  const [tab, setTab] = useState<TabId>('hub');
+  const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
+
   const [railWidth, setRailWidth] = useState(380);
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
@@ -233,24 +248,38 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
         </nav>
       </header>
 
-      {/* Dual pane */}
+      {/* Dual pane — the hub, studio and connections run full width so the work area stays clean */}
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <div
-          className="h-[48vh] min-h-0 shrink-0 border-b border-white/8 lg:h-auto lg:w-[var(--rail-w)] lg:border-b-0"
-          style={{ '--rail-w': `${railWidth}px` } as React.CSSProperties}
-        >
-          <ConversationRail onOpenAgent={openAgent} />
-        </div>
+        {!FULL_WIDTH_TABS.includes(tab) && (
+          <>
+            <div
+              className="h-[48vh] min-h-0 shrink-0 border-b border-white/8 lg:h-auto lg:w-[var(--rail-w)] lg:border-b-0"
+              style={{ '--rail-w': `${railWidth}px` } as React.CSSProperties}
+            >
+              <ConversationRail onOpenAgent={openAgent} />
+            </div>
 
-
-        {/* Resize handle */}
-        <div
-          onMouseDown={() => { dragging.current = true; document.body.style.cursor = 'col-resize'; }}
-          className="hidden w-1 shrink-0 cursor-col-resize bg-white/[0.06] transition hover:bg-[var(--m-accent)]/50 lg:block"
-          title="Drag to resize"
-        />
+            {/* Resize handle */}
+            <div
+              onMouseDown={() => { dragging.current = true; document.body.style.cursor = 'col-resize'; }}
+              className="hidden w-1 shrink-0 cursor-col-resize bg-white/[0.06] transition hover:bg-[var(--m-accent)]/50 lg:block"
+              title="Drag to resize"
+            />
+          </>
+        )}
 
         <main className="min-h-0 flex-1 overflow-hidden bg-[#101118]">
+          {tab === 'hub' && (
+            <ChatHub
+              activeAgentId={activeAgentId}
+              onSelectAgent={setActiveAgentId}
+              onOpenStudio={() => setTab('agents')}
+            />
+          )}
+          {tab === 'agents' && (
+            <AgentStudio onOpenChat={(id) => { setActiveAgentId(id); setTab('hub'); }} />
+          )}
+          {tab === 'connect' && <ConnectionsHub />}
           {tab === 'dashboard' && <PersonalSpace />}
           {tab === 'agent' && <BrowserViewport />}
           {tab === 'activity' && (
@@ -260,6 +289,7 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
           {tab === 'store' && <AgentStackStore />}
           {tab === 'coach' && <GymCoach />}
         </main>
+
 
       </div>
 

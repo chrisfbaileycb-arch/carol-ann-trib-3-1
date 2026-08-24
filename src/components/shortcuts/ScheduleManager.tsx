@@ -5,9 +5,10 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import {
   fetchSchedules, createSchedule, deleteSchedule, setScheduleActive, runScheduleSweep,
-  CRON_PRESETS, describeCron, formatNextRun, isValidCron,
+  CRON_PRESETS, describeCron, formatNextRun, isValidCron, detectTimeZone,
   type ScheduledCommand,
 } from '@/lib/scheduledCommands';
+
 import type { SavedCommand } from '@/lib/savedCommands';
 
 interface Props {
@@ -140,7 +141,10 @@ export const ScheduleManager: React.FC<Props> = ({ draft, onClearDraft, classNam
               Cancel
             </button>
           </div>
-          <p className="mt-1.5 text-[10px] text-white/40">{describeCron(expr)}</p>
+          <p className="mt-1.5 text-[10px] text-white/40">
+            {describeCron(expr)} · saved against your auto-detected zone {detectTimeZone()}
+          </p>
+
         </div>
       )}
 

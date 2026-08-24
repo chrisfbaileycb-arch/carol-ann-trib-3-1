@@ -1,0 +1,50 @@
+/* Animation kit for the little agent characters (Agent Studio). */
+
+@keyframes m-agent-bob {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-4px) rotate(1.5deg); }
+}
+
+@keyframes m-agent-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.12); }
+}
+
+@keyframes m-agent-arm-l {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-2.5px) rotate(-12deg); }
+}
+
+@keyframes m-agent-arm-r {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(2px) rotate(10deg); }
+}
+
+@keyframes m-agent-halo {
+  0%, 100% { transform: translateY(0); opacity: 0.75; }
+  50% { transform: translateY(-2px); opacity: 1; }
+}
+
+.m-agent-bob {
+  animation: m-agent-bob 2.8s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+
+.m-agent-blink {
+  animation: m-agent-blink 5.2s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+.m-agent-arm-l { animation: m-agent-arm-l 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+.m-agent-arm-r { animation: m-agent-arm-r 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+.m-agent-halo { animation: m-agent-halo 3s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+
+@media (prefers-reduced-motion: reduce) {
+  .m-agent-bob, .m-agent-blink, .m-agent-arm-l, .m-agent-arm-r, .m-agent-halo { animation: none !important; }
+}
+
+/* Description that sits behind the character on agent cards. */
+.m-agent-glow {
+  background: radial-gradient(120px 80px at 22% 30%, rgba(255, 255, 255, 0.09), transparent 70%);
+}

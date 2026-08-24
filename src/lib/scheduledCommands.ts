@@ -1,10 +1,13 @@
 import { supabase } from './supabase';
+import { detectTimeZone } from './agentStore';
 
 /**
  * Recurring command schedules (`scheduled_commands` table, owner-only RLS).
  * An hourly edge function (`run-scheduled-commands`) reads due rows and inserts
  * the matching `bus_events` row so the desktop workspace picks the command up.
  * This module is the single source of truth for cron presets + CRUD.
+ * The operator's IANA time zone is auto-detected (see detectTimeZone) and stored
+ * with every schedule so next-run times can be shown in their local clock.
  */
 
 export interface ScheduledCommand {
@@ -17,8 +20,13 @@ export interface ScheduledCommand {
   lastRunAt: string | null;
   runCount: number;
   active: boolean;
+  /** Auto-detected IANA zone captured when the schedule was created. */
+  timezone: string;
   createdAt: string;
 }
+
+export { detectTimeZone };
+
 
 export interface CronPreset {
   key: string;
@@ -148,7 +156,7 @@ export const formatNextRun = (iso: string): string => {
   });
 };
 
-const SELECT = 'id,label,text,chain_key,cron_expression,next_run_at,last_run_at,run_count,active,created_at';
+const SELECT = 'id,label,text,chain_key,cron_expression,next_run_at,last_run_at,run_count,active,created_at,timezone';
 
 const mapRow = (r: Record<string, unknown>): ScheduledCommand => ({
   id: String(r.id),
@@ -160,6 +168,7 @@ const mapRow = (r: Record<string, unknown>): ScheduledCommand => ({
   lastRunAt: typeof r.last_run_at === 'string' ? r.last_run_at : null,
   runCount: typeof r.run_count === 'number' ? r.run_count : 0,
   active: r.active !== false,
+  timezone: typeof r.timezone === 'string' && r.timezone ? r.timezone : 'UTC',
   createdAt: typeof r.created_at === 'string' ? r.created_at : new Date().toISOString(),
 });
 
@@ -182,7 +191,7 @@ export const fetchSchedules = async (
 
 export const createSchedule = async (
   userId: string,
-  input: { label: string; text: string; chainKey: string | null; cronExpression: string },
+  input: { label: string; text: string; chainKey: string | null; cronExpression: string; timezone?: string },
 ): Promise<{ row: ScheduledCommand | null; error: string | null }> => {
   const text = input.text.trim();
   if (!text) return { row: null, error: 'Nothing to schedule.' };
@@ -197,6 +206,8 @@ export const createSchedule = async (
         chain_key: input.chainKey,
         cron_expression: input.cronExpression.trim(),
         next_run_at: nextRunFromCron(input.cronExpression).toISOString(),
+        // Auto-detected from the browser unless the operator overrode it.
+        timezone: input.timezone || detectTimeZone(),
         active: true,
       })
       .select(SELECT)
@@ -207,6 +218,7 @@ export const createSchedule = async (
     return { row: null, error: e instanceof Error ? e.message : 'Could not create that schedule.' };
   }
 };
+
 
 export const setScheduleActive = async (id: string, active: boolean): Promise<string | null> => {
   try {
