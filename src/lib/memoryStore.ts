@@ -7,6 +7,8 @@ import type {
   ErrandTask,
   SavedMessage,
   FeedbackEntry,
+  StickerWatermark,
+  HydrateFormAction,
 } from '@/data/schemas';
 import { DEFAULT_PROFILE } from '@/data/intake';
 
@@ -23,6 +25,9 @@ export const KEYS = {
   feedback: `${NS}_feedback`,
   canvas: `${NS}_canvas`,
   skills: `${NS}_skills`,
+  stickers: `${NS}_stickers`,
+  scratchpad: `${NS}_scratchpad`,
+  actions: `${NS}_actions`,
   device: `${NS}_device_key`,
 };
 
@@ -139,6 +144,32 @@ export const saveMessages = (m: ConversationMessage[]) => write(KEYS.messages, m
 
 export const loadErrands = (): ErrandTask[] => read<ErrandTask[]>(KEYS.errands, SEED_ERRANDS);
 export const saveErrands = (e: ErrandTask[]) => write(KEYS.errands, e);
+
+export const DEFAULT_STICKERS: StickerWatermark[] = [
+  { id: 'st_1', label: 'Denver Broncos', emoji: '🐴', category: 'sports', opacity: 0.18, position: 'top-right', scale: 1.1, active: true },
+  { id: 'st_2', label: 'Fleetwood Mac / Dreams', emoji: '🪩', category: 'music', opacity: 0.16, position: 'bottom-right', scale: 1.0, active: true },
+  { id: 'st_3', label: 'Sovereign Sovereign Seal', emoji: '✨', category: 'badge', opacity: 0.2, position: 'header-accent', scale: 0.95, active: true },
+  { id: 'st_4', label: 'Olive Peace Branch', emoji: '🕊️', category: 'faith', opacity: 0.15, position: 'bottom-left', scale: 1.0, active: true },
+  { id: 'st_5', label: 'Artisan Sourdough', emoji: '🍞', category: 'culinary', opacity: 0.14, position: 'top-left', scale: 0.9, active: false },
+  { id: 'st_6', label: 'Amethyst Diamond', emoji: '💎', category: 'aesthetic', opacity: 0.1, position: 'center-subtle', scale: 1.2, active: false },
+];
+
+export const loadStickers = (): StickerWatermark[] => read<StickerWatermark[]>(KEYS.stickers, DEFAULT_STICKERS);
+export const saveStickers = (s: StickerWatermark[]) => write(KEYS.stickers, s);
+
+export const DEFAULT_SCRATCHPAD = `# Live Co-Pilot Scratchpad
+
+- **Active Protocol:** Magdalene Sovereign Orchestration
+- **Calendar Queue:** Friday 10:00 AM Hair Salon with Coco (Pending Confirmation)
+- **Conditioning Cycle:** Week 3 Progressive Overload / Romanian Deadlift (Ripp Coach)
+- **Local Errand Staging:** Whole Foods delivery list cached locally on device
+`;
+
+export const loadScratchpad = (): string => read<string>(KEYS.scratchpad, DEFAULT_SCRATCHPAD);
+export const saveScratchpad = (text: string) => write(KEYS.scratchpad, text);
+
+export const loadActions = (): HydrateFormAction[] => read<HydrateFormAction[]>(KEYS.actions, []);
+export const saveActions = (a: HydrateFormAction[]) => write(KEYS.actions, a);
 
 export const loadSaved = (): SavedMessage[] => read<SavedMessage[]>(KEYS.saved, []);
 export const saveSaved = (s: SavedMessage[]) => write(KEYS.saved, s);

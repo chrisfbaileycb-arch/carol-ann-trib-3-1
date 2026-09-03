@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Send, Loader2, Brain, Trash2, Volume2, ShieldAlert, Plus, X } from 'lucide-react';
 import AgentAvatar from '@/components/agents/AgentAvatar';
-import { supabase } from '@/lib/supabase';
 import { useMaggie } from '@/contexts/MaggieContext';
 import { AGENT_DISCLAIMER, toneByKey, voiceByKey } from '@/data/agents';
 import {
@@ -48,9 +47,12 @@ const AgentChat: React.FC<{
     const next = appendThread(agent.id, 'user', text);
     setThread(next);
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('maggie-chat', {
-        body: {
+      const res = await fetch('/api/gemini/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           message: text,
+          agentId: agent.id,
           agentName: agent.name,
           agentRole: agent.role,
           agentSubject: agent.subject,
@@ -60,10 +62,11 @@ const AgentChat: React.FC<{
           memoryContext: settings.useMemory ? buildAgentContext(agent, memory) : '',
           profile: { name: profile.name, identity: profile.identity },
           history: next.slice(-8).map((m) => ({ role: m.role, content: m.content })),
-        },
+        }),
       });
-      if (fnError) throw fnError;
-      const reply = String((data as { reply?: string })?.reply ?? '').trim();
+      if (!res.ok) throw new Error('The agent runner returned an error.');
+      const data = await res.json();
+      const reply = String(data?.reply ?? '').trim();
       if (!reply) throw new Error('The agent runner returned nothing. Try again in a moment.');
       setThread(appendThread(agent.id, 'assistant', reply));
       if (settings.speakReplies) speak(reply, agent.voiceKey);

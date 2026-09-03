@@ -154,32 +154,32 @@ export const MaggieProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (profileError) throw profileError;
 
       const recent = messages.slice(-25).map((m) => ({
-        user_id: user.id, device_key: deviceKey, domain: m.domain, role: m.role, content: m.content,
+        id: m.id, user_id: user.id, device_key: deviceKey, domain: m.domain, role: m.role, content: m.content,
       }));
-      if (recent.length) await supabase.from('conversation_messages').insert(recent);
+      if (recent.length) await supabase.from('conversation_messages').upsert(recent, { onConflict: 'id' });
 
       const ci = checkIns.slice(0, 20).map((c) => ({
-        user_id: user.id, device_key: deviceKey, type: c.type, label: c.label, notes: c.notes,
+        id: c.id, user_id: user.id, device_key: deviceKey, type: c.type, label: c.label, notes: c.notes,
       }));
-      if (ci.length) await supabase.from('check_ins').insert(ci);
+      if (ci.length) await supabase.from('check_ins').upsert(ci, { onConflict: 'id' });
 
       const mem = memories.slice(0, 40).map((m) => ({
-        user_id: user.id, device_key: deviceKey, category: m.category, content: m.content, tags: m.tags,
+        id: m.id, user_id: user.id, device_key: deviceKey, category: m.category, content: m.content, tags: m.tags,
       }));
-      if (mem.length) await supabase.from('memories').insert(mem);
+      if (mem.length) await supabase.from('memories').upsert(mem, { onConflict: 'id' });
 
       const er = errands.map((e) => ({
-        user_id: user.id, device_key: deviceKey, target: e.target, title: e.title,
+        id: e.id, user_id: user.id, device_key: deviceKey, target: e.target, title: e.title,
         items: e.items, status: e.status, scheduled_time: e.scheduled_time ?? null,
       }));
-      if (er.length) await supabase.from('errand_tasks').insert(er);
+      if (er.length) await supabase.from('errand_tasks').upsert(er, { onConflict: 'id' });
 
       const days = sessions.slice(0, 14).map((s) => ({
-        user_id: user.id, device_key: deviceKey, date: s.date, intention: s.intention,
+        id: s.id, user_id: user.id, device_key: deviceKey, date: s.date, intention: s.intention,
         mood_score: s.mood_score, energy_level: s.energy_level,
         reflections: s.reflections, completed_tasks: s.completed_tasks,
       }));
-      if (days.length) await supabase.from('my_day_sessions').insert(days);
+      if (days.length) await supabase.from('my_day_sessions').upsert(days, { onConflict: 'user_id,date' });
 
       setLastSync(new Date().toISOString());
     } catch (e) {

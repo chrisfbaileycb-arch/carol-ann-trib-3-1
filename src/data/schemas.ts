@@ -19,6 +19,12 @@ export interface UserProfile {
   identity: string;
   theme: string;
   sportsTeams: string[];
+  favoriteMusic?: string[];
+  faithSymbols?: string[];
+  culinaryInterests?: string[];
+  profileSong?: string;
+  profileQuote?: string;
+  wallpaperPreset?: string;
   aesthetic: string;
   accentColor: string;
   interests: string[];
@@ -66,6 +72,49 @@ export interface ConversationMessage {
   attachments?: string[];
   source?: 'desktop' | 'mobile' | 'voice' | 'vision';
   timestamp: string;
+  agentId?: string;
+  toolCall?: HydrateFormAction;
+}
+
+export type HydrateCategory = 'errand' | 'profile_intake' | 'calendar_booking' | 'scratchpad_update';
+
+export interface FormPayload {
+  title: string;
+  items?: string[];
+  target_time?: string;
+  notes?: string;
+  fields?: Record<string, string | number | boolean>;
+}
+
+export interface HydrateFormAction {
+  id: string;
+  category: HydrateCategory;
+  action_name: string;
+  form_payload: FormPayload;
+  requires_user_confirmation: boolean;
+  status: 'pending_confirmation' | 'executed' | 'cancelled';
+  timestamp: string;
+  executed_at?: string;
+}
+
+export interface StickerWatermark {
+  id: string;
+  label: string;
+  emoji?: string;
+  imageUrl?: string;
+  category: 'sports' | 'music' | 'faith' | 'culinary' | 'aesthetic' | 'badge' | 'custom';
+  opacity: number; // 0.05 to 0.6
+  position:
+    | 'top-right'
+    | 'bottom-right'
+    | 'top-left'
+    | 'bottom-left'
+    | 'center-subtle'
+    | 'header-accent'
+    | 'sidebar-badge'
+    | 'chat-backdrop';
+  scale: number; // 0.5 to 2.0
+  active: boolean;
 }
 
 export interface ErrandTask {
@@ -75,6 +124,7 @@ export interface ErrandTask {
   items: string[];
   status: 'draft' | 'queued' | 'dispatched' | 'completed';
   scheduled_time?: string;
+  actionId?: string;
 }
 
 export interface SavedMessage {

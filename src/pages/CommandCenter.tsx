@@ -1,93 +1,61 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Sparkles, LayoutDashboard, Globe, Users, Package, Bot, Smartphone, Dumbbell,
-  Cloud, Loader2, Wifi, LogIn, LogOut, ShieldCheck, UserCircle2, Settings, CloudCog, Radio,
-  MessagesSquare, Plug,
+  Sparkles, MessagesSquare, Users, Shield, Palette,
+  Smartphone, Cloud, Loader2, UserCircle2, Settings,
+  LogOut, LogIn, ShieldCheck, Wifi, CloudCog
 } from 'lucide-react';
-import ConversationRail from '@/components/command/ConversationRail';
-import BrowserViewport from '@/components/command/BrowserViewport';
-import RemoteActivity from '@/components/command/RemoteActivity';
-import PersonalSpace from '@/components/canvas/PersonalSpace';
-import SkillsEngine from '@/components/skills/SkillsEngine';
-import AgentStackStore from '@/components/skills/AgentStackStore';
-import GymCoach from '@/components/coach/GymCoach';
-import TaskDispatcher from '@/components/copilot/TaskDispatcher';
+import { WorkspaceChat } from '@/components/workspace/WorkspaceChat';
+import { AgentRosterMCP } from '@/components/workspace/AgentRosterMCP';
+import { SovereignMemoryLedger } from '@/components/workspace/SovereignMemoryLedger';
+import { SettingsThemeEngine } from '@/components/workspace/SettingsThemeEngine';
+import { WatermarkLayer } from '@/components/workspace/WatermarkLayer';
 import AuthModal from '@/components/auth/AuthModal';
 import AccountSettings from '@/components/auth/AccountSettings';
-import ChatHub from '@/components/hub/ChatHub';
-import AgentStudio from '@/components/agents/AgentStudio';
-import ConnectionsHub from '@/components/connections/ConnectionsHub';
 import { useMaggie } from '@/contexts/MaggieContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { subscribeBus, isCloudBusLive, pullBusNow } from '@/lib/realtimeBus';
-import { startRun, pushLog } from '@/lib/agentRunner';
-import { parseIntent } from '@/lib/browserAgent';
+import { loadStickers } from '@/lib/memoryStore';
+import type { StickerWatermark } from '@/data/schemas';
 
-
-type TabId =
-  | 'hub' | 'agents' | 'connect'
-  | 'dashboard' | 'agent' | 'activity' | 'skills' | 'store' | 'coach';
-
-/** Tabs that own the full width (no conversation rail) so the work area stays calm. */
-const FULL_WIDTH_TABS: TabId[] = ['hub', 'agents', 'connect'];
+type TabId = 'chat' | 'roster' | 'ledger' | 'theme';
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
-  { id: 'hub', label: 'Chat Hub', icon: MessagesSquare },
-  { id: 'agents', label: 'Agent Studio', icon: Users },
-  { id: 'connect', label: 'Connections & Skills', icon: Plug },
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'agent', label: 'Cloud Browser Agent', icon: Globe },
-  { id: 'activity', label: 'Remote Activity', icon: Radio },
-  { id: 'skills', label: 'Family & Life Skills', icon: Users },
-  { id: 'store', label: 'Agent Stack Store', icon: Package },
-  { id: 'coach', label: 'Gym Coach', icon: Dumbbell },
+  { id: 'chat', label: 'Workspace Chat', icon: MessagesSquare },
+  { id: 'roster', label: 'Agent Roster & MCPs', icon: Users },
+  { id: 'ledger', label: 'Sovereign Memory Ledger', icon: Shield },
+  { id: 'theme', label: 'Settings & Theme', icon: Palette },
 ];
 
-
-
 export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRemote }) => {
-  const { profile, theme, syncToCloud, syncing, lastSync, syncError, addCheckIn } = useMaggie();
+  const { profile, updateProfile, theme, syncToCloud, syncing, lastSync, syncError, addCheckIn } = useMaggie();
   const { user, signOut } = useAuth();
-  const [tab, setTab] = useState<TabId>('hub');
-  const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
+  const [tab, setTab] = useState<TabId>('chat');
+  const [stickers, setStickers] = useState<StickerWatermark[]>(() => loadStickers());
 
-  const [railWidth, setRailWidth] = useState(380);
-  const [copilotOpen, setCopilotOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [relayLive, setRelayLive] = useState(false);
   const [remoteBeacon, setRemoteBeacon] = useState<string | null>(null);
-  const dragging = useRef(false);
 
-  const openAgent = useCallback(() => setTab('agent'), []);
-
-  // Reflect the cross-device relay status (bus_events polling) in the header.
+  // Cross-device relay checking
   useEffect(() => {
     if (!user) {
       setRelayLive(false);
       return;
     }
-    const tick = window.setInterval(() => setRelayLive(isCloudBusLive()), 2000);
+    const tick = window.setInterval(() => setRelayLive(isCloudBusLive()), 3000);
     void pullBusNow();
     return () => window.clearInterval(tick);
   }, [user]);
 
-
+  // Phone remote bus subscriptions
   useEffect(() => {
     return subscribeBus((e) => {
-      // Phone pushes and cloud-scheduled dispatches both raise the beacon.
       if (e.source !== 'mobile' && e.source !== 'cloud') return;
       setRemoteBeacon(String(e.payload.text ?? e.type));
       window.setTimeout(() => setRemoteBeacon(null), 4200);
 
-      if (e.type === 'command' || e.type === 'voice') {
-        const intent = parseIntent(String(e.payload.text ?? ''));
-        if (intent) {
-          startRun(intent.key);
-          setTab('agent');
-        }
-      }
       if (e.type === 'checkin') {
         addCheckIn({
           type: (e.payload.type as 'physical') ?? 'wellness',
@@ -95,85 +63,84 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
           notes: String(e.payload.notes ?? 'Logged from the phone remote.'),
         });
       }
-      if (e.type === 'vision') {
-        pushLog(`Vision frame ingested from phone → queued for parsing.`, 'action');
-        setTab('agent');
-      }
     });
   }, [addCheckIn]);
 
-  useEffect(() => {
-    const move = (ev: MouseEvent) => {
-      if (!dragging.current) return;
-      setRailWidth(Math.min(620, Math.max(300, ev.clientX)));
-    };
-    const up = () => { dragging.current = false; document.body.style.cursor = ''; };
-    window.addEventListener('mousemove', move);
-    window.addEventListener('mouseup', up);
-    return () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
-  }, []);
-
   return (
     <div
-      className="maggie-root flex h-screen flex-col overflow-hidden text-white"
+      className="maggie-root relative flex h-screen flex-col overflow-hidden text-white"
       style={{
         backgroundColor: theme.surface,
         '--m-accent': profile.accentColor || theme.accent,
         '--m-accent-soft': theme.accentSoft,
       } as React.CSSProperties}
     >
+      {/* Visual Sticker & Badge Watermark Overlay */}
+      <WatermarkLayer stickers={stickers} />
 
-      {/* Top bar */}
-      <header className="shrink-0 border-b border-white/8" style={{ backgroundImage: theme.texture, backgroundColor: theme.surfaceAlt }}>
-        <div className="flex flex-wrap items-center gap-3 px-4 py-2.5">
-          <div className="flex items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-lg m-gradient-bg">
+      {/* Top Browser-Style Navigation Bar */}
+      <header
+        className="relative z-30 shrink-0 border-b border-white/8 select-none"
+        style={{ backgroundImage: theme.texture, backgroundColor: theme.surfaceAlt }}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5">
+          {/* Brand Header */}
+          <div className="flex items-center gap-2.5">
+            <span className="grid h-8 w-8 place-items-center rounded-xl m-gradient-bg shadow-sm">
               <Sparkles className="h-4 w-4 text-white" />
             </span>
             <div className="leading-tight">
-              <p className="font-display text-base font-semibold">Maggie</p>
-              <p className="text-[9px] uppercase tracking-[0.2em] text-white/35">Sovereign Executive OS</p>
+              <p className="font-display text-sm font-semibold tracking-wide">Magdalene</p>
+              <p className="text-[9px] uppercase tracking-[0.18em] text-white/40">Sovereign Executive OS</p>
             </div>
           </div>
 
-          <div className="ml-auto flex flex-wrap items-center gap-2">
+          {/* Center Tabs */}
+          <nav className="flex items-center gap-1">
+            {TABS.map((t) => {
+              const isActive = tab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  className={`relative flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-medium transition ${
+                    isActive
+                      ? 'bg-white/10 text-white shadow-sm'
+                      : 'text-white/45 hover:text-white/80 hover:bg-white/[0.03]'
+                  }`}
+                >
+                  <t.icon
+                    className={`h-3.5 w-3.5 ${
+                      isActive ? 'text-[var(--m-accent-soft)]' : 'text-white/40'
+                    }`}
+                  />
+                  <span>{t.label}</span>
+                  {isActive && (
+                    <span
+                      className="absolute inset-x-3 -bottom-2.5 h-0.5 rounded-full"
+                      style={{ background: 'linear-gradient(90deg,var(--m-accent),var(--m-accent-soft))' }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Right Actions */}
+          <div className="flex items-center gap-2">
             {remoteBeacon && (
               <span className="flex items-center gap-1.5 rounded-full border border-[var(--m-accent-soft)]/40 bg-[var(--m-accent-soft)]/10 px-2.5 py-1 text-[10px] font-semibold text-[var(--m-accent-soft)]">
-                <Wifi className="h-3 w-3" /> Remote: {remoteBeacon.slice(0, 34)}
+                <Wifi className="h-3 w-3" /> Remote: {remoteBeacon.slice(0, 24)}
               </span>
             )}
-            <span className="hidden items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/8 px-2.5 py-1 text-[10px] font-semibold text-emerald-300 md:flex">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" /> Runner online
-            </span>
-            {user && (
-              <button
-                onClick={() => void pullBusNow()}
-                title="Pull remote events queued by your phone (cross-device relay)"
-                className={`hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold transition md:flex ${relayLive ? 'border-sky-400/30 bg-sky-400/10 text-sky-300' : 'border-white/12 text-white/40 hover:text-white'}`}
-              >
-                <CloudCog className="h-3 w-3" /> {relayLive ? 'Relay live' : 'Relay idle'}
-              </button>
-            )}
-            <button
-              onClick={() => (user ? void syncToCloud() : setAuthOpen(true))}
-              title={user ? 'Push an encrypted snapshot to your private ledger' : 'Sign in to enable cloud sync'}
 
-              className="flex items-center gap-1.5 rounded-lg border border-white/12 px-2.5 py-1.5 text-[11px] font-medium text-white/60 transition hover:border-white/30 hover:text-white"
-            >
-              {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Cloud className="h-3.5 w-3.5" />}
-              {syncing ? 'Syncing' : lastSync ? 'Synced' : 'Sync'}
-            </button>
             <button
               onClick={onOpenRemote}
               className="flex items-center gap-1.5 rounded-lg border border-white/12 px-2.5 py-1.5 text-[11px] font-medium text-white/60 transition hover:border-white/30 hover:text-white"
+              title="Open Mobile Remote"
             >
-              <Smartphone className="h-3.5 w-3.5" /> Phone remote
-            </button>
-            <button
-              onClick={() => setCopilotOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg m-gradient-bg px-3 py-1.5 text-[11px] font-semibold text-white"
-            >
-              <Bot className="h-3.5 w-3.5" /> Copilot
+              <Smartphone className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Phone Remote</span>
             </button>
 
             {user ? (
@@ -183,18 +150,18 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
                   className="flex items-center gap-1.5 rounded-lg border border-emerald-400/30 bg-emerald-400/8 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-300"
                 >
                   <UserCircle2 className="h-3.5 w-3.5" />
-                  <span className="max-w-[130px] truncate">{user.email ?? 'Account'}</span>
+                  <span className="max-w-[120px] truncate">{user.email ?? 'Account'}</span>
                 </button>
                 {accountOpen && (
                   <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-xl border border-white/12 bg-[#1B1C24] p-3 shadow-2xl">
                     <p className="flex items-center gap-1.5 text-[11px] font-semibold text-white">
-                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Private ledger active
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Sovereign Private Ledger
                     </p>
                     <p className="mt-1 text-[10.5px] leading-relaxed text-white/40">
-                      Row-level security scopes every journal entry, check-in, memory, and errand to this account alone.
+                      Isolated storage. Zero external telemetry or third-party CRM hooks.
                     </p>
                     <p className="mt-2 truncate rounded-lg bg-black/30 px-2 py-1.5 font-mono text-[10px] text-white/45">
-                      {user.name ? `${user.name} · ` : ''}{user.email}
+                      {user.email}
                     </p>
                     <button
                       onClick={() => { setAccountOpen(false); setSettingsOpen(true); }}
@@ -210,94 +177,52 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
                     </button>
                   </div>
                 )}
-
               </div>
             ) : (
               <button
                 onClick={() => setAuthOpen(true)}
                 className="flex items-center gap-1.5 rounded-lg border border-[var(--m-accent)]/45 bg-[var(--m-accent)]/12 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-[var(--m-accent)]/25"
               >
-                <LogIn className="h-3.5 w-3.5" /> Sign in
+                <LogIn className="h-3.5 w-3.5" />
+                <span>Sign in</span>
               </button>
             )}
           </div>
         </div>
-
-        {syncError && (
-          <p className="border-t border-amber-400/20 bg-amber-400/8 px-4 py-1.5 text-[10.5px] text-amber-200/85">
-            {syncError}
-          </p>
-        )}
-
-
-        {/* Workspace tabs */}
-        <nav className="m-scroll flex gap-1 overflow-x-auto px-3">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`relative flex shrink-0 items-center gap-1.5 px-3 py-2.5 text-[12px] font-medium transition ${tab === t.id ? 'text-white' : 'text-white/40 hover:text-white/70'}`}
-            >
-              <t.icon className="h-3.5 w-3.5" /> {t.label}
-              <span
-                className="m-tab-underline absolute inset-x-2 bottom-0 h-0.5 rounded-full"
-                style={{ background: tab === t.id ? 'linear-gradient(90deg,var(--m-accent),var(--m-accent-soft))' : 'transparent' }}
-              />
-            </button>
-          ))}
-        </nav>
       </header>
 
-      {/* Dual pane — the hub, studio and connections run full width so the work area stays clean */}
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        {!FULL_WIDTH_TABS.includes(tab) && (
-          <>
-            <div
-              className="h-[48vh] min-h-0 shrink-0 border-b border-white/8 lg:h-auto lg:w-[var(--rail-w)] lg:border-b-0"
-              style={{ '--rail-w': `${railWidth}px` } as React.CSSProperties}
-            >
-              <ConversationRail onOpenAgent={openAgent} />
-            </div>
-
-            {/* Resize handle */}
-            <div
-              onMouseDown={() => { dragging.current = true; document.body.style.cursor = 'col-resize'; }}
-              className="hidden w-1 shrink-0 cursor-col-resize bg-white/[0.06] transition hover:bg-[var(--m-accent)]/50 lg:block"
-              title="Drag to resize"
-            />
-          </>
+      {/* Main Workspace Stage */}
+      <main className="relative z-10 min-h-0 flex-1 overflow-hidden bg-[#101118]">
+        {tab === 'chat' && (
+          <WorkspaceChat
+            profile={profile}
+            onUpdateProfile={updateProfile}
+            theme={theme}
+            onOpenAgentRoster={() => setTab('roster')}
+          />
         )}
+        {tab === 'roster' && (
+          <AgentRosterMCP
+            onSelectAgentForChat={(agentId) => {
+              setTab('chat');
+            }}
+          />
+        )}
+        {tab === 'ledger' && (
+          <SovereignMemoryLedger profile={profile} />
+        )}
+        {tab === 'theme' && (
+          <SettingsThemeEngine
+            profile={profile}
+            onUpdateProfile={updateProfile}
+            currentTheme={theme}
+          />
+        )}
+      </main>
 
-        <main className="min-h-0 flex-1 overflow-hidden bg-[#101118]">
-          {tab === 'hub' && (
-            <ChatHub
-              activeAgentId={activeAgentId}
-              onSelectAgent={setActiveAgentId}
-              onOpenStudio={() => setTab('agents')}
-            />
-          )}
-          {tab === 'agents' && (
-            <AgentStudio onOpenChat={(id) => { setActiveAgentId(id); setTab('hub'); }} />
-          )}
-          {tab === 'connect' && <ConnectionsHub />}
-          {tab === 'dashboard' && <PersonalSpace />}
-          {tab === 'agent' && <BrowserViewport />}
-          {tab === 'activity' && (
-            <RemoteActivity onOpenAgent={openAgent} onSignIn={() => setAuthOpen(true)} />
-          )}
-          {tab === 'skills' && <SkillsEngine onRunAgent={openAgent} />}
-          {tab === 'store' && <AgentStackStore />}
-          {tab === 'coach' && <GymCoach />}
-        </main>
-
-
-      </div>
-
-      <TaskDispatcher open={copilotOpen} onClose={() => setCopilotOpen(false)} onRunStarted={openAgent} />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
       <AccountSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
-
   );
 };
 

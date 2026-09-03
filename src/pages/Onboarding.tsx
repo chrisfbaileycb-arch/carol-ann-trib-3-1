@@ -27,7 +27,7 @@ export const Onboarding: React.FC<{ onComplete: () => void }> = ({ onComplete })
   const [step, setStep] = useState(0);
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [smsOptIn, setSmsOptIn] = useState(true);
+  const [smsOptIn, setSmsOptIn] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -46,24 +46,6 @@ export const Onboarding: React.FC<{ onComplete: () => void }> = ({ onComplete })
       return;
     }
     setSubmitting(true);
-    if (email) {
-      try {
-        await fetch('https://famous.ai/api/crm/6a8ac654ac78a18463513f96/subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            name: profile.name || undefined,
-            phone: phone.trim() ? phone.trim() : undefined,
-            sms_opt_in: smsOptIn === true,
-            source: 'onboarding-intake',
-            tags: ['maggie', 'sovereign-os', 'intake'],
-          }),
-        });
-      } catch {
-        /* offline — onboarding still completes locally */
-      }
-    }
     updateProfile({ onboarded: true, email: email || undefined });
     setSubmitting(false);
     onComplete();

@@ -238,10 +238,30 @@ export const saveAISettings = (s: AISettings) => write(AI_KEY, s);
 export const buildAgentContext = (agent: AgentConfig, memory: AgentMemoryEntry[]): string =>
   memory.slice(0, 12).map((m) => `- ${m.content}`).join('\n') || '';
 
-/** Speak a reply using the agent's configured voice. */
-export const speak = (text: string, voiceKey: string) => {
+/** Speak a reply using Gemini TTS with client SpeechSynthesis fallback. */
+export const speak = async (text: string, voiceKey: string) => {
   const v = voiceByKey(voiceKey);
-  if (v.key === 'silent' || typeof window === 'undefined' || !window.speechSynthesis) return;
+  if (v.key === 'silent' || typeof window === 'undefined') return;
+
+  try {
+    const res = await fetch('/api/gemini/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text.slice(0, 480), voiceName: v.key }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.audio) {
+        const audio = new Audio(`data:${data.mimeType || 'audio/wav'};base64,${data.audio}`);
+        audio.play().catch(() => undefined);
+        return;
+      }
+    }
+  } catch {
+    // Seamless fallback to client speech synthesis
+  }
+
+  if (!window.speechSynthesis) return;
   try {
     const u = new SpeechSynthesisUtterance(text.slice(0, 480));
     const voices = window.speechSynthesis.getVoices();

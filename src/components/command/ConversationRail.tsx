@@ -96,11 +96,13 @@ export const ConversationRail: React.FC<{ onOpenAgent?: () => void }> = ({ onOpe
     const domainMeta = getDomain(dom);
     let reply = '';
     try {
-      const { data, error } = await supabase.functions.invoke('maggie-chat', {
-        body: {
+      const res = await fetch('/api/gemini/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           message: text,
           domain: dom,
-          domainLabel: domainMeta.label,
+          agentName: 'Maggie',
           profile: {
             name: profile.name,
             identity: profile.identity,
@@ -108,11 +110,12 @@ export const ConversationRail: React.FC<{ onOpenAgent?: () => void }> = ({ onOpe
             professionalFocus: profile.professionalFocus,
           },
           memoryContext,
-          dispatched: intent ? intent.title : null,
-        },
+        }),
       });
-      if (error) throw error;
-      reply = String(data?.reply ?? '');
+      if (res.ok) {
+        const data = await res.json();
+        reply = String(data?.reply ?? '');
+      }
     } catch {
       reply = '';
     }

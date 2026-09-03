@@ -37,8 +37,6 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const CRM_SUBSCRIBE = 'https://famous.ai/api/crm/6a8ac654ac78a18463513f96/subscribe';
-
 const toUser = (u: { id: string; email?: string | null; user_metadata?: Record<string, unknown> } | null | undefined): AuthUser | null =>
   u
     ? {
@@ -99,24 +97,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         options: { data: { name: extras?.name ?? '' } },
       });
       if (error) return { error: error.message };
-
-      // Every email captured in this app is registered with the CRM contact list.
-      try {
-        await fetch(CRM_SUBSCRIBE, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            name: extras?.name || undefined,
-            phone: extras?.phone?.trim() ? extras.phone.trim() : undefined,
-            sms_opt_in: extras?.smsOptIn === true,
-            source: 'account-signup',
-            tags: ['maggie', 'sovereign-os', 'account'],
-          }),
-        });
-      } catch {
-        /* signup still succeeds if the CRM is unreachable */
-      }
 
       // Some projects require email confirmation; attempt an immediate session.
       await supabase.auth.signInWithPassword({ email, password }).catch(() => undefined);
