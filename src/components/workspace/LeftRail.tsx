@@ -86,7 +86,7 @@ export const LeftRail: React.FC<LeftRailProps> = ({
           </span>
           <div>
             <p className="font-display text-sm font-semibold leading-none text-white group-hover:text-[var(--m-accent-soft)] transition">
-              Magdalene OS
+              Carol Ann OS
             </p>
             <p className="text-[9px] uppercase tracking-wider text-white/40">Sovereign Executive</p>
           </div>

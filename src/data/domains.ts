@@ -12,7 +12,7 @@ export interface DomainMeta {
 export const COMPANION_DOMAINS: DomainMeta[] = [
   {
     id: 'core',
-    label: 'Maggie Core',
+    label: 'Carol Core',
     tagline: 'Life, thoughts, reflections, and daily grounding.',
     icon: 'Sparkles',
     color: '#8B5FBF',

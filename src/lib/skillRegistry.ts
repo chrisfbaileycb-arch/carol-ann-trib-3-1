@@ -57,7 +57,7 @@ export interface McpBundle {
 }
 
 export const buildMcpBundle = (skills: AgentSkill[], config: Record<string, Record<string, string>>): McpBundle => ({
-  spec: 'maggie.mcp/v1',
+  spec: 'carol-ann.mcp/v1',
   generatedAt: new Date().toISOString(),
   servers: skills.map((s) => ({
     name: s.name,

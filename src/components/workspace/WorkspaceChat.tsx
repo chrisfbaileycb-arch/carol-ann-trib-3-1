@@ -54,7 +54,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
   const [tabs, setTabs] = useState<WorkspaceTab[]>([
     {
       id: 'tab_dialogue',
-      title: 'Maggie Dialogue (Primary)',
+      title: 'Carol Dialogue (Primary)',
       type: 'chat',
       icon: '💬',
       closable: false,
@@ -84,7 +84,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
       title: 'Daily Sovereign Orchestration',
       domain: 'core',
       updatedAt: new Date().toISOString(),
-      agentId: 'magdalene',
+      agentId: 'carol-anchor',
     },
     {
       id: 'th_salon',
@@ -102,7 +102,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
     },
   ]);
   const [activeThreadId, setActiveThreadId] = useState<string>('th_orchestrator');
-  const [activeAgentId, setActiveAgentId] = useState<string>('magdalene');
+  const [activeAgentId, setActiveAgentId] = useState<string>('carol-anchor');
 
   // Messages, Errands, Actions, Memories, Stickers, Scratchpad
   const [messages, setMessages] = useState<ConversationMessage[]>(() => loadMessages());
@@ -137,7 +137,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
     }
 
     const tabConfig: Record<string, { title: string; icon: string }> = {
-      chat: { title: 'Maggie Dialogue (Primary)', icon: '💬' },
+      chat: { title: 'Carol Dialogue (Primary)', icon: '💬' },
       connectors: { title: 'MCP Connectors & Bridges', icon: '🔌' },
       customizer: { title: 'Space Customizer (MySpace)', icon: '🎨' },
       ledger: { title: 'Sovereign Memory Ledger', icon: '🛡️' },
@@ -374,7 +374,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
         id: uid('msg_a'),
         domain: 'core',
         role: 'assistant',
-        content: `Understood. Magdalene has routed your request through ${agent.name}. We are maintaining strict local-first memory on your sovereign device with zero cloud telemetry.`,
+        content: `Understood. Carol Ann has routed your request through ${agent.name}. We are maintaining strict local-first memory on your sovereign device with zero cloud telemetry.`,
         timestamp: new Date().toISOString(),
         agentId,
       };
@@ -485,7 +485,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
                       className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-white/70 hover:bg-white/10 hover:text-white"
                     >
                       <MessageSquare className="h-3.5 w-3.5 text-sky-400" />
-                      <span>Maggie Conversational Canvas</span>
+                      <span>Carol Conversational Canvas</span>
                     </button>
                     <button
                       onClick={() => {
@@ -597,7 +597,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
                   <div>
                     <h2 className="font-display text-xl font-semibold text-white">Aesthetic Theme Matrix</h2>
                     <p className="text-xs text-white/45 mt-1">
-                      Customize Magdalene's visual frequencies, wallpaper ambiance, and accent tones.
+                      Customize Carol Ann's visual frequencies, wallpaper ambiance, and accent tones.
                     </p>
                   </div>
 

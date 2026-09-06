@@ -80,12 +80,12 @@ export const AgentStackStore: React.FC = () => {
           <p className="flex items-center gap-1.5 font-display text-base font-semibold text-white">
             <Upload className="h-4 w-4" /> Load a custom stack
           </p>
-          <p className="mt-1 text-[11px] text-white/40">Paste a <code className="font-mono">maggie.mcp/v1</code> bundle to register its skills locally.</p>
+          <p className="mt-1 text-[11px] text-white/40">Paste a <code className="font-mono">carol-ann.mcp/v1</code> bundle to register its skills locally.</p>
           <textarea
             value={importText}
             onChange={(e) => setImportText(e.target.value)}
             rows={6}
-            placeholder='{"spec":"maggie.mcp/v1","servers":[{"id":"home-ops"}]}'
+            placeholder='{"spec":"carol-ann.mcp/v1","servers":[{"id":"home-ops"}]}'
             className="m-scroll mt-3 w-full resize-none rounded-xl border border-white/12 bg-black/30 p-3 font-mono text-[11px] text-white placeholder:text-white/20 outline-none focus:border-[var(--m-accent)]"
           />
           <div className="mt-2 flex items-center gap-2">
@@ -103,10 +103,10 @@ export const AgentStackStore: React.FC = () => {
           <pre className="m-scroll mt-3 max-h-56 overflow-auto rounded-xl border border-white/10 bg-black/35 p-3 font-mono text-[10.5px] leading-relaxed text-emerald-300/80">
 {JSON.stringify(
   {
-    spec: 'maggie.mcp/v1',
+    spec: 'carol-ann.mcp/v1',
     servers: registry.installed.map((id) => ({
       id,
-      endpoint: getSkill(id)?.mcpEndpoint ?? `mcp://maggie.skills/${id}`,
+      endpoint: getSkill(id)?.mcpEndpoint ?? `mcp://carol-ann.skills/${id}`,
       version: getSkill(id)?.version ?? '1.0.0',
     })),
   },

@@ -83,7 +83,7 @@ export const ResetPassword: React.FC = () => {
           </span>
           <div>
             <p className="font-display text-lg font-semibold">Set a new password</p>
-            <p className="text-[11px] text-white/40">Maggie · Sovereign Executive OS</p>
+            <p className="text-[11px] text-white/40">Carol · Sovereign Executive OS</p>
           </div>
         </div>
 

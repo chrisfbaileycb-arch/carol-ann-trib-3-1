@@ -1,6 +1,6 @@
 {
-  "name": "Maggie: Women's Lifestyle OS",
-  "description": "Magdalene sovereign executive OS featuring a Claude-style 3-pane workspace, specialized sub-agent routing, multimodal Gemini Live voice orchestration, and local-first privacy.",
+  "name": "Carol: Women's Lifestyle OS",
+  "description": "Carol Ann sovereign executive OS featuring a Claude-style 3-pane workspace, specialized sub-agent routing, multimodal Gemini Live voice orchestration, and local-first privacy.",
   "requestFramePermissions": ["microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

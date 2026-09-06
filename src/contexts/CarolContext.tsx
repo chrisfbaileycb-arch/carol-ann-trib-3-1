@@ -21,7 +21,7 @@ import { getTheme, type AestheticTheme } from '@/data/intake';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface MaggieContextValue {
+interface CarolContextValue {
   profile: UserProfile;
   updateProfile: (patch: Partial<UserProfile>) => void;
   theme: AestheticTheme;
@@ -44,9 +44,9 @@ interface MaggieContextValue {
   deviceKey: string;
 }
 
-const MaggieContext = createContext<MaggieContextValue | undefined>(undefined);
+const CarolContext = createContext<CarolContextValue | undefined>(undefined);
 
-export const MaggieProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const CarolProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile>(loadProfile);
   const [messages, setMessages] = useState<ConversationMessage[]>(loadMessages);
@@ -129,7 +129,7 @@ export const MaggieProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setSyncing(true);
     setSyncError(null);
     try {
-      const { error: profileError } = await supabase.from('maggie_users').upsert(
+      const { error: profileError } = await supabase.from('carol_ann_users').upsert(
         {
           user_id: user.id,
           device_id: deviceKey,
@@ -190,7 +190,7 @@ export const MaggieProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [user, deviceKey, profile, messages, checkIns, memories, errands, sessions]);
 
-  const value: MaggieContextValue = {
+  const value: CarolContextValue = {
     profile, updateProfile, theme,
     messages, addMessage, clearDomain,
     checkIns, addCheckIn,
@@ -201,11 +201,11 @@ export const MaggieProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
 
-  return <MaggieContext.Provider value={value}>{children}</MaggieContext.Provider>;
+  return <CarolContext.Provider value={value}>{children}</CarolContext.Provider>;
 };
 
-export const useMaggie = (): MaggieContextValue => {
-  const ctx = useContext(MaggieContext);
-  if (!ctx) throw new Error('useMaggie must be used within MaggieProvider');
+export const useCarol = (): CarolContextValue => {
+  const ctx = useContext(CarolContext);
+  if (!ctx) throw new Error('useCarol must be used within CarolProvider');
   return ctx;
 };

@@ -61,10 +61,10 @@ interface SessionState {
   activeTaskId: string | null;
 }
 
-const MSG_KEY = 'maggie.copilot.thread.v1';
-const TASK_KEY = 'maggie.copilot.tasks.v1';
-const CREW_KEY = 'maggie.copilot.crew.v1';
-const ACTIVE_CREW_KEY = 'maggie.copilot.crew.active.v1';
+const MSG_KEY = 'carol.ann.copilot.thread.v1';
+const TASK_KEY = 'carol.ann.copilot.tasks.v1';
+const CREW_KEY = 'carol.ann.copilot.crew.v1';
+const ACTIVE_CREW_KEY = 'carol.ann.copilot.crew.active.v1';
 
 export const CREW_LIMIT = 4;
 

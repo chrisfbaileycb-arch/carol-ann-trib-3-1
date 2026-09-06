@@ -46,10 +46,10 @@ export interface Artifact {
   createdAt: string;
 }
 
-const MCP_KEY = 'maggie.mcp.v1';
-const KEYS_KEY = 'maggie.apikeys.v1';
-const CONN_KEY = 'maggie.connectors.v1';
-const ART_KEY = 'maggie.artifacts.v1';
+const MCP_KEY = 'carol-ann.mcp.v1';
+const KEYS_KEY = 'carol-ann.apikeys.v1';
+const CONN_KEY = 'carol-ann.connectors.v1';
+const ART_KEY = 'carol-ann.artifacts.v1';
 
 const uid = (p: string) => `${p}_${Math.random().toString(36).slice(2, 9)}`;
 

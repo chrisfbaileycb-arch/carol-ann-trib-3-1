@@ -12,7 +12,7 @@ import type {
 } from '@/data/schemas';
 import { DEFAULT_PROFILE } from '@/data/intake';
 
-const NS = 'maggie_v1';
+const NS = 'carol_ann_v1';
 
 export const KEYS = {
   profile: `${NS}_profile`,
@@ -159,7 +159,7 @@ export const saveStickers = (s: StickerWatermark[]) => write(KEYS.stickers, s);
 
 export const DEFAULT_SCRATCHPAD = `# Live Co-Pilot Scratchpad
 
-- **Active Protocol:** Magdalene Sovereign Orchestration
+- **Active Protocol:** Carol Ann Sovereign Orchestration
 - **Calendar Queue:** Friday 10:00 AM Hair Salon with Coco (Pending Confirmation)
 - **Conditioning Cycle:** Week 3 Progressive Overload / Romanian Deadlift (Ripp Coach)
 - **Local Errand Staging:** Whole Foods delivery list cached locally on device
@@ -226,7 +226,7 @@ export const buildArchive = (): SovereignArchive => ({
 
 export const archiveToMarkdown = (a: SovereignArchive): string => {
   const lines: string[] = [];
-  lines.push(`# Maggie Sovereign Archive`);
+  lines.push(`# Carol Sovereign Archive`);
   lines.push(`\n_Exported ${new Date(a.exportedAt).toLocaleString()}_\n`);
   lines.push(`## Profile\n`);
   lines.push(`- **Name:** ${a.profile.name || '—'}`);
@@ -268,10 +268,10 @@ export const downloadFile = (filename: string, content: string, mime: string) =>
 
 export const exportJSON = () => {
   const a = buildArchive();
-  downloadFile(`maggie-archive-${a.exportedAt.slice(0, 10)}.json`, JSON.stringify(a, null, 2), 'application/json');
+  downloadFile(`carol-ann-archive-${a.exportedAt.slice(0, 10)}.json`, JSON.stringify(a, null, 2), 'application/json');
 };
 
 export const exportMarkdown = () => {
   const a = buildArchive();
-  downloadFile(`maggie-archive-${a.exportedAt.slice(0, 10)}.md`, archiveToMarkdown(a), 'text/markdown');
+  downloadFile(`carol-ann-archive-${a.exportedAt.slice(0, 10)}.md`, archiveToMarkdown(a), 'text/markdown');
 };

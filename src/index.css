@@ -132,13 +132,13 @@
   @apply my-4 ml-6;
 }
 
-/* ===================== Maggie: Lumina Edition ===================== */
+/* ===================== Carol: Lumina Edition ===================== */
 
 .font-display {
   font-family: 'Playfair Display', Georgia, serif;
 }
 
-.maggie-root {
+.carol-ann-root {
   --m-accent: #8B5FBF;
   --m-accent-soft: #E8A0BF;
   --m-surface: #1A1B23;

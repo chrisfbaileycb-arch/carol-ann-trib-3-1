@@ -24,6 +24,8 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/remote" element={<Index />} />
               <Route path="/onboarding" element={<Index />} />
+              <Route path="/agent" element={<Index />} />
+              <Route path="/memory" element={<Index />} />
               <Route path="/reset" element={<ResetPassword />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

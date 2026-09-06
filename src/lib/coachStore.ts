@@ -17,7 +17,7 @@ export interface WorkoutState {
   history: Array<{ date: string; focus: string; summary: string }>;
 }
 
-const STORAGE_KEY = 'maggie_gym_coach';
+const STORAGE_KEY = 'carol_ann_gym_coach';
 
 export const SPLIT_ROTATION = [
   'Upper Body Push & Shoulders',

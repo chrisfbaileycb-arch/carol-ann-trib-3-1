@@ -41,10 +41,10 @@ export interface AgentMessage {
   createdAt: string;
 }
 
-const AGENTS_KEY = 'maggie.agents.v1';
-const MEM_KEY = 'maggie.agents.memory.v1';
-const THREAD_KEY = 'maggie.agents.threads.v1';
-const AI_KEY = 'maggie.ai.settings.v1';
+const AGENTS_KEY = 'carol.ann.agents.v1';
+const MEM_KEY = 'carol.ann.agents.memory.v1';
+const THREAD_KEY = 'carol.ann.agents.threads.v1';
+const AI_KEY = 'carol.ann.ai.settings.v1';
 
 export const newId = (p: string) => `${p}_${Math.random().toString(36).slice(2, 9)}`;
 

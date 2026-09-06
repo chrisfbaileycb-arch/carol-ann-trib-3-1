@@ -15,7 +15,7 @@ export const LEDGER_TABLES = [
   'memories',
   'errand_tasks',
   'my_day_sessions',
-  'maggie_users',
+  'carol_ann_users',
 ] as const;
 
 interface AuthContextValue {
@@ -148,7 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (user) {
         try {
           await supabase
-            .from('maggie_users')
+            .from('carol_ann_users')
             .update({ name: patch.name ?? user.name, email: patch.email ?? user.email })
             .eq('user_id', user.id);
         } catch {

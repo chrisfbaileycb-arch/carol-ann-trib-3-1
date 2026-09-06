@@ -1,6 +1,7 @@
 import express from 'express';
 import http from 'http';
 import path from 'path';
+import { chromium } from 'playwright';
 import { WebSocketServer, WebSocket } from 'ws';
 import { GoogleGenAI, Modality, Type, type LiveServerMessage } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
@@ -37,66 +38,66 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-// Tool Definitions for Sovereign Executive OS Actions
+// Tool Definitions for local-first workspace actions
 const executiveTools = [
   {
     functionDeclarations: [
       {
         name: 'stage_grocery_errand',
-        description: 'Stages an automated grocery order or shopping errand (e.g. Whole Foods, Erewhon, Trader Joes).',
+        description: 'Stages a grocery or shopping errand locally for user confirmation.',
         parameters: {
           type: Type.OBJECT,
           properties: {
-            title: { type: Type.STRING, description: 'Order title, e.g. Weekly Organic Grocery Basket' },
+            title: { type: Type.STRING, description: 'Order title' },
             items: {
               type: Type.ARRAY,
               items: { type: Type.STRING },
-              description: 'List of specific items in the grocery order',
+              description: 'List of requested items',
             },
-            target_time: { type: Type.STRING, description: 'Delivery window or pickup timing' },
-            notes: { type: Type.STRING, description: 'Delivery notes or instructions' },
+            target_time: { type: Type.STRING, description: 'Requested delivery or pickup window' },
+            notes: { type: Type.STRING, description: 'Notes or instructions' },
           },
           required: ['title', 'items'],
         },
       },
       {
         name: 'stage_booking_appointment',
-        description: 'Stages a salon, spa, wellness, or calendar booking appointment requiring user confirmation.',
+        description: 'Stages an appointment or booking locally for user confirmation.',
         parameters: {
           type: Type.OBJECT,
           properties: {
-            title: { type: Type.STRING, description: 'Appointment title, e.g. Cut, Color & Blowout' },
+            title: { type: Type.STRING, description: 'Appointment title' },
             items: {
               type: Type.ARRAY,
               items: { type: Type.STRING },
-              description: 'Services or treatments requested' },
+              description: 'Services or requests' },
             target_time: { type: Type.STRING, description: 'Target date and time' },
-            notes: { type: Type.STRING, description: 'Specialist, location, or travel buffer notes' },
+            notes: { type: Type.STRING, description: 'Location, provider, or travel notes' },
           },
           required: ['title', 'items'],
         },
       },
       {
         name: 'update_workout_scratchpad',
-        description: 'Programs or updates a strength, hypertrophy, cardio, or athletic training session.',
+        description: 'Stages a workout or wellness plan locally.',
         parameters: {
           type: Type.OBJECT,
           properties: {
-            title: { type: Type.STRING, description: 'Workout routine title, e.g. Upper/Lower Split — Week 3' },
+            title: { type: Type.STRING, description: 'Routine title' },
             items: {
               type: Type.ARRAY,
               items: { type: Type.STRING },
-              description: 'List of exercises with sets, reps, and RPE cues',
+              description: 'Planned exercises or habits',
             },
             target_time: { type: Type.STRING, description: 'Scheduled session time' },
-            notes: { type: Type.STRING, description: 'Recovery metrics, HRV, or intensity guidelines' },
+            notes: { type: Type.STRING, description: 'Recovery or context notes' },
           },
           required: ['title', 'items'],
         },
       },
       {
         name: 'update_memory_ledger',
-        description: 'Records a permanent personal fact, preference, habit, or relationship into local sovereign memory.',
+        description: 'Records a personal fact, preference, habit, or relationship into local memory.',
         parameters: {
           type: Type.OBJECT,
           properties: {
@@ -108,7 +109,7 @@ const executiveTools = [
             tags: {
               type: Type.ARRAY,
               items: { type: Type.STRING },
-              description: 'Searchable tags for indexing',
+              description: 'Searchable tags',
             },
           },
           required: ['category', 'content'],
@@ -118,14 +119,196 @@ const executiveTools = [
   },
 ];
 
+const ANCHOR_SYSTEM_INSTRUCTION = `You are Carol Ann, the warm, steady anchor for this local-first tribute workspace.
+
+Core Behavioral Tenets:
+1. Remember the person, not the persona. Calibrate every response against the explicit profile, memories, and intentions the operator has shared. Do not invent family details, schedules, or preferences.
+2. Local-first sovereignty. Treat every memory, check-in, and agent thread as a private asset that stays on this device. Never transmit or synchronize it without explicit affirmative consent.
+3. Direct action over generic advice. Favor concrete plans, structured data, and tool calls over conversational filler.
+4. Warmth with boundaries. Be kind, clear, and gently honest. Avoid sycophancy, excessive flattery, or performative enthusiasm.
+
+When the user asks for errands, bookings, workout plans, or recording a lasting fact, use the matching tool function declaration. Keep answers focused and actionable.`;
+
+// Shared inference helper
+async function runAnchorChat(
+  message: string,
+  agentId: string,
+  agentName: string,
+  agentRole: string,
+  history: { role: string; content: string }[],
+  profile: Record<string, unknown>,
+  memoryContext: string,
+) {
+  const ai = getGenAI();
+
+  if (!ai) {
+    const lower = message.toLowerCase();
+    let toolCall: Record<string, unknown> | null = null;
+    let reply = '';
+
+    if (lower.includes('grocery') || lower.includes('food') || lower.includes('cart') || lower.includes('order')) {
+      toolCall = {
+        id: `act_${Date.now()}`,
+        category: 'errand',
+        action_name: 'Grocery Errand',
+        form_payload: {
+          title: 'Grocery order',
+          items: ['Eggs', 'Spinach', 'Almond milk', 'Bread'],
+          target_time: 'Tomorrow morning',
+          notes: 'Staged locally — confirm before placing.',
+        },
+        requires_user_confirmation: true,
+        status: 'pending_confirmation',
+        timestamp: new Date().toISOString(),
+      };
+      reply = 'I have staged a grocery list locally. Please review and confirm before placing any order.';
+    } else if (lower.includes('book') || lower.includes('appointment') || lower.includes('schedule') || lower.includes('salon')) {
+      toolCall = {
+        id: `act_${Date.now()}`,
+        category: 'calendar_booking',
+        action_name: 'Appointment Booking',
+        form_payload: {
+          title: 'Appointment request',
+          items: ['Preferred time', 'Provider notes'],
+          target_time: 'Next available opening',
+          notes: 'Staged locally — confirm before booking.',
+        },
+        requires_user_confirmation: true,
+        status: 'pending_confirmation',
+        timestamp: new Date().toISOString(),
+      };
+      reply = 'I have staged an appointment card locally. Add the provider and time, then confirm.';
+    } else if (lower.includes('workout') || lower.includes('gym') || lower.includes('train') || lower.includes('exercise')) {
+      toolCall = {
+        id: `act_${Date.now()}`,
+        category: 'scratchpad_update',
+        action_name: 'Wellness Plan',
+        form_payload: {
+          title: 'Movement plan',
+          items: ['Warm-up 5 min', 'Main session', 'Cool-down stretch'],
+          target_time: 'Today',
+          notes: 'Staged in your local scratchpad.',
+        },
+        requires_user_confirmation: false,
+        status: 'executed',
+        timestamp: new Date().toISOString(),
+      };
+      reply = 'I have updated your local wellness scratchpad.';
+    } else {
+      reply = `Understood. Carol Ann has routed your request through ${agentName}. Your local-first memory ledger is active. How would you like to proceed?`;
+    }
+
+    return { reply, toolCall, agentId, source: 'local-fallback' };
+  }
+
+  const systemInstruction = `${ANCHOR_SYSTEM_INSTRUCTION}\n\nIdentity context:\n- User Name: ${(profile.name as string) || 'Operator'}\n- User Focus: ${(profile.identity as string) || 'Local-first life management'}\n- Wellness Goal: ${(profile.wellnessGoal as string) || 'Balanced energy and recovery'}\n- Professional Focus: ${(profile.professionalFocus as string) || 'Personal projects'}\n- Local Memories:\n${memoryContext || 'None recorded yet.'}\n\nYou are ${agentName}, ${agentRole}.`;
+
+  const contents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
+  for (const h of history.slice(-10)) {
+    if (h.role === 'user' || h.role === 'assistant') {
+      contents.push({
+        role: h.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: h.content }],
+      });
+    }
+  }
+  contents.push({ role: 'user', parts: [{ text: message }] });
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash-preview-05-20',
+    contents,
+    config: {
+      systemInstruction,
+      tools: executiveTools,
+    },
+  });
+
+  let reply = response.text || '';
+  let toolCall: Record<string, unknown> | null = null;
+
+  const candidates = response.candidates || [];
+  for (const c of candidates) {
+    const parts = c.content?.parts || [];
+    for (const p of parts) {
+      if (p.functionCall) {
+        const fc = p.functionCall;
+        const args = (fc.args || {}) as Record<string, unknown>;
+        const base = {
+          id: `act_${Date.now()}`,
+          requires_user_confirmation: fc.name !== 'update_workout_scratchpad' && fc.name !== 'update_memory_ledger',
+          status: fc.name === 'update_workout_scratchpad' || fc.name === 'update_memory_ledger' ? 'executed' : 'pending_confirmation',
+          timestamp: new Date().toISOString(),
+        };
+        if (fc.name === 'stage_grocery_errand') {
+          toolCall = {
+            ...base,
+            category: 'errand',
+            action_name: typeof args.title === 'string' ? args.title : 'Grocery Errand',
+            form_payload: {
+              title: typeof args.title === 'string' ? args.title : 'Grocery Order',
+              items: Array.isArray(args.items) ? (args.items as string[]) : [],
+              target_time: typeof args.target_time === 'string' ? args.target_time : 'Tomorrow morning',
+              notes: typeof args.notes === 'string' ? args.notes : '',
+            },
+          };
+        } else if (fc.name === 'stage_booking_appointment') {
+          toolCall = {
+            ...base,
+            category: 'calendar_booking',
+            action_name: typeof args.title === 'string' ? args.title : 'Appointment Booking',
+            form_payload: {
+              title: typeof args.title === 'string' ? args.title : 'Appointment Booking',
+              items: Array.isArray(args.items) ? (args.items as string[]) : [],
+              target_time: typeof args.target_time === 'string' ? args.target_time : 'Next opening',
+              notes: typeof args.notes === 'string' ? args.notes : '',
+            },
+          };
+        } else if (fc.name === 'update_workout_scratchpad') {
+          toolCall = {
+            ...base,
+            category: 'scratchpad_update',
+            action_name: typeof args.title === 'string' ? args.title : 'Wellness Plan',
+            form_payload: {
+              title: typeof args.title === 'string' ? args.title : 'Training Routine',
+              items: Array.isArray(args.items) ? (args.items as string[]) : [],
+              target_time: typeof args.target_time === 'string' ? args.target_time : 'Today',
+              notes: typeof args.notes === 'string' ? args.notes : '',
+            },
+          };
+        } else if (fc.name === 'update_memory_ledger') {
+          toolCall = {
+            ...base,
+            category: 'profile_intake',
+            action_name: 'Record Memory Ledger',
+            form_payload: {
+              title: `Memory: ${typeof args.category === 'string' ? args.category : 'general'}`,
+              items: [typeof args.content === 'string' ? args.content : ''],
+              notes: Array.isArray(args.tags) ? (args.tags as string[]).join(', ') : '',
+            },
+          };
+        }
+      }
+    }
+  }
+
+  if (!reply && toolCall) {
+    const payload = toolCall.form_payload as { title?: string } | undefined;
+    reply = `I have staged the ${payload?.title || 'action'} for you.`;
+  } else if (!reply) {
+    reply = 'Processed and synchronized with your local workspace.';
+  }
+
+  return { reply, toolCall, agentId, source: 'gemini-2.5-flash-preview-05-20' };
+}
+
 // Conversational Inference Route
 app.post('/api/gemini/chat', async (req, res) => {
   try {
     const {
       message,
-      agentId = 'maggie-core',
-      agentName = 'Maggie',
-      agentRole = 'Sovereign Anchor & Executive Orchestrator',
+      agentId = 'carol-anchor',
+      agentName = 'Carol Ann',
+      agentRole = 'Warm Anchor & Workspace Orchestrator',
       history = [],
       profile = {},
       memoryContext = '',
@@ -135,201 +318,113 @@ app.post('/api/gemini/chat', async (req, res) => {
       return res.status(400).json({ error: 'Message content is required.' });
     }
 
-    const ai = getGenAI();
-
-    // Fallback if no API key is set
-    if (!ai) {
-      const lower = message.toLowerCase();
-      let replyContent = '';
-      let toolCall: Record<string, unknown> | null = null;
-
-      if (lower.includes('whole foods') || lower.includes('groceries') || lower.includes('cart') || lower.includes('order')) {
-        toolCall = {
-          id: `act_${Date.now()}`,
-          category: 'errand',
-          action_name: 'Whole Foods Automated Order',
-          form_payload: {
-            title: 'Weekly Organic Grocery Basket',
-            items: ['Organic Pasture-Raised Eggs', 'Grass-Fed Ribeye', 'Baby Spinach', 'Almond Milk', 'Cold Brew Concentrate'],
-            target_time: 'Tomorrow between 8:00 AM – 10:00 AM',
-            notes: 'Leave at front entrance gate with access code',
-          },
-          requires_user_confirmation: true,
-          status: 'pending_confirmation',
-          timestamp: new Date().toISOString(),
-        };
-        replyContent = `I have staged your Whole Foods delivery cart locally based on your dietary preferences. Please review the items and authorize execution.`;
-      } else if (lower.includes('salon') || lower.includes('hair') || lower.includes('nail') || lower.includes('book') || lower.includes('schedule')) {
-        toolCall = {
-          id: `act_${Date.now()}`,
-          category: 'calendar_booking',
-          action_name: 'Coco Executive Booking',
-          form_payload: {
-            title: 'Cut, Color & Blowout with Lead Stylist',
-            items: ['Full Foil Balayage', 'Olaplex Treatment', 'Blowout & Style'],
-            target_time: 'Saturday at 10:00 AM',
-            notes: 'Requires 120-minute block with 15-minute travel buffer',
-          },
-          requires_user_confirmation: true,
-          status: 'pending_confirmation',
-          timestamp: new Date().toISOString(),
-        };
-        replyContent = `Coco has found an optimal opening on Saturday at 10:00 AM with a 15-minute buffer. I've staged the booking card for your confirmation.`;
-      } else if (lower.includes('workout') || lower.includes('strength') || lower.includes('split') || lower.includes('gym') || lower.includes('deadlift')) {
-        toolCall = {
-          id: `act_${Date.now()}`,
-          category: 'scratchpad_update',
-          action_name: 'Ripp Hypertrophy Programming',
-          form_payload: {
-            title: 'Upper/Lower Split — Week 3 Hypertrophy',
-            items: ['Barbell RDL: 4 sets x 8-10 reps @ RPE 8', 'Bulgarian Split Squats: 3 sets x 10 reps/leg', 'Weighted Hanging Leg Raises: 3 sets x 12 reps'],
-            target_time: 'Today 5:30 PM',
-            notes: 'Hydration check-in complete; HRV primed at 64ms.',
-          },
-          requires_user_confirmation: false,
-          status: 'executed',
-          timestamp: new Date().toISOString(),
-        };
-        replyContent = `Ripp here. Programmed your Week 3 progressive overload session into your live scratchpad. Intensity is set to RPE 8 with strict tempo on eccentric phases.`;
-      } else {
-        replyContent = `Understood. Magdalene has routed your request through ${agentName}. Local-first memory ledger is active on your sovereign device. How would you like to proceed?`;
-      }
-
-      return res.json({
-        reply: replyContent,
-        toolCall,
-        agentId,
-        source: 'local-fallback',
-      });
-    }
-
-    const systemInstruction = `You are ${agentName}, ${agentRole} within the Magdalene Sovereign Executive Life OS.
-Identity context:
-- User Name: ${profile.name || 'Executive User'}
-- User Focus: ${profile.identity || 'Autonomous high-performance lifestyle'}
-- Wellness Goal: ${profile.wellnessGoal || 'Peak vitality, longevity, balanced energy'}
-- Professional Focus: ${profile.professionalFocus || 'Executive strategy'}
-- Sovereign Ledger Memories:
-${memoryContext || 'None recorded yet.'}
-
-Guidelines:
-1. Speak directly, elegantly, with warm poise and high agency. Avoid sycophancy or generic filler.
-2. If the user asks for errands (groceries, supplies), scheduling/salon appointments, workout programming, or recording a lasting fact, invoke the corresponding tool function declaration.
-3. Keep answers focused and actionable.`;
-
-    // Map conversation history
-    const contents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
-    for (const h of history.slice(-10)) {
-      if (h.role === 'user' || h.role === 'assistant') {
-        contents.push({
-          role: h.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: h.content }],
-        });
-      }
-    }
-    contents.push({ role: 'user', parts: [{ text: message }] });
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.7-flash',
-      contents,
-      config: {
-        systemInstruction,
-        tools: executiveTools,
-      },
-    });
-
-    let reply = response.text || '';
-    let toolCall: Record<string, unknown> | null = null;
-
-    // Check for function calls
-    const candidates = response.candidates || [];
-    for (const c of candidates) {
-      const parts = c.content?.parts || [];
-      for (const p of parts) {
-        if (p.functionCall) {
-          const fc = p.functionCall;
-          const args = (fc.args || {}) as Record<string, unknown>;
-          if (fc.name === 'stage_grocery_errand') {
-            toolCall = {
-              id: `act_${Date.now()}`,
-              category: 'errand',
-              action_name: typeof args.title === 'string' ? args.title : 'Grocery Automated Order',
-              form_payload: {
-                title: typeof args.title === 'string' ? args.title : 'Grocery Order',
-                items: Array.isArray(args.items) ? (args.items as string[]) : [],
-                target_time: typeof args.target_time === 'string' ? args.target_time : 'Tomorrow morning',
-                notes: typeof args.notes === 'string' ? args.notes : '',
-              },
-              requires_user_confirmation: true,
-              status: 'pending_confirmation',
-              timestamp: new Date().toISOString(),
-            };
-          } else if (fc.name === 'stage_booking_appointment') {
-            toolCall = {
-              id: `act_${Date.now()}`,
-              category: 'calendar_booking',
-              action_name: typeof args.title === 'string' ? args.title : 'Executive Booking',
-              form_payload: {
-                title: typeof args.title === 'string' ? args.title : 'Appointment Booking',
-                items: Array.isArray(args.items) ? (args.items as string[]) : [],
-                target_time: typeof args.target_time === 'string' ? args.target_time : 'Next opening',
-                notes: typeof args.notes === 'string' ? args.notes : '',
-              },
-              requires_user_confirmation: true,
-              status: 'pending_confirmation',
-              timestamp: new Date().toISOString(),
-            };
-          } else if (fc.name === 'update_workout_scratchpad') {
-            toolCall = {
-              id: `act_${Date.now()}`,
-              category: 'scratchpad_update',
-              action_name: typeof args.title === 'string' ? args.title : 'Strength & Conditioning Programming',
-              form_payload: {
-                title: typeof args.title === 'string' ? args.title : 'Training Routine',
-                items: Array.isArray(args.items) ? (args.items as string[]) : [],
-                target_time: typeof args.target_time === 'string' ? args.target_time : 'Today',
-                notes: typeof args.notes === 'string' ? args.notes : '',
-              },
-              requires_user_confirmation: false,
-              status: 'executed',
-              timestamp: new Date().toISOString(),
-            };
-          } else if (fc.name === 'update_memory_ledger') {
-            toolCall = {
-              id: `act_${Date.now()}`,
-              category: 'profile_intake',
-              action_name: 'Record Memory Ledger',
-              form_payload: {
-                title: `Memory: ${typeof args.category === 'string' ? args.category : 'general'}`,
-                items: [typeof args.content === 'string' ? args.content : ''],
-                notes: Array.isArray(args.tags) ? (args.tags as string[]).join(', ') : '',
-              },
-              requires_user_confirmation: false,
-              status: 'executed',
-              timestamp: new Date().toISOString(),
-            };
-          }
-        }
-      }
-    }
-
-    if (!reply && toolCall) {
-      const payload = toolCall.form_payload as { title?: string } | undefined;
-      reply = `I have staged the ${payload?.title || 'action'} for you.`;
-    } else if (!reply) {
-      reply = 'Processed and synchronized with your sovereign workspace.';
-    }
-
-    return res.json({
-      reply,
-      toolCall,
-      agentId,
-      source: 'gemini-3.7-flash',
-    });
+    const result = await runAnchorChat(message, agentId, agentName, agentRole, history, profile, memoryContext);
+    return res.json(result);
   } catch (error) {
     console.error('Error in /api/gemini/chat:', error);
     return res.status(500).json({
       error: error instanceof Error ? error.message : 'Internal inference error',
+    });
+  }
+});
+
+// Agent dispatch route — plans and routes a task to the right specialist
+app.post('/api/agent/dispatch', async (req, res) => {
+  try {
+    const { task, agentId = 'carol-anchor', agentName = 'Carol Ann', history = [], profile = {}, memoryContext = '' } = req.body;
+    if (!task) {
+      return res.status(400).json({ error: 'Task description is required.' });
+    }
+
+    const result = await runAnchorChat(
+      `Dispatch this task to the right specialist and outline a plan: ${task}`,
+      agentId,
+      agentName,
+      'Warm Anchor & Workspace Orchestrator',
+      history,
+      profile,
+      memoryContext,
+    );
+
+    return res.json({
+      ...result,
+      dispatched: true,
+      task,
+    });
+  } catch (error) {
+    console.error('Error in /api/agent/dispatch:', error);
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : 'Dispatch error',
+    });
+  }
+});
+
+// Browser automation: run a navigation / DOM task
+app.post('/api/browser/run', async (req, res) => {
+  const { url, waitFor } = req.body as { url?: string; waitFor?: string };
+  if (!url) {
+    return res.status(400).json({ error: 'URL is required.' });
+  }
+
+  let browser;
+  try {
+    browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    const page = await context.newPage();
+    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+
+    if (waitFor) {
+      await page.waitForSelector(waitFor, { timeout: 15000 }).catch(() => undefined);
+    }
+
+    const title = await page.title().catch(() => '');
+    const text = await page.evaluate(() => document.body?.innerText?.slice(0, 4000) || '');
+    const pageUrl = page.url();
+
+    await browser.close();
+    return res.json({
+      ok: true,
+      url: pageUrl,
+      title,
+      text,
+      source: 'playwright',
+    });
+  } catch (error) {
+    if (browser) await browser.close().catch(() => undefined);
+    console.error('Error in /api/browser/run:', error);
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : 'Browser run failed',
+    });
+  }
+});
+
+// Browser automation: capture a screenshot
+app.post('/api/browser/screenshot', async (req, res) => {
+  const { url, fullPage } = req.body as { url?: string; fullPage?: boolean };
+  if (!url) {
+    return res.status(400).json({ error: 'URL is required.' });
+  }
+
+  let browser;
+  try {
+    browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    const page = await context.newPage();
+    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+    const screenshot = await page.screenshot({ fullPage: Boolean(fullPage), type: 'png' });
+    await browser.close();
+    return res.json({
+      ok: true,
+      url: page.url(),
+      image: screenshot.toString('base64'),
+      mimeType: 'image/png',
+      source: 'playwright',
+    });
+  } catch (error) {
+    if (browser) await browser.close().catch(() => undefined);
+    console.error('Error in /api/browser/screenshot:', error);
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : 'Screenshot failed',
     });
   }
 });
@@ -348,7 +443,7 @@ app.post('/api/gemini/tts', async (req, res) => {
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-tts-preview',
+      model: 'gemini-2.5-flash-preview-05-20',
       contents: text,
       config: {
         responseModalities: [Modality.AUDIO],
@@ -399,13 +494,13 @@ async function bootstrap() {
 
     try {
       liveSession = await ai.live.connect({
-        model: 'gemini-3.1-flash-live-preview',
+        model: 'gemini-2.5-flash-preview-05-20',
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } },
           },
-          systemInstruction: 'You are Maggie, the sovereign companion for Magdalene OS. Speak warmly, concisely, and helpfully.',
+          systemInstruction: ANCHOR_SYSTEM_INSTRUCTION,
         },
         callbacks: {
           onmessage: (message: LiveServerMessage) => {
@@ -467,7 +562,7 @@ async function bootstrap() {
   }
 
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Magdalene OS Server running on http://0.0.0.0:${PORT}`);
+    console.log(`Carol Ann Tribute Server running on http://0.0.0.0:${PORT}`);
   });
 }
 

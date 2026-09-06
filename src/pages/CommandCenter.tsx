@@ -11,7 +11,7 @@ import { SettingsThemeEngine } from '@/components/workspace/SettingsThemeEngine'
 import { WatermarkLayer } from '@/components/workspace/WatermarkLayer';
 import AuthModal from '@/components/auth/AuthModal';
 import AccountSettings from '@/components/auth/AccountSettings';
-import { useMaggie } from '@/contexts/MaggieContext';
+import { useCarol } from '@/contexts/CarolContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { subscribeBus, isCloudBusLive, pullBusNow } from '@/lib/realtimeBus';
 import { loadStickers } from '@/lib/memoryStore';
@@ -27,7 +27,7 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
 ];
 
 export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRemote }) => {
-  const { profile, updateProfile, theme, syncToCloud, syncing, lastSync, syncError, addCheckIn } = useMaggie();
+  const { profile, updateProfile, theme, syncToCloud, syncing, lastSync, syncError, addCheckIn } = useCarol();
   const { user, signOut } = useAuth();
   const [tab, setTab] = useState<TabId>('chat');
   const [stickers, setStickers] = useState<StickerWatermark[]>(() => loadStickers());
@@ -68,7 +68,7 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
 
   return (
     <div
-      className="maggie-root relative flex h-screen flex-col overflow-hidden text-white"
+      className="carol-ann-root relative flex h-screen flex-col overflow-hidden text-white"
       style={{
         backgroundColor: theme.surface,
         '--m-accent': profile.accentColor || theme.accent,
@@ -90,7 +90,7 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
               <Sparkles className="h-4 w-4 text-white" />
             </span>
             <div className="leading-tight">
-              <p className="font-display text-sm font-semibold tracking-wide">Magdalene</p>
+              <p className="font-display text-sm font-semibold tracking-wide">Carol Ann</p>
               <p className="text-[9px] uppercase tracking-[0.18em] text-white/40">Sovereign Executive OS</p>
             </div>
           </div>

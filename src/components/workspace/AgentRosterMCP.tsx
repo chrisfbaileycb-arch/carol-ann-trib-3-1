@@ -12,7 +12,7 @@ interface AgentRosterMCPProps {
 }
 
 export const AgentRosterMCP: React.FC<AgentRosterMCPProps> = ({ onSelectAgentForChat }) => {
-  const [selectedAgentId, setSelectedAgentId] = useState<string>('magdalene');
+  const [selectedAgentId, setSelectedAgentId] = useState<string>('carol-anchor');
   const [testSpeaking, setTestSpeaking] = useState<string | null>(null);
   const [activeSubTab, setActiveSubTab] = useState<'roster' | 'orchestrator_prompt' | 'tool_schema' | 'mcp_connectors'>('roster');
 

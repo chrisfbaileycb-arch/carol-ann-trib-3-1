@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Send, Loader2, Brain, Trash2, Volume2, ShieldAlert, Plus, X } from 'lucide-react';
 import AgentAvatar from '@/components/agents/AgentAvatar';
-import { useMaggie } from '@/contexts/MaggieContext';
+import { useCarol } from '@/contexts/CarolContext';
 import { AGENT_DISCLAIMER, toneByKey, voiceByKey } from '@/data/agents';
 import {
   type AgentConfig, type AgentMessage, type AgentMemoryEntry,
@@ -19,7 +19,7 @@ const AgentChat: React.FC<{
   onAcceptDisclaimer: () => void;
   compact?: boolean;
 }> = ({ agent, onAcceptDisclaimer, compact = false }) => {
-  const { profile } = useMaggie();
+  const { profile } = useCarol();
   const [thread, setThread] = useState<AgentMessage[]>([]);
   const [memory, setMemory] = useState<AgentMemoryEntry[]>([]);
   const [draft, setDraft] = useState('');

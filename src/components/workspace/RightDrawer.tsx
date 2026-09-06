@@ -396,7 +396,7 @@ export const RightDrawer: React.FC<RightDrawerProps> = ({
 
             {actions.length === 0 ? (
               <div className="rounded-xl border border-white/8 bg-white/[0.02] p-6 text-center text-[11px] text-white/40">
-                No function tool calls yet. Ask Magdalene to book an appointment or stage an errand.
+                No function tool calls yet. Ask Carol Ann to book an appointment or stage an errand.
               </div>
             ) : (
               actions.map((act) => (

@@ -5,14 +5,14 @@ import {
 } from 'lucide-react';
 import { COMPANION_DOMAINS, getDomain } from '@/data/domains';
 import { AESTHETIC_THEMES, SPORTS_TEAMS, ACCENT_PALETTES } from '@/data/intake';
-import { useMaggie } from '@/contexts/MaggieContext';
+import { useCarol } from '@/contexts/CarolContext';
 import { exportJSON, exportMarkdown } from '@/lib/memoryStore';
 import Icon from '@/components/common/Icon';
 
 const MOOD_TAGS = ['Focused', 'Restoring', 'Momentum', 'Quiet', 'Ambitious', 'Grateful'];
 
 export const PersonalSpace: React.FC = () => {
-  const { profile, updateProfile, theme, checkIns, memories, sessions, addCheckIn, syncToCloud, syncing, lastSync, syncError } = useMaggie();
+  const { profile, updateProfile, theme, checkIns, memories, sessions, addCheckIn, syncToCloud, syncing, lastSync, syncError } = useCarol();
 
   const [order, setOrder] = useState<string[]>(() => COMPANION_DOMAINS.map((d) => d.id));
   const [dragging, setDragging] = useState<string | null>(null);

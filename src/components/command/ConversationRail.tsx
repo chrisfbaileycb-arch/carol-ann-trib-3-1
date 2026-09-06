@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Mic, MicOff, Send, Sparkles, Trash2, Pin, Radio, Loader2 } from 'lucide-react';
 import { COMPANION_DOMAINS, getDomain } from '@/data/domains';
 import type { DomainId } from '@/data/schemas';
-import { useMaggie } from '@/contexts/MaggieContext';
+import { useCarol } from '@/contexts/CarolContext';
 import { parseIntent } from '@/lib/browserAgent';
 import { startRun, pushLog } from '@/lib/agentRunner';
 import { publishBus, subscribeBus } from '@/lib/realtimeBus';
@@ -39,7 +39,7 @@ interface WindowWithSpeech extends Window {
 }
 
 export const ConversationRail: React.FC<{ onOpenAgent?: () => void }> = ({ onOpenAgent }) => {
-  const { messages, addMessage, profile, memories, clearDomain } = useMaggie();
+  const { messages, addMessage, profile, memories, clearDomain } = useCarol();
   const [domain, setDomain] = useState<DomainId>('core');
   const [input, setInput] = useState('');
   const [listening, setListening] = useState(false);
@@ -102,7 +102,7 @@ export const ConversationRail: React.FC<{ onOpenAgent?: () => void }> = ({ onOpe
         body: JSON.stringify({
           message: text,
           domain: dom,
-          agentName: 'Maggie',
+          agentName: 'Carol',
           profile: {
             name: profile.name,
             identity: profile.identity,
@@ -281,7 +281,7 @@ export const ConversationRail: React.FC<{ onOpenAgent?: () => void }> = ({ onOpe
         })}
         {thinking && (
           <div className="flex items-center gap-2 text-xs text-white/40">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Maggie is composing…
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Carol is composing…
           </div>
         )}
       </div>
@@ -329,7 +329,7 @@ export const ConversationRail: React.FC<{ onOpenAgent?: () => void }> = ({ onOpe
               }
             }}
             rows={2}
-            placeholder="Talk to Maggie, or say “order Whole Foods delivery”…"
+            placeholder="Talk to Carol, or say “order Whole Foods delivery”…"
             className="m-scroll max-h-28 flex-1 resize-none bg-transparent text-[13px] text-white placeholder:text-white/25 outline-none"
           />
           <button

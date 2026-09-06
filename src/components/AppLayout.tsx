@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Monitor, Smartphone, ShieldCheck, Sparkles, SlidersHorizontal } from 'lucide-react';
-import { MaggieProvider, useMaggie } from '@/contexts/MaggieContext';
+import { CarolProvider, useCarol } from '@/contexts/CarolContext';
 import { useAuth } from '@/contexts/AuthContext';
 import CommandCenter from '@/pages/CommandCenter';
+import AgentPage from '@/pages/AgentPage';
+import MemoryPage from '@/pages/MemoryPage';
 import MobileRemote from '@/pages/MobileRemote';
 import Onboarding from '@/pages/Onboarding';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -11,8 +13,8 @@ import { applyBrightCanvas, loadAISettings } from '@/lib/agentStore';
 
 type Surface = 'desktop' | 'remote';
 
-const MaggieShell: React.FC = () => {
-  const { profile, updateProfile, theme, memories, checkIns } = useMaggie();
+const CarolShell: React.FC = () => {
+  const { profile, updateProfile, theme, memories, checkIns } = useCarol();
   const { user } = useAuth();
 
   const isMobile = useIsMobile();
@@ -50,7 +52,7 @@ const MaggieShell: React.FC = () => {
 
   return (
     <div
-      className="maggie-root relative min-h-screen"
+      className="carol-ann-root relative min-h-screen"
       style={
         {
           backgroundColor: theme.surface,
@@ -62,6 +64,10 @@ const MaggieShell: React.FC = () => {
       {/* Active surface */}
       {surface === 'remote' ? (
         <MobileRemote onBackToDesktop={() => setSurface('desktop')} />
+      ) : path === '/agent' ? (
+        <AgentPage />
+      ) : path === '/memory' ? (
+        <MemoryPage />
       ) : (
         <CommandCenter onOpenRemote={() => setSurface('remote')} />
       )}
@@ -72,7 +78,7 @@ const MaggieShell: React.FC = () => {
           <div className="pointer-events-auto flex items-center gap-3 rounded-full border border-white/12 bg-[#15161C]/92 px-4 py-2 shadow-2xl backdrop-blur">
             <span className="flex items-center gap-1.5 text-[11px] font-semibold text-white/70">
               <Sparkles className="h-3.5 w-3.5 text-[var(--m-accent-soft)]" />
-              {profile.name ? `${profile.name}'s workspace` : 'Maggie workspace'}
+              {profile.name ? `${profile.name}'s workspace` : 'Carol workspace'}
             </span>
             <span className="h-3 w-px bg-white/12" />
             <span className="flex items-center gap-1.5 text-[11px] text-emerald-300/85">
@@ -113,9 +119,9 @@ const MaggieShell: React.FC = () => {
 };
 
 const AppLayout: React.FC = () => (
-  <MaggieProvider>
-    <MaggieShell />
-  </MaggieProvider>
+  <CarolProvider>
+    <CarolShell />
+  </CarolProvider>
 );
 
 export default AppLayout;

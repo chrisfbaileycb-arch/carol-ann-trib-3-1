@@ -42,7 +42,7 @@ export const SkillsEngine: React.FC<{ onRunAgent?: () => void }> = ({ onRunAgent
           </p>
         </div>
         <button
-          onClick={() => exportStackBundle(registry.installed, 'maggie-active-stack.mcp.json')}
+          onClick={() => exportStackBundle(registry.installed, 'carol-ann-active-stack.mcp.json')}
           className="flex items-center gap-1.5 rounded-lg border border-white/12 px-3 py-2 text-xs font-medium text-white/70 transition hover:border-white/30 hover:text-white"
         >
           <Download className="h-3.5 w-3.5" /> Export active stack

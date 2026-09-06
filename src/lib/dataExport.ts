@@ -103,7 +103,7 @@ export const runDataExport = async (
     counts[table] = rows.length;
     if (rows.length) {
       files.push({
-        name: `maggie-${table}.csv`,
+        name: `carol-ann-${table}.csv`,
         blob: new Blob([toCSV(rows)], { type: 'text/csv;charset=utf-8' }),
       });
     }
@@ -119,7 +119,7 @@ export const runDataExport = async (
   };
 
   files.unshift({
-    name: 'maggie-export.json',
+    name: 'carol-ann-export.json',
     blob: new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' }),
   });
 

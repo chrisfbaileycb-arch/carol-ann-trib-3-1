@@ -6,11 +6,11 @@ import {
   getWorkoutState, saveWorkoutState, nextSplit, speak,
   EXERCISE_LIBRARY, CUE_LIBRARY, SPLIT_ROTATION, type WorkoutState,
 } from '@/lib/coachStore';
-import { useMaggie } from '@/contexts/MaggieContext';
+import { useCarol } from '@/contexts/CarolContext';
 import { uid } from '@/lib/memoryStore';
 
 export const GymCoach: React.FC = () => {
-  const { addCheckIn, addMessage, updateToday } = useMaggie();
+  const { addCheckIn, addMessage, updateToday } = useCarol();
   const [state, setState] = useState<WorkoutState>(getWorkoutState);
   const [camOn, setCamOn] = useState(false);
   const [camError, setCamError] = useState('');

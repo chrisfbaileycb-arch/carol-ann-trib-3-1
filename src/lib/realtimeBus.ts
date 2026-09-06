@@ -26,8 +26,8 @@ export interface BusEvent {
 type Handler = (e: BusEvent) => void;
 
 const handlers = new Set<Handler>();
-const CHANNEL = `maggie-remote-${getDeviceKey()}`;
-const LOCAL_KEY = 'maggie_bus_event';
+const CHANNEL = `carol-ann-remote-${getDeviceKey()}`;
+const LOCAL_KEY = 'carol_ann_bus_event';
 const CLIENT_ID = uid('client');
 const POLL_MS = 3500;
 

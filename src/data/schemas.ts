@@ -1,5 +1,5 @@
 // ============================================================================
-// Maggie: Sovereign Life Companion & Cloud Executive OS
+// Carol: Sovereign Life Companion & Cloud Executive OS
 // Single source of truth for all typed data structures.
 // ============================================================================
 

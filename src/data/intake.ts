@@ -159,7 +159,7 @@ export interface IntakeStepMeta {
 
 export const INTAKE_STEPS: IntakeStepMeta[] = [
   { id: 'identity', title: 'Who is at the helm', subtitle: 'Your name and how you describe yourself right now.' },
-  { id: 'rhythm', title: 'Your daily rhythm', subtitle: 'How your hours actually move so Maggie can move with them.' },
+  { id: 'rhythm', title: 'Your daily rhythm', subtitle: 'How your hours actually move so Carol can move with them.' },
   { id: 'wellness', title: 'Body & wellness focus', subtitle: 'What your physical coach should optimize for.' },
   { id: 'work', title: 'Professional focus', subtitle: 'Where your technical and executive energy goes.' },
   { id: 'aesthetic', title: 'Aesthetic & culture', subtitle: 'The canvas re-skins itself from these choices.' },

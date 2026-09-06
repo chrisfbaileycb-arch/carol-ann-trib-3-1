@@ -241,7 +241,7 @@ export const AuthModal: React.FC<{ open: boolean; onClose: () => void; initialMo
         </form>
 
         <p className="border-t border-white/8 px-5 py-3 text-[10.5px] leading-relaxed text-white/30">
-          Maggie stays local-first. Signing in only enables encrypted cloud sync — your journal, check-ins, and memory
+          Carol stays local-first. Signing in only enables encrypted cloud sync — your journal, check-ins, and memory
           ledger are readable by your account alone.
         </p>
       </div>

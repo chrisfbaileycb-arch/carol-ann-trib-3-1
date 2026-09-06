@@ -3,7 +3,7 @@ import {
   Mic, MicOff, Camera, X, Monitor, Zap, ClipboardCheck, ShoppingBag, Dumbbell,
   ChevronUp, Send, Radio, Check, Trash2, LogIn, ShieldCheck, Bot,
 } from 'lucide-react';
-import { useMaggie } from '@/contexts/MaggieContext';
+import { useCarol } from '@/contexts/CarolContext';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/auth/AuthModal';
 import { publishBus, subscribeBus, isCloudBusLive, pullBusNow } from '@/lib/realtimeBus';
@@ -46,7 +46,7 @@ interface WindowWithSpeech extends Window {
 }
 
 export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBackToDesktop }) => {
-  const { profile, theme, addMessage, addCheckIn } = useMaggie();
+  const { profile, theme, addMessage, addCheckIn } = useCarol();
   const { user } = useAuth();
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -165,7 +165,7 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
 
   return (
     <div
-      className="maggie-root relative flex min-h-screen flex-col text-white"
+      className="carol-ann-root relative flex min-h-screen flex-col text-white"
       style={{
         backgroundColor: theme.surface,
         backgroundImage: theme.texture,
@@ -178,7 +178,7 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
       <header className="flex items-center justify-between px-5 pb-3 pt-6">
         <div>
           <p className="text-[10px] uppercase tracking-[0.22em] text-white/35">Phone remote</p>
-          <h1 className="font-display text-2xl font-semibold">{profile.name ? `${profile.name}'s remote` : 'Maggie remote'}</h1>
+          <h1 className="font-display text-2xl font-semibold">{profile.name ? `${profile.name}'s remote` : 'Carol remote'}</h1>
         </div>
         <button
           onClick={onBackToDesktop}

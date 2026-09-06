@@ -4,7 +4,7 @@ import {
   INTAKE_STEPS, AESTHETIC_THEMES, SPORTS_TEAMS, INTEREST_OPTIONS,
   ROUTINE_OPTIONS, WELLNESS_GOALS, PROFESSIONAL_FOCUS, ACCENT_PALETTES,
 } from '@/data/intake';
-import { useMaggie } from '@/contexts/MaggieContext';
+import { useCarol } from '@/contexts/CarolContext';
 
 const Chip: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode; color?: string }> = ({
   active, onClick, children, color = '#8B5FBF',
@@ -23,7 +23,7 @@ const Chip: React.FC<{ active: boolean; onClick: () => void; children: React.Rea
 );
 
 export const Onboarding: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
-  const { profile, updateProfile, theme } = useMaggie();
+  const { profile, updateProfile, theme } = useCarol();
   const [step, setStep] = useState(0);
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -52,14 +52,14 @@ export const Onboarding: React.FC<{ onComplete: () => void }> = ({ onComplete })
   };
 
   return (
-    <div className="maggie-root min-h-screen text-white" style={{ backgroundColor: theme.surface, backgroundImage: theme.texture }}>
+    <div className="carol-ann-root min-h-screen text-white" style={{ backgroundColor: theme.surface, backgroundImage: theme.texture }}>
       <div className="mx-auto flex min-h-screen max-w-3xl flex-col px-5 py-10">
         <div className="flex items-center gap-2">
           <span className="grid h-9 w-9 place-items-center rounded-xl m-gradient-bg">
             <Sparkles className="h-5 w-5 text-white" />
           </span>
           <div>
-            <p className="font-display text-lg font-semibold">Maggie</p>
+            <p className="font-display text-lg font-semibold">Carol</p>
             <p className="text-[10px] uppercase tracking-[0.2em] text-white/35">Sovereign intake</p>
           </div>
           <button onClick={onComplete} className="ml-auto text-[11px] text-white/35 underline-offset-2 transition hover:text-white/70 hover:underline">
@@ -226,7 +226,7 @@ export const Onboarding: React.FC<{ onComplete: () => void }> = ({ onComplete })
             {step === 5 && (
               <div className="space-y-4">
                 <p className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-xs text-white/45">
-                  Maggie is local-first — everything above already lives on this device. Adding a contact channel only enables
+                  Carol is local-first — everything above already lives on this device. Adding a contact channel only enables
                   cross-device continuity and optional briefings. It is entirely optional.
                 </p>
                 <label className="block text-[11px] uppercase tracking-wider text-white/40">

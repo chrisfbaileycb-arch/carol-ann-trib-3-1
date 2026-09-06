@@ -4,7 +4,7 @@ import {
 } from 'lucide-react';
 import { CHAIN_LIST, chainForTarget, parseIntent } from '@/lib/browserAgent';
 import { startRun, subscribeRunner, getRunnerState, pushLog } from '@/lib/agentRunner';
-import { useMaggie } from '@/contexts/MaggieContext';
+import { useCarol } from '@/contexts/CarolContext';
 import { uid } from '@/lib/memoryStore';
 import { publishBus } from '@/lib/realtimeBus';
 import SavedShortcuts from '@/components/shortcuts/SavedShortcuts';
@@ -19,7 +19,7 @@ type Tab = 'errands' | 'code' | 'terminal';
 export const TaskDispatcher: React.FC<{ open: boolean; onClose: () => void; onRunStarted?: () => void }> = ({
   open, onClose, onRunStarted,
 }) => {
-  const { errands, upsertErrand } = useMaggie();
+  const { errands, upsertErrand } = useCarol();
   const [tab, setTab] = useState<Tab>('errands');
   const [scheduleDraft, setScheduleDraft] = useState<SavedCommand | null>(null);
   const [, force] = useState(0);
@@ -31,7 +31,7 @@ export const TaskDispatcher: React.FC<{ open: boolean; onClose: () => void; onRu
   const [validation, setValidation] = useState<{ ok: boolean; msg: string } | null>(null);
   const [cmd, setCmd] = useState('');
   const [termLines, setTermLines] = useState<string[]>([
-    'maggie@sovereign:~$ runner status',
+    'carol-ann@sovereign:~$ runner status',
     'cloud runner: READY · chromium 128 · region us-west-2',
   ]);
 
@@ -58,7 +58,7 @@ export const TaskDispatcher: React.FC<{ open: boolean; onClose: () => void; onRu
   const runCmd = () => {
     const c = cmd.trim();
     if (!c) return;
-    const out: string[] = [`maggie@sovereign:~$ ${c}`];
+    const out: string[] = [`carol-ann@sovereign:~$ ${c}`];
     if (c.startsWith('run ')) {
       const key = c.slice(4).trim();
       const chain = CHAIN_LIST.find((x) => x.key === key);
@@ -89,7 +89,7 @@ export const TaskDispatcher: React.FC<{ open: boolean; onClose: () => void; onRu
     const chain = chainKey ? CHAIN_LIST.find((x) => x.key === chainKey) : parseIntent(text);
     if (!chain) {
       pushLog(`No dispatch chain matched shortcut “${text.slice(0, 60)}”.`, 'warn');
-      setTermLines((prev) => [...prev, `maggie@sovereign:~$ shortcut "${text}"`, 'no matching chain'].slice(-60));
+      setTermLines((prev) => [...prev, `carol-ann@sovereign:~$ shortcut "${text}"`, 'no matching chain'].slice(-60));
       return;
     }
     startRun(chain.key);

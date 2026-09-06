@@ -101,7 +101,7 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
               <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[9.5px] font-mono text-white/55">
                 Voice: {currentAgent.geminiVoice}
               </span>
-              {currentAgent.id === 'magdalene' && (
+              {currentAgent.id === 'carol-anchor' && (
                 <span className="rounded-full border border-[var(--m-accent)]/40 bg-[var(--m-accent)]/15 px-2 py-0.5 text-[9.5px] font-medium text-[var(--m-accent-soft)]">
                   Sovereign Router
                 </span>
@@ -147,7 +147,7 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
                 <Sparkles className="h-6 w-6 text-white" />
               </div>
               <h2 className="mt-4 font-display text-lg font-bold text-white">
-                Magdalene Sovereign Orchestrator
+                Carol Ann Sovereign Orchestrator
               </h2>
               <p className="mt-1 text-[13px] text-white/60 max-w-md mx-auto leading-relaxed">
                 Adaptive executive intelligence for {profile.name || 'Sovereign Operator'}. Zero cloud data leaks, real-time voice orchestration, and local-first memory.

@@ -89,7 +89,7 @@ export const ConnectorsHub: React.FC = () => {
             <h2 className="font-display text-lg font-semibold text-white">Model Context Protocol (MCP) & Connectors</h2>
           </div>
           <p className="text-xs text-white/45 mt-0.5">
-            Sovereign tool definitions, local bridges, and real-time execution endpoints wired to Magdalene.
+            Sovereign tool definitions, local bridges, and real-time execution endpoints wired to Carol Ann.
           </p>
         </div>
 
@@ -200,7 +200,7 @@ export const ConnectorsHub: React.FC = () => {
 
             <pre className="rounded-xl border border-white/6 bg-black/60 p-4 font-mono text-xs text-emerald-300/90 whitespace-pre-wrap leading-relaxed min-h-[140px]">
               {testOutput ||
-                `// MCP Client initialized. Ready to execute tools via Magdalene Orchestration Engine.\n// Select any tool above to run an instantaneous mock handshake.`}
+                `// MCP Client initialized. Ready to execute tools via Carol Ann Orchestration Engine.\n// Select any tool above to run an instantaneous mock handshake.`}
             </pre>
           </div>
         </div>

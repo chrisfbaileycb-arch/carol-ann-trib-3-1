@@ -52,7 +52,7 @@ export const MemoryLedgerTab: React.FC<MemoryLedgerTabProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `magdalene-sovereign-ledger-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `carol-ann-sovereign-ledger-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -106,7 +106,7 @@ export const MemoryLedgerTab: React.FC<MemoryLedgerTabProps> = ({
               <span>Hardware-Bound Ledger</span>
             </div>
             <p className="text-[11px] text-white/50 leading-relaxed">
-              Every memory entry is hashed and indexed locally. Magdalene references these during conversations to personalize without cloud storage.
+              Every memory entry is hashed and indexed locally. Carol Ann references these during conversations to personalize without cloud storage.
             </p>
           </div>
 
