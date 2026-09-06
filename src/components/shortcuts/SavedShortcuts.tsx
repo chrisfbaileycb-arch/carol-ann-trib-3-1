@@ -8,6 +8,8 @@ import {
   groupShortcuts, GROUP_SUGGESTIONS, DEFAULT_GROUP, type SavedCommand,
 } from '@/lib/savedCommands';
 import { subscribeBus } from '@/lib/realtimeBus';
+import { useCarol } from '@/contexts/CarolContext';
+import { isLightTheme } from '@/data/intake';
 
 interface Props {
   /** Fire the shortcut — the host decides what dispatching means. */
@@ -18,6 +20,7 @@ interface Props {
   variant?: 'pills' | 'list';
   title?: string;
   className?: string;
+  isLight?: boolean;
 }
 
 /**
@@ -27,9 +30,11 @@ interface Props {
  * drag-to-reorder and can hand a shortcut to the scheduler.
  */
 export const SavedShortcuts: React.FC<Props> = ({
-  onDispatch, onSchedule, variant = 'pills', title = 'Saved shortcuts', className = '',
+  onDispatch, onSchedule, variant = 'pills', title = 'Saved shortcuts', className = '', isLight,
 }) => {
   const { user } = useAuth();
+  const { profile } = useCarol();
+  const light = isLight !== undefined ? isLight : isLightTheme(profile);
   const [rows, setRows] = useState<SavedCommand[]>([]);
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -102,13 +107,13 @@ export const SavedShortcuts: React.FC<Props> = ({
 
   return (
     <div className={className}>
-      <p className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-white/30">
-        <Bookmark className="h-3 w-3" /> {title}
-        {loading && <Loader2 className="h-3 w-3 animate-spin" />}
+      <p className={`flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] font-bold ${light ? 'text-slate-700' : 'text-white/80'}`}>
+        <Bookmark className="h-3.5 w-3.5 text-[var(--m-accent)]" /> {title}
+        {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
       </p>
 
       {!loading && !rows.length && (
-        <p className="mt-2 text-[11px] text-white/30">
+        <p className={`mt-2 text-xs font-medium ${light ? 'text-slate-500' : 'text-white/60'}`}>
           Save a command from Remote activity to pin it here.
         </p>
       )}
@@ -118,31 +123,35 @@ export const SavedShortcuts: React.FC<Props> = ({
           {groups.map((g) => {
             const isOpen = !collapsed[g.name];
             return (
-              <div key={g.name} className="rounded-2xl border border-white/10 bg-white/[0.03]">
+              <div key={g.name} className={`rounded-2xl border transition shadow-sm ${light ? 'border-slate-200/90 bg-white/95 text-slate-900' : 'border-white/12 bg-zinc-900/70 text-white'}`}>
                 <button
                   onClick={() => setCollapsed((c) => ({ ...c, [g.name]: isOpen }))}
                   className="flex w-full items-center justify-between px-3 py-2.5"
                   aria-expanded={isOpen}
                 >
-                  <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
+                  <span className={`flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] ${light ? 'text-slate-800' : 'text-white/85'}`}>
                     {g.name}
-                    <span className="rounded-full bg-white/10 px-1.5 text-[10px] text-white/45">{g.items.length}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${light ? 'bg-slate-100 text-slate-700' : 'bg-white/10 text-white/70'}`}>{g.items.length}</span>
                   </span>
-                  <ChevronDown className={`h-4 w-4 text-white/35 transition ${isOpen ? '' : '-rotate-90'}`} />
+                  <ChevronDown className={`h-4 w-4 transition ${isOpen ? '' : '-rotate-90'} ${light ? 'text-slate-500' : 'text-white/50'}`} />
                 </button>
                 {isOpen && (
                   <div className="flex flex-wrap gap-2 px-3 pb-3">
                     {g.items.map((c) => (
-                      <span key={c.id} className="flex items-center overflow-hidden rounded-full border border-[var(--m-accent)]/35 bg-[var(--m-accent)]/10">
+                      <span key={c.id} className={`flex items-center overflow-hidden rounded-full border transition shadow-sm ${
+                        light
+                          ? 'border-[var(--m-accent)]/40 bg-white text-slate-950 hover:bg-[var(--m-accent)]/10'
+                          : 'border-[var(--m-accent)]/45 bg-[var(--m-accent)]/15 text-white'
+                      }`}>
                         <button
                           onClick={() => onDispatch(c)}
-                          className="flex items-center gap-1.5 py-2 pl-3 pr-2 text-[11px] font-semibold text-white"
+                          className={`flex items-center gap-1.5 py-2 pl-3 pr-2 text-xs font-bold ${light ? 'text-slate-950' : 'text-white'}`}
                         >
-                          <Zap className="h-3 w-3 text-[var(--m-accent)]" /> {c.label}
+                          <Zap className="h-3.5 w-3.5 text-[var(--m-accent)]" /> {c.label}
                         </button>
                         <button
                           onClick={() => void remove(c.id)}
-                          className="border-l border-white/10 px-2 py-2 text-white/35"
+                          className={`border-l px-2.5 py-2 transition ${light ? 'border-slate-200 text-slate-400 hover:text-rose-600' : 'border-white/15 text-white/50 hover:text-rose-400'}`}
                           aria-label={`Remove ${c.label}`}
                         >
                           {busyId === c.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}

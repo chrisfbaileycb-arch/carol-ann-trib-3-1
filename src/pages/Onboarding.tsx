@@ -5,6 +5,7 @@ import {
   ROUTINE_OPTIONS, WELLNESS_GOALS, PROFESSIONAL_FOCUS, ACCENT_PALETTES,
 } from '@/data/intake';
 import { useCarol } from '@/contexts/CarolContext';
+import WallpaperBackground from '@/components/workspace/WallpaperBackground';
 
 const Chip: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode; color?: string }> = ({
   active, onClick, children, color = '#8B5FBF',
@@ -52,8 +53,9 @@ export const Onboarding: React.FC<{ onComplete: () => void }> = ({ onComplete })
   };
 
   return (
-    <div className="carol-ann-root min-h-screen text-white" style={{ backgroundColor: theme.surface, backgroundImage: theme.texture }}>
-      <div className="mx-auto flex min-h-screen max-w-3xl flex-col px-5 py-10">
+    <div className="carol-ann-root relative min-h-screen text-white bg-black" style={{ backgroundColor: '#000000' }}>
+      <WallpaperBackground profile={profile} />
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-3xl flex-col px-5 py-10">
         <div className="flex items-center gap-2">
           <span className="grid h-9 w-9 place-items-center rounded-xl m-gradient-bg">
             <Sparkles className="h-5 w-5 text-white" />

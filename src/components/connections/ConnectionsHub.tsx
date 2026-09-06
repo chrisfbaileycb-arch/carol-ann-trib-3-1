@@ -9,6 +9,9 @@ import {
   loadConnectors, saveConnectors,
   loadArtifacts, saveArtifacts, addArtifact,
 } from '@/lib/connections';
+import { SaaSConnectorsDirectory } from '@/components/connectors/SaaSConnectorsDirectory';
+import { useCarol } from '@/contexts/CarolContext';
+import { isLightTheme } from '@/data/intake';
 
 type TabKey = 'connectors' | 'mcp' | 'keys' | 'artifacts';
 
@@ -20,6 +23,8 @@ const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
 ];
 
 const ConnectionsHub: React.FC = () => {
+  const { profile } = useCarol();
+  const isLight = isLightTheme(profile);
   const [tab, setTab] = useState<TabKey>('connectors');
   const [mcps, setMcps] = useState<McpServer[]>(() => loadMcps());
   const [keys, setKeys] = useState<ApiKeyRecord[]>(() => loadKeys());
@@ -64,34 +69,8 @@ const ConnectionsHub: React.FC = () => {
 
         {/* Connectors */}
         {tab === 'connectors' && (
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {CONNECTORS.map((def) => {
-              const state = connectors.find((c) => c.key === def.key)!;
-              return (
-                <div key={def.key} className="m-lift rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                  <div className="flex items-center gap-2.5">
-                    <span className="grid h-9 w-9 place-items-center rounded-xl text-[12px] font-bold text-white" style={{ background: def.accent }}>
-                      {def.name.slice(0, 2).toUpperCase()}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[12.5px] font-semibold text-white">{def.name}</p>
-                      <p className="truncate text-[10px] text-white/35">{def.scopes.join(' · ')}</p>
-                    </div>
-                    {state.connected && <Check className="h-4 w-4 text-emerald-400" />}
-                  </div>
-                  <p className="mt-2 text-[11px] leading-relaxed text-white/50">{def.blurb}</p>
-                  {state.connected && <p className="mt-1.5 truncate text-[10px] text-emerald-300/80">Linked as {state.account}</p>}
-                  <button
-                    onClick={() => toggleConnector(def.key)}
-                    className={`mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-[11px] font-semibold transition ${
-                      state.connected ? 'border border-white/12 text-white/60 hover:border-rose-400/40 hover:text-rose-300' : 'm-gradient-bg text-white'
-                    }`}
-                  >
-                    <Power className="h-3.5 w-3.5" /> {state.connected ? 'Disconnect' : 'Connect'}
-                  </button>
-                </div>
-              );
-            })}
+          <div className="mt-4">
+            <SaaSConnectorsDirectory isLight={isLight} />
           </div>
         )}
 

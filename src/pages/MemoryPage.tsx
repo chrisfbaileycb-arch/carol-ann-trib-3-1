@@ -1,13 +1,71 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Cloud, ShieldCheck } from 'lucide-react';
 import { SovereignMemoryLedger } from '@/components/workspace/SovereignMemoryLedger';
 import { useCarol } from '@/contexts/CarolContext';
+import { isLightTheme } from '@/data/intake';
+import WallpaperBackground from '@/components/workspace/WallpaperBackground';
 
 /** Dedicated /memory route — sovereign memory ledger with search, categories, export and wipe. */
 const MemoryPage: React.FC = () => {
-  const { profile } = useCarol();
+  const navigate = useNavigate();
+  const { profile, stickers } = useCarol();
+  const isLight = isLightTheme(profile);
+
   return (
-    <div className="h-screen bg-[#101118]">
-      <SovereignMemoryLedger profile={profile} />
+    <div className={`relative flex h-screen w-full flex-col bg-transparent select-none overflow-hidden transition-colors ${
+      isLight ? 'text-slate-800' : 'text-white'
+    }`}>
+      {/* Shared Wallpaper Atmospheric Background */}
+      <WallpaperBackground profile={profile} stickers={stickers} />
+
+      {/* Top Route Navigation Bar */}
+      <div className={`relative z-20 flex shrink-0 items-center justify-between border-b px-5 py-3 backdrop-blur-md ${
+        isLight ? 'border-rose-200/60 bg-white/75' : 'border-white/10 bg-zinc-950/75'
+      }`}>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/')}
+            className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold shadow-sm transition ${
+              isLight
+                ? 'border-rose-200 bg-white text-slate-800 hover:bg-rose-50'
+                : 'border-white/12 bg-white/[0.05] text-white hover:bg-white/15'
+            }`}
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>Back to Workspace</span>
+          </button>
+          <span className={`h-4 w-px ${isLight ? 'bg-slate-200' : 'bg-white/15'}`} />
+          <div className="flex items-center gap-2">
+            <span className={`grid h-7 w-7 place-items-center rounded-lg border ${
+              isLight ? 'border-sky-200 bg-sky-50 text-sky-600' : 'border-white/10 bg-sky-500/20 text-sky-300'
+            }`}>
+              <Cloud className="h-4 w-4" />
+            </span>
+            <div>
+              <p className={`font-display text-xs font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                Sovereign Memory Ledger
+              </p>
+              <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-white/50'}`}>
+                Encrypted Cloud Memory Vault
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className={`rounded-full border px-3 py-1 text-[11px] ${
+            isLight ? 'border-rose-200 bg-white/80 text-slate-600' : 'border-white/12 bg-white/[0.04] text-white/70'
+          }`}>
+            Path: <code className={`font-mono font-semibold ${isLight ? 'text-sky-600' : 'text-sky-300'}`}>/memory</code>
+          </span>
+        </div>
+      </div>
+
+      {/* Main Memory Ledger Content */}
+      <div className="relative z-10 min-h-0 flex-1 overflow-y-auto">
+        <SovereignMemoryLedger profile={profile} />
+      </div>
     </div>
   );
 };

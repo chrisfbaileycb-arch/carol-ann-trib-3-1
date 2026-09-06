@@ -1,5 +1,5 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -94,7 +94,15 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans dark:bg-background dark:text-foreground;
+    @apply text-white font-sans;
+    min-height: 100vh;
+    background-color: #0A0B10;
+  }
+
+  #root {
+    min-height: 100vh;
+    width: 100%;
+    background: transparent;
   }
 
   pre, code {
@@ -135,15 +143,35 @@
 /* ===================== Carol: Lumina Edition ===================== */
 
 .font-display {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: var(--font-display, 'Outfit', 'Playfair Display', sans-serif);
 }
 
 .carol-ann-root {
-  --m-accent: #8B5FBF;
-  --m-accent-soft: #E8A0BF;
-  --m-surface: #1A1B23;
-  --m-surface-alt: #22232D;
-  --m-ink: #FAF8F5;
+  --m-accent: #FF4D8D;
+  --m-accent-soft: #FF8EB8;
+  --m-surface: #12131C;
+  --m-surface-alt: #181926;
+  --m-ink: #FFFFFF;
+  color: #FFFFFF;
+  font-family: var(--font-body, 'Plus Jakarta Sans', Inter, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.carol-ann-root.is-light {
+  --m-surface: #FFFFFF;
+  --m-surface-alt: #F8FAFC;
+  --m-ink: #0F172A;
+  color: #0F172A;
+}
+
+.m-glow-accent {
+  box-shadow: 0 0 24px -4px var(--m-accent, rgba(255, 77, 141, 0.35));
+}
+
+.m-glow-soft {
+  box-shadow: 0 0 40px -8px var(--m-accent-soft, rgba(255, 142, 184, 0.25));
 }
 
 .m-gradient-text {

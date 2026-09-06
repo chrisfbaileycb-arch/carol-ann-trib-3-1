@@ -48,7 +48,32 @@ export function write<T>(key: string, value: T): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    /* storage full or unavailable — local-first degrades gracefully */
+    /* browser storage cache fallback */
+  }
+}
+
+// Cloud State Synchronization Helpers
+export async function fetchCloudState(userId = 'default'): Promise<Record<string, unknown> | null> {
+  try {
+    const res = await fetch(`/api/cloud/state?userId=${encodeURIComponent(userId)}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return (data.state as Record<string, unknown>) || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function sendCloudSync(state: Record<string, unknown>, userId = 'default'): Promise<boolean> {
+  try {
+    const res = await fetch('/api/cloud/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, state }),
+    });
+    return res.ok;
+  } catch {
+    return false;
   }
 }
 

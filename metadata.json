@@ -1,6 +1,6 @@
 {
   "name": "Carol: Women's Lifestyle OS",
-  "description": "Carol Ann sovereign executive OS featuring a Claude-style 3-pane workspace, specialized sub-agent routing, multimodal Gemini Live voice orchestration, and local-first privacy.",
+  "description": "Carol Ann cloud-agent native executive workspace deployed on Google Cloud, featuring a Claude-style 3-pane dashboard, specialized cloud sub-agents, Playwright browser co-pilot, and Gemini Live voice orchestration.",
   "requestFramePermissions": ["microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

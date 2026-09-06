@@ -4,7 +4,19 @@
  * and Gemini Multimodal Live API voice profiles.
  */
 
-export type AgentCategory = 'orchestrator' | 'appointments' | 'family' | 'wellness' | 'work' | 'custom';
+import { BEST_SKILLS_AGENTS } from '@/data/bestSkillsAgents';
+
+export type AgentCategory =
+  | 'orchestrator'
+  | 'design'
+  | 'work'
+  | 'ai-multimodal'
+  | 'cloud-infra'
+  | 'productivity'
+  | 'wellness'
+  | 'family'
+  | 'appointments'
+  | 'custom';
 
 export interface AgentSkin {
   body: [string, string];
@@ -24,6 +36,9 @@ export interface AgentPreset {
   skin: AgentSkin;
   geminiVoice: 'Aoede' | 'Kore' | 'Charon' | 'Fenrir' | 'Puck' | 'Zephyr' | 'Pegasus';
   caution?: string;
+  vendor?: string;
+  wis?: number;
+  sourceUrl?: string;
 }
 
 export interface TonePreset {
@@ -48,11 +63,11 @@ export interface GeminiVoiceOption {
 // System Prompt 1: The Carol Ann Anchor
 // ----------------------------------------------------------------------------
 
-export const SOVEREIGN_ORCHESTRATOR_PROMPT = `You are Carol Ann, the warm, steady anchor for this local-first tribute workspace.
+export const SOVEREIGN_ORCHESTRATOR_PROMPT = `You are Carol Ann, the warm, steady anchor for this cloud-agent native executive workspace deployed on Google Cloud.
 
 # Core Behavioral Tenets
 1. Remember the person, not the persona. Calibrate every response against the explicit profile, memories, and intentions the operator has shared. Do not invent family details, schedules, or preferences.
-2. Local-first sovereignty. Treat every memory, check-in, and agent thread as a private asset that stays on this device. Never transmit or synchronize it without explicit affirmative consent.
+2. Cloud agent native intelligence. Treat every memory, check-in, and agent thread as an asset managed by your cloud executive core, synchronized across your web workspace.
 3. Direct action over generic advice. Favor concrete plans, structured data, and tool calls over conversational filler.
 4. Warmth with boundaries. Be kind, clear, and gently honest. Avoid sycophancy, excessive flattery, or performative enthusiasm.
 5. Multimodal voice brevity. In real-time audio mode, keep turns concise and natural. Avoid long lists unless explicitly requested.
@@ -110,14 +125,18 @@ export const HYDRATE_FORM_TOOL_DEFINITION = {
 
 export const AGENT_CATEGORIES: { key: AgentCategory; label: string }[] = [
   { key: 'orchestrator', label: 'Anchor' },
-  { key: 'appointments', label: 'Life Operations' },
-  { key: 'family', label: 'Family & Care' },
+  { key: 'design', label: 'Design & UI' },
+  { key: 'work', label: 'Engineering & Code' },
+  { key: 'ai-multimodal', label: 'AI & Multimodal' },
+  { key: 'cloud-infra', label: 'Cloud & Infrastructure' },
+  { key: 'productivity', label: 'Productivity & Tools' },
   { key: 'wellness', label: 'Health & Conditioning' },
-  { key: 'work', label: 'Architecture & Code' },
+  { key: 'family', label: 'Family & Care' },
+  { key: 'appointments', label: 'Life Operations' },
   { key: 'custom', label: 'Custom' },
 ];
 
-export const AGENT_PRESETS: AgentPreset[] = [
+export const CORE_AGENT_PRESETS: AgentPreset[] = [
   {
     id: 'carol-anchor',
     name: 'Carol Ann',
@@ -207,7 +226,7 @@ export const AGENT_PRESETS: AgentPreset[] = [
     blurb: 'Designs resilient systems and writes clean, maintainable automation so the operator can focus on higher-level decisions.',
     systemPrompt: 'You are Architect, a senior software designer. You produce clear TypeScript, resilient APIs, and deterministic automation. Explain trade-offs, not just answers.',
     starters: [
-      'Design a local-first schema for my notes',
+      'Design a cloud-native schema for my notes',
       'Review this React component for clarity',
       'Write a small automation script for my workspace'
     ],
@@ -230,6 +249,11 @@ export const AGENT_PRESETS: AgentPreset[] = [
     skin: { body: ['#A78BFA', '#6366F1'], hat: '#E0E7FF', prop: 'glasses' },
     geminiVoice: 'Pegasus',
   },
+];
+
+export const AGENT_PRESETS: AgentPreset[] = [
+  ...CORE_AGENT_PRESETS,
+  ...BEST_SKILLS_AGENTS,
 ];
 
 export const GEMINI_VOICE_OPTIONS: GeminiVoiceOption[] = [
@@ -333,7 +357,7 @@ export const TONE_PRESETS: TonePreset[] = [
 ];
 
 export const AGENT_DISCLAIMER = [
-  'Carol Ann is local-first. All memories, check-ins, and agent states stay strictly on your sovereign device.',
+  'Carol Ann is cloud-agent native. All memories, check-ins, and agent states are synchronized in your cloud workspace.',
   'Automated errands and purchases are staged in draft state and require explicit affirmative confirmation before execution.',
   'AI agent outputs are advisory and under your complete sovereign control.',
 ];

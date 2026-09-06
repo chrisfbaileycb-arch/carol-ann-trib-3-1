@@ -1,4 +1,5 @@
 import { AGENT_PRESETS, toneByKey, voiceByKey, type AgentCategory, type AgentSkin } from '@/data/agents';
+import { SEED_AGENT_MEMORIES } from '@/data/bestSkillsAgents';
 
 /**
  * Device-local store for the Agent Studio.
@@ -86,7 +87,7 @@ const fromPreset = (id: string): AgentConfig | null => {
   if (!p) return null;
   return {
     ...p,
-    toneKey: p.category === 'work' ? 'teacher' : p.category === 'wellness' ? 'hype' : 'friendly',
+    toneKey: p.category === 'work' ? 'teacher' : p.category === 'wellness' ? 'hype' : p.category === 'design' ? 'creative' : 'friendly',
     toneNote: '',
     voiceKey: 'female-warm',
     custom: false,
@@ -132,8 +133,25 @@ export const blankAgent = (): AgentConfig => ({
 
 /* ---------------- per-agent workflow memory (isolated by agent id) ------------- */
 
-export const loadMemory = (agentId: string): AgentMemoryEntry[] =>
-  read<AgentMemoryEntry[]>(MEM_KEY, []).filter((m) => m.agentId === agentId);
+export const loadMemory = (agentId: string): AgentMemoryEntry[] => {
+  const all = read<AgentMemoryEntry[]>(MEM_KEY, []);
+  const existing = all.filter((m) => m.agentId === agentId);
+  if (existing.length > 0) return existing;
+
+  // Check if there are seed memories from best-skills or defaults
+  const seeds = SEED_AGENT_MEMORIES.filter((s) => s.agentId === agentId);
+  if (seeds.length > 0) {
+    const seeded: AgentMemoryEntry[] = seeds.map((s) => ({
+      id: newId('am_seed'),
+      agentId,
+      content: s.content,
+      createdAt: new Date().toISOString(),
+    }));
+    write(MEM_KEY, [...seeded, ...all]);
+    return seeded;
+  }
+  return [];
+};
 
 export const addMemory = (agentId: string, content: string): AgentMemoryEntry[] => {
   const all = read<AgentMemoryEntry[]>(MEM_KEY, []);

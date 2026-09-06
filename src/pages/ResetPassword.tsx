@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Lock, Loader2, ShieldCheck, Sparkles, ArrowRight, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -153,12 +154,12 @@ export const ResetPassword: React.FC = () => {
               Save new password
             </button>
 
-            <a
-              href="/"
+            <Link
+              to="/"
               className="flex items-center justify-center gap-1 pt-1 text-[11px] text-white/45 underline-offset-2 transition hover:text-white hover:underline"
             >
               Back to the workspace <ArrowRight className="h-3 w-3" />
-            </a>
+            </Link>
           </form>
         )}
       </div>

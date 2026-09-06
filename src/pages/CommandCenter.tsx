@@ -16,14 +16,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { subscribeBus, isCloudBusLive, pullBusNow } from '@/lib/realtimeBus';
 import { loadStickers } from '@/lib/memoryStore';
 import type { StickerWatermark } from '@/data/schemas';
+import { isLightTheme } from '@/data/intake';
 
 type TabId = 'chat' | 'roster' | 'ledger' | 'theme';
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'chat', label: 'Workspace Chat', icon: MessagesSquare },
-  { id: 'roster', label: 'Agent Roster & MCPs', icon: Users },
-  { id: 'ledger', label: 'Sovereign Memory Ledger', icon: Shield },
-  { id: 'theme', label: 'Settings & Theme', icon: Palette },
+  { id: 'roster', label: 'Agent Studio', icon: Users },
+  { id: 'ledger', label: 'Sovereign Memory', icon: Shield },
+  { id: 'theme', label: 'Design & Wallpaper', icon: Palette },
 ];
 
 export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRemote }) => {
@@ -66,11 +67,14 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
     });
   }, [addCheckIn]);
 
+  const isLight = isLightTheme(profile);
+
   return (
     <div
-      className="carol-ann-root relative flex h-screen flex-col overflow-hidden text-white"
+      className={`carol-ann-root relative flex h-full flex-1 flex-col overflow-hidden bg-transparent ${
+        isLight ? 'text-slate-800' : 'text-white'
+      }`}
       style={{
-        backgroundColor: theme.surface,
         '--m-accent': profile.accentColor || theme.accent,
         '--m-accent-soft': theme.accentSoft,
       } as React.CSSProperties}
@@ -80,8 +84,11 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
 
       {/* Top Browser-Style Navigation Bar */}
       <header
-        className="relative z-30 shrink-0 border-b border-white/8 select-none"
-        style={{ backgroundImage: theme.texture, backgroundColor: theme.surfaceAlt }}
+        className={`relative z-30 shrink-0 border-b backdrop-blur-md select-none transition-colors ${
+          isLight
+            ? 'border-rose-200/60 bg-white/75 text-slate-800 shadow-xs'
+            : 'border-white/10 bg-zinc-950/75 text-white'
+        }`}
       >
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5">
           {/* Brand Header */}
@@ -90,8 +97,12 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
               <Sparkles className="h-4 w-4 text-white" />
             </span>
             <div className="leading-tight">
-              <p className="font-display text-sm font-semibold tracking-wide">Carol Ann</p>
-              <p className="text-[9px] uppercase tracking-[0.18em] text-white/40">Sovereign Executive OS</p>
+              <p className={`font-display text-base font-semibold tracking-wide ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                Carol Ann
+              </p>
+              <p className={`text-[10px] uppercase tracking-[0.2em] font-medium ${isLight ? 'text-slate-500' : 'text-white/60'}`}>
+                Sovereign Executive OS
+              </p>
             </div>
           </div>
 
@@ -105,13 +116,19 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
                   onClick={() => setTab(t.id)}
                   className={`relative flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-medium transition ${
                     isActive
-                      ? 'bg-white/10 text-white shadow-sm'
-                      : 'text-white/45 hover:text-white/80 hover:bg-white/[0.03]'
+                      ? isLight
+                        ? 'bg-white text-slate-900 font-semibold shadow-xs border border-rose-200/60'
+                        : 'bg-white/12 text-white font-semibold shadow-sm'
+                      : isLight
+                      ? 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                      : 'text-white/70 hover:text-white hover:bg-white/[0.06]'
                   }`}
                 >
                   <t.icon
                     className={`h-3.5 w-3.5 ${
-                      isActive ? 'text-[var(--m-accent-soft)]' : 'text-white/40'
+                      isActive
+                        ? isLight ? 'text-[var(--m-accent)]' : 'text-[var(--m-accent-soft)]'
+                        : isLight ? 'text-slate-500' : 'text-white/60'
                     }`}
                   />
                   <span>{t.label}</span>
@@ -129,14 +146,22 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
           {/* Right Actions */}
           <div className="flex items-center gap-2">
             {remoteBeacon && (
-              <span className="flex items-center gap-1.5 rounded-full border border-[var(--m-accent-soft)]/40 bg-[var(--m-accent-soft)]/10 px-2.5 py-1 text-[10px] font-semibold text-[var(--m-accent-soft)]">
+              <span className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10.5px] font-semibold ${
+                isLight
+                  ? 'border-[var(--m-accent)]/40 bg-[var(--m-accent)]/10 text-[var(--m-accent)]'
+                  : 'border-[var(--m-accent-soft)]/40 bg-[var(--m-accent-soft)]/10 text-[var(--m-accent-soft)]'
+              }`}>
                 <Wifi className="h-3 w-3" /> Remote: {remoteBeacon.slice(0, 24)}
               </span>
             )}
 
             <button
               onClick={onOpenRemote}
-              className="flex items-center gap-1.5 rounded-lg border border-white/12 px-2.5 py-1.5 text-[11px] font-medium text-white/60 transition hover:border-white/30 hover:text-white"
+              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition ${
+                isLight
+                  ? 'border-rose-200 bg-white/70 text-slate-700 hover:bg-white hover:text-slate-900 shadow-xs'
+                  : 'border-white/15 bg-white/[0.03] text-white/80 hover:border-white/30 hover:text-white'
+              }`}
               title="Open Mobile Remote"
             >
               <Smartphone className="h-3.5 w-3.5" />
@@ -147,31 +172,49 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
               <div className="relative">
                 <button
                   onClick={() => setAccountOpen((v) => !v)}
-                  className="flex items-center gap-1.5 rounded-lg border border-emerald-400/30 bg-emerald-400/8 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-300"
+                  className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold ${
+                    isLight
+                      ? 'border-emerald-500/40 bg-emerald-50 text-emerald-700'
+                      : 'border-emerald-400/35 bg-emerald-400/10 text-emerald-300'
+                  }`}
                 >
                   <UserCircle2 className="h-3.5 w-3.5" />
                   <span className="max-w-[120px] truncate">{user.email ?? 'Account'}</span>
                 </button>
                 {accountOpen && (
-                  <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-xl border border-white/12 bg-[#1B1C24] p-3 shadow-2xl">
-                    <p className="flex items-center gap-1.5 text-[11px] font-semibold text-white">
-                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Sovereign Private Ledger
+                  <div className={`absolute right-0 top-full z-50 mt-2 w-72 rounded-xl border p-3.5 shadow-2xl backdrop-blur-xl ${
+                    isLight
+                      ? 'border-rose-200/80 bg-white/95 text-slate-800'
+                      : 'border-white/12 bg-[#1B1C24] text-white'
+                  }`}>
+                    <p className={`flex items-center gap-1.5 text-xs font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" /> Sovereign Private Ledger
                     </p>
-                    <p className="mt-1 text-[10.5px] leading-relaxed text-white/40">
+                    <p className={`mt-1 text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/60'}`}>
                       Isolated storage. Zero external telemetry or third-party CRM hooks.
                     </p>
-                    <p className="mt-2 truncate rounded-lg bg-black/30 px-2 py-1.5 font-mono text-[10px] text-white/45">
+                    <p className={`mt-2 truncate rounded-lg px-2.5 py-1.5 font-mono text-[11px] ${
+                      isLight ? 'bg-slate-100 text-slate-700' : 'bg-black/40 text-white/70'
+                    }`}>
                       {user.email}
                     </p>
                     <button
                       onClick={() => { setAccountOpen(false); setSettingsOpen(true); }}
-                      className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-white/12 py-2 text-[11px] font-medium text-white/75 transition hover:border-[var(--m-accent)]/50 hover:text-white"
+                      className={`mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-lg border py-2 text-xs font-medium transition ${
+                        isLight
+                          ? 'border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                          : 'border-white/12 text-white/85 hover:border-[var(--m-accent)]/50 hover:text-white'
+                      }`}
                     >
                       <Settings className="h-3.5 w-3.5" /> Account settings
                     </button>
                     <button
                       onClick={async () => { setAccountOpen(false); await signOut(); }}
-                      className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-white/12 py-2 text-[11px] font-medium text-white/65 transition hover:border-rose-400/40 hover:text-rose-300"
+                      className={`mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border py-2 text-xs font-medium transition ${
+                        isLight
+                          ? 'border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700'
+                          : 'border-white/12 text-white/75 hover:border-rose-400/40 hover:text-rose-300'
+                      }`}
                     >
                       <LogOut className="h-3.5 w-3.5" /> Sign out
                     </button>
@@ -181,7 +224,7 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
             ) : (
               <button
                 onClick={() => setAuthOpen(true)}
-                className="flex items-center gap-1.5 rounded-lg border border-[var(--m-accent)]/45 bg-[var(--m-accent)]/12 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-[var(--m-accent)]/25"
+                className="flex items-center gap-1.5 rounded-lg border border-[var(--m-accent)]/45 bg-[var(--m-accent)]/20 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[var(--m-accent)]/35"
               >
                 <LogIn className="h-3.5 w-3.5" />
                 <span>Sign in</span>
@@ -192,7 +235,7 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
       </header>
 
       {/* Main Workspace Stage */}
-      <main className="relative z-10 min-h-0 flex-1 overflow-hidden bg-[#101118]">
+      <main className="relative z-10 min-h-0 flex-1 overflow-hidden bg-transparent">
         {tab === 'chat' && (
           <WorkspaceChat
             profile={profile}
@@ -203,6 +246,7 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
         )}
         {tab === 'roster' && (
           <AgentRosterMCP
+            profile={profile}
             onSelectAgentForChat={(agentId) => {
               setTab('chat');
             }}

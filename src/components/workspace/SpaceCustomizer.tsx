@@ -94,9 +94,9 @@ export const SpaceCustomizer: React.FC<SpaceCustomizerProps> = ({
     : stickers.filter((s) => s.category === stickerFilter);
 
   return (
-    <div className="flex h-full flex-col bg-[#13141E] text-white select-none overflow-hidden">
+    <div className="flex h-full flex-col bg-transparent text-white select-none overflow-hidden">
       {/* Header */}
-      <div className="flex shrink-0 items-center justify-between border-b border-white/8 px-6 py-4 bg-[#10111A]">
+      <div className="flex shrink-0 items-center justify-between border-b border-white/8 px-6 py-4 bg-zinc-950/75 backdrop-blur-md">
         <div>
           <div className="flex items-center gap-2">
             <span className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-fuchsia-500/20 to-indigo-500/30 border border-fuchsia-500/30">

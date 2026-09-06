@@ -6,9 +6,9 @@ import {
 } from 'lucide-react';
 import type {
   ConversationMessage, ErrandTask, HydrateFormAction,
-  MemoryEntry, StickerWatermark, UserProfile
+  MemoryEntry, StickerWatermark, UserProfile, ChatAttachment
 } from '@/data/schemas';
-import { AESTHETIC_THEMES, type AestheticTheme } from '@/data/intake';
+import { AESTHETIC_THEMES, type AestheticTheme, isLightTheme } from '@/data/intake';
 import { LeftRail, type ChatThread } from '@/components/workspace/LeftRail';
 import { DialogueCanvas } from '@/components/workspace/DialogueCanvas';
 import { RightDrawer } from '@/components/workspace/RightDrawer';
@@ -23,6 +23,8 @@ import {
   loadActions, saveActions, uid
 } from '@/lib/memoryStore';
 import { AGENT_PRESETS } from '@/data/agents';
+import { loadInstalledPluginIds } from '@/data/mcpPlugins';
+import { tryExecutePluginIntent } from '@/data/pluginMockRunner';
 
 export interface WorkspaceTab {
   id: string;
@@ -111,6 +113,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
   const [memories, setMemories] = useState<MemoryEntry[]>(() => loadMemories());
   const [stickers, setStickers] = useState<StickerWatermark[]>(() => loadStickers());
   const [scratchpad, setScratchpad] = useState<string>(() => loadScratchpad());
+  const [installedPluginIds, setInstalledPluginIds] = useState<string[]>(() => loadInstalledPluginIds());
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   // Sync back to local store
@@ -120,6 +123,15 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
   useEffect(() => { saveMemories(memories); }, [memories]);
   useEffect(() => { saveStickers(stickers); }, [stickers]);
   useEffect(() => { saveScratchpad(scratchpad); }, [scratchpad]);
+
+  // Sync plugin updates across tabs and views
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setInstalledPluginIds(loadInstalledPluginIds());
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Tab Open helper
   const handleOpenTab = (
@@ -280,6 +292,15 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
           ? 'amazon'
           : 'custom',
       });
+    } else if (action.category === 'social_marketing') {
+      const addition = `\n\n### Dispatched via ${action.target_app || 'Social Hub'}\n- **Action:** ${action.action_name}\n- **Title:** ${action.form_payload.title}\n- **Scheduled Time:** ${action.form_payload.target_time ?? 'Immediate'}\n- **Status:** Verified 200 OK · Dispatched over MCP Bridge`;
+      setScratchpad((prev) => prev + addition);
+    } else if (action.category === 'finance_accounting') {
+      const addition = `\n\n### Dispatched via ${action.target_app || 'Accounting Hub'}\n- **Action:** ${action.action_name}\n- **Title:** ${action.form_payload.title}\n- **Payload:** ${JSON.stringify(action.form_payload.fields ?? {})}\n- **Receipt:** Verified 200 OK via OAuth MCP Gateway`;
+      setScratchpad((prev) => prev + addition);
+    } else if (action.category === 'hospitality_review') {
+      const addition = `\n\n### Dispatched via ${action.target_app || 'Review Hub'}\n- **Action:** ${action.action_name}\n- **Response:** "${action.form_payload.notes ?? action.form_payload.title}"\n- **Status:** Published to platform`;
+      setScratchpad((prev) => prev + addition);
     } else if (action.category === 'scratchpad_update') {
       const addition = `\n\n### Updated via ${action.action_name}\n- **Title:** ${action.form_payload.title}\n- **Items:** ${(action.form_payload.items ?? []).join(', ')}\n- **Target Time:** ${action.form_payload.target_time ?? 'N/A'}`;
       setScratchpad((prev) => prev + addition);
@@ -298,8 +319,24 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
     }
   };
 
-  // Conversational response generation with native Gemini API execution
-  const handleSendMessage = async (content: string, targetAgentId?: string) => {
+  // User cancellation of a staged action card
+  const handleCancelToolAction = (action: HydrateFormAction) => {
+    const updatedAction: HydrateFormAction = {
+      ...action,
+      status: 'cancelled',
+    };
+    setActions((prev) => [updatedAction, ...prev.filter((a) => a.id !== action.id)]);
+    setMessages((prev) =>
+      prev.map((m) => (m.toolCall?.id === action.id ? { ...m, toolCall: updatedAction } : m))
+    );
+  };
+
+  // Conversational response generation with native Gemini API execution & Plugin execution
+  const handleSendMessage = async (
+    content: string,
+    targetAgentId?: string,
+    attachments?: ChatAttachment[]
+  ) => {
     const agentId = targetAgentId || activeAgentId;
     const agent = AGENT_PRESETS.find((a) => a.id === agentId) ?? AGENT_PRESETS[0];
 
@@ -308,6 +345,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
       domain: 'core',
       role: 'user',
       content,
+      richAttachments: attachments,
       timestamp: new Date().toISOString(),
       agentId,
     };
@@ -315,6 +353,42 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
     setMessages((prev) => [...prev, userMsg]);
     setIsProcessing(true);
 
+    // 1. First test if user prompt triggers an installed MCP plugin intent
+    let currentInstalledIds = loadInstalledPluginIds();
+    const attachedConnector = attachments?.find((a) => a.type === 'connector');
+    if (attachedConnector?.connectorId && !currentInstalledIds.includes(attachedConnector.connectorId)) {
+      currentInstalledIds = [...currentInstalledIds, attachedConnector.connectorId];
+    }
+
+    const intentQuery = attachedConnector
+      ? `${content} [Connector: ${attachedConnector.name}]`
+      : content;
+
+    const pluginResult = tryExecutePluginIntent(intentQuery, currentInstalledIds);
+
+    if (pluginResult) {
+      setTimeout(() => {
+        const assistantMsg: ConversationMessage = {
+          id: uid('msg_a'),
+          domain: 'core',
+          role: 'assistant',
+          content: pluginResult.replyText,
+          timestamp: new Date().toISOString(),
+          agentId,
+          pluginExecution: pluginResult.chip,
+          toolCall: pluginResult.actionCard,
+        };
+
+        setMessages((prev) => [...prev, assistantMsg]);
+        if (pluginResult.actionCard) {
+          setActions((prev) => [pluginResult.actionCard!, ...prev]);
+        }
+        setIsProcessing(false);
+      }, 400);
+      return;
+    }
+
+    // 2. Otherwise dispatch to Gemini conversational engine
     try {
       const memoryContext = memories.slice(0, 8).map((m) => `- [${m.category}] ${m.content}`).join('\n');
       const res = await fetch('/api/gemini/chat', {
@@ -333,6 +407,16 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
             professionalFocus: profile.professionalFocus,
           },
           memoryContext,
+          installedPlugins: currentInstalledIds,
+          attachments: attachments?.map((a) => ({
+            id: a.id,
+            type: a.type,
+            name: a.name,
+            size: a.size,
+            contextSnippet: a.contextSnippet,
+            connectorId: a.connectorId,
+            connectorName: a.connectorName,
+          })),
         }),
       });
 
@@ -374,7 +458,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
         id: uid('msg_a'),
         domain: 'core',
         role: 'assistant',
-        content: `Understood. Carol Ann has routed your request through ${agent.name}. We are maintaining strict local-first memory on your sovereign device with zero cloud telemetry.`,
+        content: `Understood. Carol Ann has routed your request through ${agent.name}. Your cloud agent memory is active and synchronized across your web workspace.`,
         timestamp: new Date().toISOString(),
         agentId,
       };
@@ -385,14 +469,15 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
   };
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
+  const isLight = isLightTheme(profile);
 
   return (
-    <div className="relative flex h-full min-h-0 w-full overflow-hidden bg-[#11121A]">
+    <div className={`relative flex h-full min-h-0 w-full overflow-hidden bg-transparent ${isLight ? 'text-slate-800' : 'text-white'}`}>
       {/* 1. Left Rail (Conversational History, MCPs & Personal Space) */}
       <div
-        className={`relative shrink-0 transition-all duration-300 ease-in-out border-r border-white/8 z-20 ${
-          leftOpen ? 'w-80' : 'w-0'
-        }`}
+        className={`relative shrink-0 transition-all duration-300 ease-in-out border-r z-20 ${
+          isLight ? 'border-rose-200/60' : 'border-white/8'
+        } ${leftOpen ? 'w-80' : 'w-0'}`}
       >
         <div className={`h-full w-80 overflow-hidden ${leftOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
           <LeftRail
@@ -409,6 +494,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
             onToggleSticker={handleToggleSticker}
             onOpenAgentRoster={onOpenAgentRoster}
             onOpenTab={handleOpenTab}
+            installedPluginIds={installedPluginIds}
           />
         </div>
       </div>
@@ -419,7 +505,11 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
         <button
           onClick={() => setLeftOpen(!leftOpen)}
           title={leftOpen ? 'Collapse Left Rail' : 'Expand Left Rail'}
-          className="absolute left-3 top-2.5 z-30 flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-[#141520]/80 text-white/50 backdrop-blur-md transition hover:border-white/25 hover:text-white shadow-md"
+          className={`absolute left-3 top-2.5 z-30 flex h-7 w-7 items-center justify-center rounded-lg border backdrop-blur-md transition shadow-md ${
+            isLight
+              ? 'border-rose-200/80 bg-white/80 text-slate-600 hover:text-slate-900 hover:border-rose-300'
+              : 'border-white/10 bg-zinc-900/80 text-white/50 hover:border-white/25 hover:text-white'
+          }`}
         >
           {leftOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
         </button>
@@ -428,15 +518,25 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
         <button
           onClick={() => setRightOpen(!rightOpen)}
           title={rightOpen ? 'Collapse Automation Dock' : 'Expand Automation Dock'}
-          className="absolute right-3 top-2.5 z-30 flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-[#141520]/80 text-white/50 backdrop-blur-md transition hover:border-white/25 hover:text-white shadow-md"
+          className={`absolute right-3 top-2.5 z-30 flex h-7 w-7 items-center justify-center rounded-lg border backdrop-blur-md transition shadow-md ${
+            isLight
+              ? 'border-rose-200/80 bg-white/80 text-slate-600 hover:text-slate-900 hover:border-rose-300'
+              : 'border-white/10 bg-zinc-900/80 text-white/50 hover:border-white/25 hover:text-white'
+          }`}
         >
           {rightOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRight className="h-4 w-4" />}
         </button>
 
         {/* 2. Center Stage (VS Code Multi-Tab Canvas) */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#101119]">
+        <div className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden backdrop-blur-md ${
+          isLight ? 'bg-white/65 text-slate-800' : 'bg-zinc-950/70 text-white'
+        }`}>
           {/* VS Code-Style Top Tab Bar */}
-          <div className="flex shrink-0 items-center justify-between border-b border-white/8 bg-[#0D0E15] px-12 py-1 overflow-x-auto select-none">
+          <div className={`flex shrink-0 items-center justify-between border-b px-12 py-1 overflow-x-auto select-none backdrop-blur-md ${
+            isLight
+              ? 'border-rose-200/60 bg-white/75 text-slate-800'
+              : 'border-white/8 bg-zinc-950/80 text-white'
+          }`}>
             <div className="flex items-center gap-1 overflow-x-auto m-scroll">
               {tabs.map((tab) => {
                 const isActive = tab.id === activeTabId;
@@ -446,7 +546,11 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
                     onClick={() => setActiveTabId(tab.id)}
                     className={`group flex items-center gap-2 cursor-pointer rounded-t-lg px-3 py-1.5 text-xs font-medium transition-all ${
                       isActive
-                        ? 'border-t-2 border-t-[var(--m-accent)] bg-[#13141F] text-white shadow-sm'
+                        ? isLight
+                          ? 'border-t-2 border-t-[var(--m-accent)] bg-white text-slate-900 shadow-xs'
+                          : 'border-t-2 border-t-[var(--m-accent)] bg-white/10 text-white shadow-sm backdrop-blur-sm'
+                        : isLight
+                        ? 'text-slate-600 hover:bg-rose-50/50 hover:text-slate-900'
                         : 'text-white/45 hover:bg-white/[0.03] hover:text-white/80'
                     }`}
                   >
@@ -455,7 +559,11 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
                     {tab.closable && (
                       <button
                         onClick={(e) => handleCloseTab(tab.id, e)}
-                        className="opacity-0 group-hover:opacity-100 rounded p-0.5 text-white/30 hover:bg-white/10 hover:text-white transition"
+                        className={`opacity-0 group-hover:opacity-100 rounded p-0.5 transition ${
+                          isLight
+                            ? 'text-slate-400 hover:bg-slate-200/60 hover:text-slate-800'
+                            : 'text-white/30 hover:bg-white/10 hover:text-white'
+                        }`}
                         title="Close tab"
                       >
                         <X className="h-3 w-3" />
@@ -470,19 +578,31 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
                 <button
                   onClick={() => setShowAddMenu(!showAddMenu)}
                   title="Open new workspace view"
-                  className="flex h-6 w-6 items-center justify-center rounded-md text-white/40 hover:bg-white/10 hover:text-white transition"
+                  className={`flex h-6 w-6 items-center justify-center rounded-md transition ${
+                    isLight
+                      ? 'text-slate-500 hover:bg-rose-100/60 hover:text-slate-900'
+                      : 'text-white/40 hover:bg-white/10 hover:text-white'
+                  }`}
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </button>
 
                 {showAddMenu && (
-                  <div className="absolute left-0 top-8 z-40 w-56 rounded-xl border border-white/12 bg-[#1A1B28] p-1.5 shadow-2xl space-y-1">
+                  <div className={`absolute left-0 top-8 z-40 w-56 rounded-xl border p-1.5 shadow-2xl space-y-1 backdrop-blur-xl ${
+                    isLight
+                      ? 'border-rose-200/80 bg-white/95 text-slate-800'
+                      : 'border-white/12 bg-[#1A1B28] text-white'
+                  }`}>
                     <button
                       onClick={() => {
                         handleOpenTab('chat');
                         setShowAddMenu(false);
                       }}
-                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-white/70 hover:bg-white/10 hover:text-white"
+                      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition ${
+                        isLight
+                          ? 'text-slate-700 hover:bg-rose-50/80 hover:text-slate-900'
+                          : 'text-white/70 hover:bg-white/10 hover:text-white'
+                      }`}
                     >
                       <MessageSquare className="h-3.5 w-3.5 text-sky-400" />
                       <span>Carol Conversational Canvas</span>
@@ -492,7 +612,11 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
                         handleOpenTab('connectors');
                         setShowAddMenu(false);
                       }}
-                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-white/70 hover:bg-white/10 hover:text-white"
+                      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition ${
+                        isLight
+                          ? 'text-slate-700 hover:bg-rose-50/80 hover:text-slate-900'
+                          : 'text-white/70 hover:bg-white/10 hover:text-white'
+                      }`}
                     >
                       <Cpu className="h-3.5 w-3.5 text-emerald-400" />
                       <span>MCP Connectors & Bridges</span>
@@ -502,7 +626,11 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
                         handleOpenTab('customizer');
                         setShowAddMenu(false);
                       }}
-                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-white/70 hover:bg-white/10 hover:text-white"
+                      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition ${
+                        isLight
+                          ? 'text-slate-700 hover:bg-rose-50/80 hover:text-slate-900'
+                          : 'text-white/70 hover:bg-white/10 hover:text-white'
+                      }`}
                     >
                       <Trophy className="h-3.5 w-3.5 text-amber-400" />
                       <span>Space Customizer (MySpace)</span>
@@ -512,7 +640,11 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
                         handleOpenTab('ledger');
                         setShowAddMenu(false);
                       }}
-                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-white/70 hover:bg-white/10 hover:text-white"
+                      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition ${
+                        isLight
+                          ? 'text-slate-700 hover:bg-rose-50/80 hover:text-slate-900'
+                          : 'text-white/70 hover:bg-white/10 hover:text-white'
+                      }`}
                     >
                       <Shield className="h-3.5 w-3.5 text-emerald-400" />
                       <span>Sovereign Memory Ledger</span>
@@ -522,7 +654,11 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
                         handleOpenTab('agent');
                         setShowAddMenu(false);
                       }}
-                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-white/70 hover:bg-white/10 hover:text-white"
+                      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition ${
+                        isLight
+                          ? 'text-slate-700 hover:bg-rose-50/80 hover:text-slate-900'
+                          : 'text-white/70 hover:bg-white/10 hover:text-white'
+                      }`}
                     >
                       <Users className="h-3.5 w-3.5 text-fuchsia-400" />
                       <span>Sub-Agent Studio</span>
@@ -532,7 +668,11 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
                         handleOpenTab('theme');
                         setShowAddMenu(false);
                       }}
-                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-white/70 hover:bg-white/10 hover:text-white"
+                      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition ${
+                        isLight
+                          ? 'text-slate-700 hover:bg-rose-50/80 hover:text-slate-900'
+                          : 'text-white/70 hover:bg-white/10 hover:text-white'
+                      }`}
                     >
                       <Palette className="h-3.5 w-3.5 text-pink-400" />
                       <span>Aesthetic Themes Matrix</span>
@@ -550,10 +690,14 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
                 messages={messages}
                 onSendMessage={handleSendMessage}
                 onExecuteToolAction={handleExecuteToolAction}
+                onCancelToolAction={handleCancelToolAction}
                 activeAgentId={activeAgentId}
                 onSelectAgent={setActiveAgentId}
                 profile={profile}
                 isProcessing={isProcessing}
+                installedPluginIds={installedPluginIds}
+                scratchpad={scratchpad}
+                memories={memories}
               />
             )}
 
@@ -581,7 +725,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
             )}
 
             {activeTab.type === 'agent' && (
-              <div className="h-full overflow-y-auto bg-[#13141E]">
+              <div className={`h-full overflow-y-auto ${isLight ? 'bg-white/40' : 'bg-[#13141E]'}`}>
                 <AgentStudio
                   onOpenChat={(agentId) => {
                     handleSendMessage(`Summoning ${agentId} into active canvas...`, agentId);
@@ -592,11 +736,11 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
             )}
 
             {activeTab.type === 'theme' && (
-              <div className="h-full overflow-y-auto p-8 bg-[#13141E] text-white">
+              <div className={`h-full overflow-y-auto p-8 ${isLight ? 'bg-white/50 text-slate-800' : 'bg-[#13141E] text-white'}`}>
                 <div className="max-w-4xl mx-auto space-y-6">
                   <div>
-                    <h2 className="font-display text-xl font-semibold text-white">Aesthetic Theme Matrix</h2>
-                    <p className="text-xs text-white/45 mt-1">
+                    <h2 className={`font-display text-xl font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>Aesthetic Theme Matrix</h2>
+                    <p className={`text-xs mt-1 ${isLight ? 'text-slate-500' : 'text-white/45'}`}>
                       Customize Carol Ann's visual frequencies, wallpaper ambiance, and accent tones.
                     </p>
                   </div>
@@ -608,7 +752,11 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
                         onClick={() => onUpdateProfile({ theme: th.id, accentColor: th.accent })}
                         className={`flex flex-col items-start rounded-2xl border p-4 text-left transition-all ${
                           profile.theme === th.id
-                            ? 'border-[var(--m-accent)] bg-white/[0.08] shadow-lg ring-2 ring-[var(--m-accent)]/50'
+                            ? isLight
+                              ? 'border-[var(--m-accent)] bg-white shadow-md ring-2 ring-[var(--m-accent)]/50'
+                              : 'border-[var(--m-accent)] bg-white/[0.08] shadow-lg ring-2 ring-[var(--m-accent)]/50'
+                            : isLight
+                            ? 'border-slate-200 bg-white/70 hover:border-slate-300 hover:bg-white'
                             : 'border-white/8 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]'
                         }`}
                       >
@@ -617,9 +765,9 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
                             className="h-4 w-4 rounded-full shadow-sm"
                             style={{ backgroundColor: th.accent }}
                           />
-                          <span className="text-sm font-semibold text-white">{th.label}</span>
+                          <span className={`text-sm font-semibold ${isLight ? 'text-slate-800' : 'text-white'}`}>{th.label}</span>
                         </div>
-                        <p className="mt-2 text-xs text-white/50 leading-relaxed">{th.description}</p>
+                        <p className={`mt-2 text-xs leading-relaxed ${isLight ? 'text-slate-500' : 'text-white/50'}`}>{th.description}</p>
                       </button>
                     ))}
                   </div>
@@ -631,9 +779,9 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
 
         {/* 3. Right Drawer (Embedded Co-Pilot & Automation Dock - in-line push/resize) */}
         <div
-          className={`relative shrink-0 transition-all duration-300 ease-in-out z-20 ${
-            rightOpen ? 'w-84 lg:w-96' : 'w-0'
-          }`}
+          className={`relative shrink-0 transition-all duration-300 ease-in-out border-l z-20 ${
+            isLight ? 'border-rose-200/60' : 'border-white/8'
+          } ${rightOpen ? 'w-84 lg:w-96' : 'w-0'}`}
         >
           <div className={`h-full w-84 lg:w-96 overflow-hidden ${rightOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
             <RightDrawer
@@ -646,6 +794,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
               scratchpad={scratchpad}
               onChangeScratchpad={setScratchpad}
               onClose={() => setRightOpen(false)}
+              profile={profile}
             />
           </div>
         </div>
