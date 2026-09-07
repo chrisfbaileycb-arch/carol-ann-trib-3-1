@@ -1,17 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Lock, Loader2, ShieldCheck, Sparkles, ArrowRight, AlertTriangle } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { auth } from '@/lib/firebase';
+import { confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth';
 import { useAuth } from '@/contexts/AuthContext';
 
-/**
- * /reset — landing target for the password-recovery email.
- * The recovery link carries a session (hash or code), so once it is exchanged
- * we can simply call auth.updateUser({ password }).
- */
 export const ResetPassword: React.FC = () => {
   const { updatePassword } = useAuth();
   const [ready, setReady] = useState(false);
+  const [oobCode, setOobCode] = useState<string | null>(null);
   const [hasSession, setHasSession] = useState(false);
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -23,26 +20,28 @@ export const ResetPassword: React.FC = () => {
     let active = true;
 
     const boot = async () => {
-      // Newer recovery links use ?code=..., older ones drop tokens in the hash.
       try {
         const url = new URL(window.location.href);
-        const code = url.searchParams.get('code');
-        if (code && typeof supabase.auth.exchangeCodeForSession === 'function') {
-          await supabase.auth.exchangeCodeForSession(code).catch(() => undefined);
+        const code = url.searchParams.get('oobCode') || url.searchParams.get('code');
+        if (code) {
+          setOobCode(code);
+          await verifyPasswordResetCode(auth, code);
+          if (active) {
+            setHasSession(true);
+            setReady(true);
+          }
+          return;
         }
-      } catch {
-        /* fall through to session check */
+      } catch (e) {
+        console.warn('Code verification warning:', e);
       }
 
-      try {
-        const { data } = await supabase.auth.getSession();
-        if (!active) return;
-        setHasSession(!!data?.session);
-      } catch {
+      if (auth.currentUser) {
+        if (active) setHasSession(true);
+      } else {
         if (active) setHasSession(false);
-      } finally {
-        if (active) setReady(true);
       }
+      if (active) setReady(true);
     };
 
     void boot();
@@ -63,6 +62,23 @@ export const ResetPassword: React.FC = () => {
       return;
     }
     setBusy(true);
+
+    if (oobCode) {
+      try {
+        await confirmPasswordReset(auth, oobCode, password);
+        setBusy(false);
+        setDone(true);
+        window.setTimeout(() => {
+          window.location.href = '/';
+        }, 1600);
+        return;
+      } catch (err: unknown) {
+        setBusy(false);
+        setError(err instanceof Error ? err.message : 'Could not reset password with this code.');
+        return;
+      }
+    }
+
     const res = await updatePassword(password);
     setBusy(false);
     if (res.error) {
@@ -103,7 +119,7 @@ export const ResetPassword: React.FC = () => {
           </div>
         ) : (
           <form onSubmit={submit} className="space-y-3 px-5 py-4">
-            {!hasSession && (
+            {!hasSession && !oobCode && (
               <p className="flex items-start gap-2 rounded-lg border border-amber-400/30 bg-amber-400/8 px-3 py-2 text-[11px] leading-relaxed text-amber-200">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 No active recovery session detected. Open the most recent reset link from your email on this device, then
@@ -119,9 +135,9 @@ export const ResetPassword: React.FC = () => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="new-password"
                   placeholder="At least 6 characters"
-                  className="flex-1 bg-transparent text-sm normal-case text-white placeholder:text-white/20 outline-none"
+                  className="w-full bg-transparent text-xs text-white placeholder:text-white/25 focus:outline-none"
+                  autoFocus
                 />
               </div>
             </label>
@@ -134,37 +150,37 @@ export const ResetPassword: React.FC = () => {
                   type="password"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
-                  autoComplete="new-password"
-                  placeholder="Repeat it"
-                  className="flex-1 bg-transparent text-sm normal-case text-white placeholder:text-white/20 outline-none"
+                  placeholder="Retype password"
+                  className="w-full bg-transparent text-xs text-white placeholder:text-white/25 focus:outline-none"
                 />
               </div>
             </label>
 
             {error && (
-              <p className="rounded-lg border border-rose-400/30 bg-rose-400/8 px-3 py-2 text-[11px] text-rose-300">{error}</p>
+              <p className="rounded-lg border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-[11px] text-rose-300">
+                {error}
+              </p>
             )}
 
-            <button
-              type="submit"
-              disabled={busy}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-rose-500 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-              Save new password
-            </button>
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={busy}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-rose-500 px-4 py-2.5 text-xs font-semibold text-white shadow-lg transition hover:brightness-110 disabled:opacity-50"
+              >
+                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
+                Update password
+              </button>
+            </div>
 
-            <Link
-              to="/"
-              className="flex items-center justify-center gap-1 pt-1 text-[11px] text-white/45 underline-offset-2 transition hover:text-white hover:underline"
-            >
-              Back to the workspace <ArrowRight className="h-3 w-3" />
-            </Link>
+            <div className="pt-2 text-center">
+              <Link to="/" className="text-[11px] text-white/40 hover:text-white">
+                Back to command center
+              </Link>
+            </div>
           </form>
         )}
       </div>
     </div>
   );
 };
-
-export default ResetPassword;

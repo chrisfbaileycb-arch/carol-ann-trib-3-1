@@ -26,7 +26,7 @@ export const TaskDispatcher: React.FC<{ open: boolean; onClose: () => void; onRu
 
   const [newItem, setNewItem] = useState('');
   const [scratch, setScratch] = useState(
-    '// Architecture scratchpad\nconst pipeline = {\n  ingest: "phone.vision",\n  route: "cloud.runner",\n  persist: "local -> supabase"\n};\n',
+    '// Architecture scratchpad\nconst pipeline = {\n  ingest: "phone.vision",\n  route: "cloud.runner",\n  persist: "local -> firebase_firestore"\n};\n',
   );
   const [validation, setValidation] = useState<{ ok: boolean; msg: string } | null>(null);
   const [cmd, setCmd] = useState('');

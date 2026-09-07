@@ -1,19 +1,12 @@
-import { supabase } from './supabase';
-import { LEDGER_TABLES } from '@/contexts/AuthContext';
+import { db } from './firebase';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { LEDGER_COLLECTIONS } from '@/contexts/AuthContext';
 
-/**
- * Full-account data export.
- * Pulls every row the signed-in user owns across the ledger tables plus the
- * cross-device relay ledger, then hands back a single JSON bundle and one CSV
- * per table. Progress is reported table-by-table so the UI can show a bar.
- */
-
-/** Single source of truth for what gets exported (ledger tables + relay). */
-export const EXPORT_TABLES = [...LEDGER_TABLES, 'bus_events'] as const;
-export type ExportTable = (typeof EXPORT_TABLES)[number];
+export const EXPORT_COLLECTIONS = [...LEDGER_COLLECTIONS, 'bus_events'] as const;
+export type ExportCollection = (typeof EXPORT_COLLECTIONS)[number];
 
 export interface ExportProgress {
-  table: ExportTable | 'bundle';
+  table: ExportCollection | 'bundle';
   index: number;
   total: number;
   rows: number;
@@ -27,43 +20,39 @@ export interface ExportResult {
   errors: string[];
 }
 
-const PAGE = 1000;
-
 const fetchAllRows = async (
-  table: string,
+  collectionName: string,
   userId: string,
 ): Promise<{ rows: Record<string, unknown>[]; error: string | null }> => {
-  const rows: Record<string, unknown>[] = [];
-  let from = 0;
-  for (let guard = 0; guard < 25; guard += 1) {
-    const { data, error } = await supabase
-      .from(table)
-      .select('*')
-      .eq('user_id', userId)
-      .range(from, from + PAGE - 1);
-    if (error) return { rows, error: error.message };
-    const batch = (data ?? []) as Record<string, unknown>[];
-    rows.push(...batch);
-    if (batch.length < PAGE) break;
-    from += PAGE;
+  try {
+    let q;
+    if (collectionName === 'bus_events') {
+      q = query(collection(db, 'bus_events'), where('userId', '==', userId));
+    } else {
+      q = collection(db, 'users', userId, collectionName);
+    }
+    const snap = await getDocs(q);
+    const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return { rows, error: null };
+  } catch (e: unknown) {
+    return { rows: [], error: e instanceof Error ? e.message : 'Fetch error' };
   }
-  return { rows, error: null };
 };
 
 const csvCell = (value: unknown): string => {
   if (value === null || value === undefined) return '';
-  const raw =
-    typeof value === 'object' ? JSON.stringify(value) : String(value);
+  const raw = typeof value === 'object' ? JSON.stringify(value) : String(value);
   return `"${raw.replace(/"/g, '""')}"`;
 };
 
-/** Convert an array of row objects into a CSV string (union of all keys). */
 export const toCSV = (rows: Record<string, unknown>[]): string => {
   if (!rows.length) return '';
-  const cols = Array.from(rows.reduce<Set<string>>((set, r) => {
-    Object.keys(r).forEach((k) => set.add(k));
-    return set;
-  }, new Set<string>()));
+  const cols = Array.from(
+    rows.reduce<Set<string>>((set, r) => {
+      Object.keys(r).forEach((k) => set.add(k));
+      return set;
+    }, new Set<string>())
+  );
   const head = cols.join(',');
   const body = rows.map((r) => cols.map((c) => csvCell(r[c])).join(',')).join('\n');
   return `${head}\n${body}`;
@@ -80,42 +69,39 @@ export const downloadBlob = (blob: Blob, filename: string) => {
   window.setTimeout(() => URL.revokeObjectURL(url), 4000);
 };
 
-/**
- * Run the export. Calls `onProgress` after every table so the caller can
- * render a live progress indicator, then returns the JSON bundle + CSV files.
- */
 export const runDataExport = async (
   userId: string,
   email: string | null,
   onProgress?: (p: ExportProgress) => void,
 ): Promise<ExportResult> => {
-  const total = EXPORT_TABLES.length;
+  const total = EXPORT_COLLECTIONS.length;
   const counts: Record<string, number> = {};
   const errors: string[] = [];
   const files: { name: string; blob: Blob }[] = [];
   const tables: Record<string, Record<string, unknown>[]> = {};
 
   for (let i = 0; i < total; i += 1) {
-    const table = EXPORT_TABLES[i];
-    const { rows, error } = await fetchAllRows(table, userId);
-    if (error) errors.push(`${table}: ${error}`);
-    tables[table] = rows;
-    counts[table] = rows.length;
+    const col = EXPORT_COLLECTIONS[i];
+    const { rows, error } = await fetchAllRows(col, userId);
+    if (error) errors.push(`${col}: ${error}`);
+    tables[col] = rows;
+    counts[col] = rows.length;
     if (rows.length) {
       files.push({
-        name: `carol-ann-${table}.csv`,
+        name: `carol-ann-${col}.csv`,
         blob: new Blob([toCSV(rows)], { type: 'text/csv;charset=utf-8' }),
       });
     }
-    onProgress?.({ table, index: i + 1, total, rows: rows.length, done: false });
+    onProgress?.({ table: col, index: i + 1, total, rows: rows.length, done: false });
   }
 
   const bundle = {
     export_version: 1,
     generated_at: new Date().toISOString(),
+    backend: 'firebase_firestore',
     account: { id: userId, email },
     row_counts: counts,
-    tables,
+    collections: tables,
   };
 
   files.unshift({
@@ -127,7 +113,6 @@ export const runDataExport = async (
   return { bundle, counts, files, errors };
 };
 
-/** Trigger the browser download of every produced file (staggered). */
 export const downloadExportFiles = (files: { name: string; blob: Blob }[]) => {
   files.forEach((f, i) => {
     window.setTimeout(() => downloadBlob(f.blob, f.name), i * 350);

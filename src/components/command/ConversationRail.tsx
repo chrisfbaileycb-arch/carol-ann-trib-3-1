@@ -7,7 +7,6 @@ import { parseIntent } from '@/lib/browserAgent';
 import { startRun, pushLog } from '@/lib/agentRunner';
 import { publishBus, subscribeBus } from '@/lib/realtimeBus';
 import { loadSaved, saveSaved, uid } from '@/lib/memoryStore';
-import { supabase } from '@/lib/supabase';
 import Icon from '@/components/common/Icon';
 
 const VoiceWave: React.FC<{ active: boolean }> = ({ active }) => (

@@ -1,0 +1,168 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Security Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Connection Health Verification Probe
+    match /test/connection {
+      allow read: if true;
+    }
+
+    // Entity Validation Helpers
+    function isValidUserProfile(data, userId) {
+      return data.id is string &&
+             data.id == userId &&
+             data.email is string &&
+             data.email.size() > 3 &&
+             data.email.size() <= 256;
+    }
+
+    function isValidWorkspace(data) {
+      return data.userId is string &&
+             data.userId.size() > 0 &&
+             data.userId.size() <= 128 &&
+             (isSignedIn() ? data.userId == request.auth.uid : true) &&
+             data.lastSyncedAt is string &&
+             data.lastSyncedAt.size() <= 64;
+    }
+
+    function isValidMessage(data, userId) {
+      return data.id is string &&
+             data.userId == userId &&
+             data.sender is string &&
+             data.sender.size() <= 64 &&
+             data.text is string &&
+             data.text.size() <= 10000 &&
+             data.timestamp is string;
+    }
+
+    function isValidMemory(data, userId) {
+      return data.id is string &&
+             data.userId == userId &&
+             data.category is string &&
+             data.category.size() <= 64 &&
+             data.content is string &&
+             data.content.size() <= 5000 &&
+             data.createdAt is string;
+    }
+
+    function isValidErrand(data, userId) {
+      return data.id is string &&
+             data.userId == userId &&
+             data.title is string &&
+             data.title.size() <= 256 &&
+             data.category is string &&
+             data.category.size() <= 64 &&
+             data.status is string &&
+             data.status.size() <= 64 &&
+             data.createdAt is string;
+    }
+
+    function isValidCheckIn(data, userId) {
+      return data.id is string &&
+             data.userId == userId &&
+             data.date is string &&
+             data.date.size() <= 32 &&
+             data.timestamp is string;
+    }
+
+    function isValidBusEvent(data) {
+      return data.id is string &&
+             data.eventType is string &&
+             data.eventType.size() <= 128 &&
+             data.timestamp is string;
+    }
+
+    function isValidConnector(data, userId) {
+      return data.id is string &&
+             data.userId == userId &&
+             data.connectorId is string &&
+             data.connectorId.size() <= 128 &&
+             data.isConnected is bool &&
+             data.lastHandshakeAt is string;
+    }
+
+    function isValidScheduledCommand(data, userId) {
+      return data.id is string &&
+             data.userId == userId &&
+             data.name is string &&
+             data.name.size() <= 128 &&
+             data.prompt is string &&
+             data.prompt.size() <= 2000 &&
+             data.schedule is string &&
+             data.schedule.size() <= 64 &&
+             data.active is bool;
+    }
+
+    // User Profile Rules
+    match /users/{userId} {
+      allow get: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
+      allow create, update: if (isOwner(userId) || (!isSignedIn() && isValidId(userId))) && isValidUserProfile(request.resource.data, userId);
+      allow delete: if isOwner(userId);
+
+      // Sub-collections under User
+      match /messages/{messageId} {
+        allow get, list: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
+        allow create, update: if (isOwner(userId) || (!isSignedIn() && isValidId(userId))) && isValidId(messageId) && isValidMessage(request.resource.data, userId);
+        allow delete: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
+      }
+
+      match /memories/{memoryId} {
+        allow get, list: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
+        allow create, update: if (isOwner(userId) || (!isSignedIn() && isValidId(userId))) && isValidId(memoryId) && isValidMemory(request.resource.data, userId);
+        allow delete: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
+      }
+
+      match /errands/{errandId} {
+        allow get, list: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
+        allow create, update: if (isOwner(userId) || (!isSignedIn() && isValidId(userId))) && isValidId(errandId) && isValidErrand(request.resource.data, userId);
+        allow delete: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
+      }
+
+      match /checkins/{checkinId} {
+        allow get, list: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
+        allow create, update: if (isOwner(userId) || (!isSignedIn() && isValidId(userId))) && isValidId(checkinId) && isValidCheckIn(request.resource.data, userId);
+        allow delete: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
+      }
+
+      match /connectors/{connectorId} {
+        allow get, list: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
+        allow create, update: if (isOwner(userId) || (!isSignedIn() && isValidId(userId))) && isValidId(connectorId) && isValidConnector(request.resource.data, userId);
+        allow delete: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
+      }
+
+      match /scheduled_commands/{cmdId} {
+        allow get, list: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
+        allow create, update: if (isOwner(userId) || (!isSignedIn() && isValidId(userId))) && isValidId(cmdId) && isValidScheduledCommand(request.resource.data, userId);
+        allow delete: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
+      }
+    }
+
+    // Workspace State Documents
+    match /workspaces/{workspaceId} {
+      allow get: if isValidId(workspaceId);
+      allow list: if isValidId(workspaceId);
+      allow create, update: if isValidId(workspaceId) && isValidWorkspace(request.resource.data);
+      allow delete: if isValidId(workspaceId) && (isSignedIn() ? resource.data.userId == request.auth.uid : true);
+    }
+
+    // Realtime Message Bus Events
+    match /bus_events/{eventId} {
+      allow get, list: if isValidId(eventId);
+      allow create: if isValidId(eventId) && isValidBusEvent(request.resource.data);
+      allow delete: if isValidId(eventId);
+    }
+  }
+}

@@ -5,11 +5,18 @@ import { chromium } from 'playwright';
 import { WebSocketServer, WebSocket } from 'ws';
 import { GoogleGenAI, Modality, Type, type LiveServerMessage } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
+import { initializeApp as initFirebaseApp, getApps as getFirebaseApps } from 'firebase/app';
+import { getFirestore as getFirebaseFirestore, doc as fsDoc, getDoc as fsGetDoc, setDoc as fsSetDoc } from 'firebase/firestore';
+import firebaseConfig from './firebase-applet-config.json';
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json({ limit: '10mb' }));
+
+// Initialize persistent cloud backend with Firestore
+const firebaseApp = getFirebaseApps().length ? getFirebaseApps()[0] : initFirebaseApp(firebaseConfig);
+const firestoreDb = getFirebaseFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId || '(default)');
 
 // Lazy Google GenAI Client
 let genAIClient: GoogleGenAI | null = null;
@@ -36,55 +43,64 @@ app.get('/api/health', (_req, res) => {
     cloudAgentNative: true,
     deployed: true,
     geminiConfigured: Boolean(process.env.GEMINI_API_KEY),
-    supabaseConfigured: Boolean(process.env.VITE_SUPABASE_URL && process.env.VITE_SUPABASE_ANON_KEY),
+    firebaseConfigured: Boolean(firebaseConfig.projectId && firebaseConfig.apiKey),
+    firestoreDatabaseId: firebaseConfig.firestoreDatabaseId,
+    backend: 'firebase_firestore',
   });
 });
 
-// Cloud Workspace State Persistence Store
-interface CloudWorkspaceState {
-  profile?: Record<string, unknown>;
-  messages?: Array<unknown>;
-  checkIns?: Array<unknown>;
-  memories?: Array<unknown>;
-  errands?: Array<unknown>;
-  sessions?: Array<unknown>;
-  lastSyncedAt: string;
-}
-
-const cloudWorkspaceStore = new Map<string, CloudWorkspaceState>();
-
-// Cloud state fetch endpoint
-app.get('/api/cloud/state', (req, res) => {
-  const userId = (req.query.userId as string) || 'default';
-  const state = cloudWorkspaceStore.get(userId) || null;
-  res.json({
-    status: 'ok',
-    cloudNative: true,
-    state,
-  });
-});
-
-// Cloud state sync endpoint
-app.post('/api/cloud/sync', (req, res) => {
-  const { userId = 'default', state } = req.body;
-  if (!state) {
-    return res.status(400).json({ error: 'State payload is required.' });
+// Cloud state fetch endpoint backed directly by Firestore
+app.get('/api/cloud/state', async (req, res) => {
+  try {
+    const userId = (req.query.userId as string) || 'default';
+    const cleanId = userId.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const docRef = fsDoc(firestoreDb, 'workspaces', cleanId);
+    const snap = await fsGetDoc(docRef);
+    const state = snap.exists() ? snap.data() : null;
+    res.json({
+      status: 'ok',
+      cloudNative: true,
+      backend: 'firebase_firestore',
+      databaseId: firebaseConfig.firestoreDatabaseId,
+      state,
+    });
+  } catch (err: unknown) {
+    console.error('[Firestore State Error]', err);
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Firestore read failure' });
   }
-  const payload: CloudWorkspaceState = {
-    ...state,
-    lastSyncedAt: new Date().toISOString(),
-  };
-  cloudWorkspaceStore.set(userId, payload);
-  res.json({
-    status: 'ok',
-    cloudNative: true,
-    lastSyncedAt: payload.lastSyncedAt,
-    recordsCount: {
-      memories: Array.isArray(payload.memories) ? payload.memories.length : 0,
-      errands: Array.isArray(payload.errands) ? payload.errands.length : 0,
-      checkIns: Array.isArray(payload.checkIns) ? payload.checkIns.length : 0,
-    },
-  });
+});
+
+// Cloud state sync endpoint backed directly by Firestore
+app.post('/api/cloud/sync', async (req, res) => {
+  try {
+    const { userId = 'default', state } = req.body;
+    if (!state) {
+      return res.status(400).json({ error: 'State payload is required.' });
+    }
+    const cleanId = String(userId).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const docRef = fsDoc(firestoreDb, 'workspaces', cleanId);
+    const payload = {
+      ...state,
+      userId: cleanId,
+      lastSyncedAt: new Date().toISOString(),
+    };
+    await fsSetDoc(docRef, payload, { merge: true });
+    res.json({
+      status: 'ok',
+      cloudNative: true,
+      backend: 'firebase_firestore',
+      databaseId: firebaseConfig.firestoreDatabaseId,
+      lastSyncedAt: payload.lastSyncedAt,
+      recordsCount: {
+        memories: Array.isArray(payload.memories) ? payload.memories.length : 0,
+        errands: Array.isArray(payload.errands) ? payload.errands.length : 0,
+        checkIns: Array.isArray(payload.checkIns) ? payload.checkIns.length : 0,
+      },
+    });
+  } catch (err: unknown) {
+    console.error('[Firestore Sync Error]', err);
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Firestore write failure' });
+  }
 });
 
 // Tool Definitions for cloud-native workspace actions

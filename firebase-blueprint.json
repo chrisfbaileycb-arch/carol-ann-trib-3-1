@@ -1,0 +1,182 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User account profile and authentication metadata",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "email"]
+    },
+    "WorkspaceState": {
+      "title": "WorkspaceState",
+      "description": "Complete durable cloud workspace state for Carol Ann OS",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "profile": { "type": "object" },
+        "messages": { "type": "array" },
+        "checkIns": { "type": "array" },
+        "memories": { "type": "array" },
+        "errands": { "type": "array" },
+        "sessions": { "type": "array" },
+        "installedPlugins": { "type": "array" },
+        "lastSyncedAt": { "type": "string" }
+      },
+      "required": ["userId", "lastSyncedAt"]
+    },
+    "ConversationMessage": {
+      "title": "ConversationMessage",
+      "description": "Individual conversation message between user and Carol Ann agents",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "sender": { "type": "string" },
+        "agentId": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "toolCall": { "type": "object" }
+      },
+      "required": ["id", "userId", "sender", "text", "timestamp"]
+    },
+    "MemoryRecord": {
+      "title": "MemoryRecord",
+      "description": "Long-term durable agent memory or personal preference",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "category": { "type": "string" },
+        "content": { "type": "string" },
+        "tags": { "type": "array" },
+        "confidence": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "category", "content", "createdAt"]
+    },
+    "ErrandTask": {
+      "title": "ErrandTask",
+      "description": "Executive action, errand, or booking item requiring user verification",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "status": { "type": "string" },
+        "items": { "type": "array" },
+        "targetTime": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "title", "category", "status", "createdAt"]
+    },
+    "CheckInRecord": {
+      "title": "CheckInRecord",
+      "description": "Daily wellness and operational check-in log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "date": { "type": "string" },
+        "energyLevel": { "type": "number" },
+        "notes": { "type": "string" },
+        "completed": { "type": "boolean" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "userId", "date", "timestamp"]
+    },
+    "BusEvent": {
+      "title": "BusEvent",
+      "description": "Cross-device realtime message bus event",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "eventType": { "type": "string" },
+        "payload": { "type": "object" },
+        "timestamp": { "type": "string" },
+        "source": { "type": "string" }
+      },
+      "required": ["id", "userId", "eventType", "timestamp"]
+    },
+    "ConnectorConfig": {
+      "title": "ConnectorConfig",
+      "description": "Verified SaaS connector or MCP server configuration",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "connectorId": { "type": "string" },
+        "endpointUrl": { "type": "string" },
+        "protocolVersion": { "type": "string" },
+        "isConnected": { "type": "boolean" },
+        "capabilities": { "type": "array" },
+        "lastHandshakeAt": { "type": "string" },
+        "handshakeStatus": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "connectorId", "isConnected", "lastHandshakeAt"]
+    },
+    "ScheduledCommand": {
+      "title": "ScheduledCommand",
+      "description": "Scheduled recurring executive command",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "prompt": { "type": "string" },
+        "schedule": { "type": "string" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "name", "prompt", "schedule", "active"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Stores user profile information"
+    },
+    "/workspaces/{workspaceId}": {
+      "schema": "WorkspaceState",
+      "description": "Stores persistent cloud workspace state"
+    },
+    "/users/{userId}/messages/{messageId}": {
+      "schema": "ConversationMessage",
+      "description": "Stores conversation messages for a user"
+    },
+    "/users/{userId}/memories/{memoryId}": {
+      "schema": "MemoryRecord",
+      "description": "Stores agent memories for a user"
+    },
+    "/users/{userId}/errands/{errandId}": {
+      "schema": "ErrandTask",
+      "description": "Stores action items and errands for a user"
+    },
+    "/users/{userId}/checkins/{checkinId}": {
+      "schema": "CheckInRecord",
+      "description": "Stores wellness check-in records for a user"
+    },
+    "/bus_events/{eventId}": {
+      "schema": "BusEvent",
+      "description": "Stores realtime cross-device bus events"
+    },
+    "/users/{userId}/connectors/{connectorId}": {
+      "schema": "ConnectorConfig",
+      "description": "Stores verified SaaS and MCP connector configs"
+    },
+    "/users/{userId}/scheduled_commands/{cmdId}": {
+      "schema": "ScheduledCommand",
+      "description": "Stores recurring scheduled commands"
+    }
+  }
+}

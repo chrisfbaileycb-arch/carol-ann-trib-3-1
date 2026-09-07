@@ -1,21 +1,41 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  sendPasswordResetEmail,
+  updatePassword as firebaseUpdatePassword,
+  updateProfile,
+  type User as FirebaseUser,
+} from 'firebase/auth';
+import {
+  doc,
+  setDoc,
+  deleteDoc,
+  collection,
+  getDocs,
+  writeBatch,
+} from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 import { setBusUser } from '@/lib/realtimeBus';
 
 export interface AuthUser {
   id: string;
   email: string | null;
   name: string;
+  photoURL?: string | null;
 }
 
-/** Every table that carries per-user rows for this ledger. */
-export const LEDGER_TABLES = [
-  'conversation_messages',
-  'check_ins',
+export const LEDGER_COLLECTIONS = [
+  'messages',
+  'checkins',
   'memories',
-  'errand_tasks',
-  'my_day_sessions',
-  'carol_ann_users',
+  'errands',
+  'connectors',
+  'scheduled_commands',
 ] as const;
 
 interface AuthContextValue {
@@ -37,12 +57,13 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const toUser = (u: { id: string; email?: string | null; user_metadata?: Record<string, unknown> } | null | undefined): AuthUser | null =>
+const toUser = (u: FirebaseUser | null): AuthUser | null =>
   u
     ? {
-        id: u.id,
+        id: u.uid,
         email: u.email ?? null,
-        name: typeof u.user_metadata?.name === 'string' ? (u.user_metadata.name as string) : '',
+        name: u.displayName || u.email?.split('@')[0] || 'Operator',
+        photoURL: u.photoURL,
       }
     : null;
 
@@ -51,38 +72,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let active = true;
-
-    supabase.auth
-      .getSession()
-      .then(({ data }) => {
-        if (!active) return;
-        setUser(toUser(data?.session?.user));
-        setLoading(false);
-      })
-      .catch(() => {
-        if (active) setLoading(false);
-      });
-
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(toUser(session?.user));
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const mapped = toUser(firebaseUser);
+        setUser(mapped);
+        // Ensure user document exists in Firestore
+        try {
+          const userRef = doc(db, 'users', firebaseUser.uid);
+          await setDoc(
+            userRef,
+            {
+              id: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              displayName: firebaseUser.displayName || mapped?.name || '',
+              photoURL: firebaseUser.photoURL || '',
+              updatedAt: new Date().toISOString(),
+            },
+            { merge: true }
+          );
+        } catch (e) {
+          console.warn('[Firebase Auth] User profile sync warning:', e);
+        }
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     });
 
-    return () => {
-      active = false;
-      sub?.subscription?.unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
-  // Attach the account to the cross-device event relay.
+  // Attach the account to the cross-device event relay
   useEffect(() => {
     setBusUser(user?.id ?? null);
   }, [user?.id]);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error ? error.message : null };
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      return { error: null };
+    } catch (err: unknown) {
+      return { error: err instanceof Error ? err.message : 'Failed to sign in.' };
+    }
   }, []);
 
   const signUp = useCallback(
@@ -91,79 +122,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       password: string,
       extras?: { name?: string; phone?: string; smsOptIn?: boolean },
     ) => {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { name: extras?.name ?? '' } },
-      });
-      if (error) return { error: error.message };
-
-      // Some projects require email confirmation; attempt an immediate session.
-      await supabase.auth.signInWithPassword({ email, password }).catch(() => undefined);
-      return { error: null };
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        if (extras?.name && cred.user) {
+          await updateProfile(cred.user, { displayName: extras.name });
+          const userRef = doc(db, 'users', cred.user.uid);
+          await setDoc(userRef, {
+            id: cred.user.uid,
+            email: cred.user.email || '',
+            displayName: extras.name,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+        }
+        return { error: null };
+      } catch (err: unknown) {
+        return { error: err instanceof Error ? err.message : 'Failed to register account.' };
+      }
     },
     [],
   );
 
   const signInWithGoogle = useCallback(async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: `${window.location.origin}/` },
-      });
-      return { error: error ? error.message : null };
-    } catch (e) {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      await signInWithPopup(auth, provider);
+      return { error: null };
+    } catch (e: unknown) {
       return { error: e instanceof Error ? e.message : 'Google sign-in is unavailable right now.' };
     }
   }, []);
 
   const requestPasswordReset = useCallback(async (email: string) => {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset`,
-      });
-      return { error: error ? error.message : null };
-    } catch (e) {
+      await sendPasswordResetEmail(auth, email);
+      return { error: null };
+    } catch (e: unknown) {
       return { error: e instanceof Error ? e.message : 'Could not send the reset link.' };
     }
   }, []);
 
   const updatePassword = useCallback(async (password: string) => {
-    const { error } = await supabase.auth.updateUser({ password });
-    return { error: error ? error.message : null };
+    try {
+      if (!auth.currentUser) return { error: 'Not authenticated.' };
+      await firebaseUpdatePassword(auth.currentUser, password);
+      return { error: null };
+    } catch (err: unknown) {
+      return { error: err instanceof Error ? err.message : 'Failed to update password.' };
+    }
   }, []);
 
   const updateAccount = useCallback(
     async (patch: { name?: string; email?: string }) => {
-      const payload: { email?: string; data?: Record<string, unknown> } = {};
-      if (typeof patch.name === 'string') payload.data = { name: patch.name };
-      const emailChanged = !!patch.email && patch.email !== user?.email;
-      if (emailChanged) payload.email = patch.email;
-
-      const { data, error } = await supabase.auth.updateUser(payload);
-      if (error) return { error: error.message };
-      if (data?.user) setUser(toUser(data.user));
-
-      // Keep the mirrored profile row in step with the account record.
-      if (user) {
-        try {
-          await supabase
-            .from('carol_ann_users')
-            .update({ name: patch.name ?? user.name, email: patch.email ?? user.email })
-            .eq('user_id', user.id);
-        } catch {
-          /* profile mirror is best-effort */
+      if (!auth.currentUser) return { error: 'Not authenticated.' };
+      try {
+        if (patch.name) {
+          await updateProfile(auth.currentUser, { displayName: patch.name });
+          const userRef = doc(db, 'users', auth.currentUser.uid);
+          await setDoc(userRef, { displayName: patch.name, updatedAt: new Date().toISOString() }, { merge: true });
         }
+        setUser(toUser(auth.currentUser));
+        return { error: null, notice: 'Account details saved.' };
+      } catch (err: unknown) {
+        return { error: err instanceof Error ? err.message : 'Failed to update account.' };
       }
-
-      return {
-        error: null,
-        notice: emailChanged
-          ? 'Check your new inbox to confirm the address change.'
-          : 'Account details saved.',
-      };
     },
-    [user],
+    [],
   );
 
   const deleteLedger = useCallback(async () => {
@@ -171,32 +196,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let deleted = 0;
     let failure: string | null = null;
 
-    for (const table of LEDGER_TABLES) {
-      try {
-        const { error } = await supabase.from(table).delete().eq('user_id', user.id);
-        if (error) failure = error.message;
-        else deleted += 1;
-      } catch (e) {
-        failure = e instanceof Error ? e.message : `Could not clear ${table}.`;
-      }
-    }
-
-    // The relay ledger and saved shortcuts are part of the cloud footprint too.
     try {
-      await supabase.from('bus_events').delete().eq('user_id', user.id);
-      await supabase.from('saved_commands').delete().eq('user_id', user.id);
-      await supabase.from('scheduled_commands').delete().eq('user_id', user.id);
+      const batch = writeBatch(db);
 
-    } catch {
-      /* best-effort */
+      for (const collName of LEDGER_COLLECTIONS) {
+        const collRef = collection(db, 'users', user.id, collName);
+        const snap = await getDocs(collRef);
+        snap.forEach((d) => {
+          batch.delete(d.ref);
+          deleted++;
+        });
+      }
+
+      // Delete workspace document
+      const wsRef = doc(db, 'workspaces', user.id);
+      batch.delete(wsRef);
+
+      // Delete user document
+      const userRef = doc(db, 'users', user.id);
+      batch.delete(userRef);
+
+      await batch.commit();
+    } catch (e: unknown) {
+      failure = e instanceof Error ? e.message : 'Could not clear cloud ledger.';
     }
-
 
     return { error: failure, deleted };
   }, [user]);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    await firebaseSignOut(auth);
     setUser(null);
     setBusUser(null);
   }, []);

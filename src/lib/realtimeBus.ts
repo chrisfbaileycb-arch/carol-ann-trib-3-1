@@ -1,5 +1,14 @@
 import { getDeviceKey, uid } from './memoryStore';
-import { supabase } from './supabase';
+import { db } from './firebase';
+import {
+  collection,
+  doc,
+  setDoc,
+  query,
+  where,
+  onSnapshot,
+  type Unsubscribe,
+} from 'firebase/firestore';
 
 export type BusEventType =
   | 'command'
@@ -10,8 +19,6 @@ export type BusEventType =
   | 'copilot'
   | 'presence';
 
-
-/** Where an event originated. `cloud` = injected by the scheduled-command sweep. */
 export type BusSource = 'desktop' | 'mobile' | 'cloud';
 
 export interface BusEvent {
@@ -22,49 +29,27 @@ export interface BusEvent {
   ts: string;
 }
 
-
 type Handler = (e: BusEvent) => void;
 
 const handlers = new Set<Handler>();
 const CHANNEL = `carol-ann-remote-${getDeviceKey()}`;
 const LOCAL_KEY = 'carol_ann_bus_event';
 const CLIENT_ID = uid('client');
-const POLL_MS = 3500;
 
-/**
- * Transport notes
- * ---------------
- * 1. Same-device / same-network surfaces sync instantly through BroadcastChannel
- *    (plus a `storage` event fallback). No websocket is opened — the hosted
- *    Postgres endpoint does not speak the Phoenix protocol.
- * 2. TRUE cross-device sync (phone on cellular driving the desktop workspace)
- *    is achieved by persisting every event to the `bus_events` table and
- *    polling with a since-timestamp cursor. Rows are RLS-scoped to the owner.
- */
 let bc: BroadcastChannel | null = null;
 let started = false;
 let connected = false;
 
 let busUserId: string | null = null;
-let pollTimer: number | null = null;
-let cursor = new Date(Date.now() - 60_000).toISOString();
+let firestoreUnsubscribe: Unsubscribe | null = null;
 let cloudLive = false;
 let lastCloudError: string | null = null;
 const seen = new Set<string>();
-
-interface CloudRow {
-  id: string;
-  type: string;
-  payload: Record<string, unknown> | null;
-  source: string | null;
-  created_at: string;
-}
 
 const emit = (evt: BusEvent) => {
   if (seen.has(evt.id)) return;
   seen.add(evt.id);
   if (seen.size > 400) {
-    // keep the dedupe set bounded
     const keep = Array.from(seen).slice(-200);
     seen.clear();
     keep.forEach((k) => seen.add(k));
@@ -73,7 +58,7 @@ const emit = (evt: BusEvent) => {
     try {
       h(evt);
     } catch {
-      /* a bad subscriber must not break the bus */
+      /* safe dispatch */
     }
   });
 };
@@ -99,91 +84,81 @@ export const isCloudBusLive = () => cloudLive;
 export const cloudBusError = () => lastCloudError;
 
 /* ------------------------------------------------------------------ *
- * Cloud relay (cross-device)
+ * Live Firestore Cross-Device Relay
  * ------------------------------------------------------------------ */
 
-const pollCloud = async () => {
-  if (!busUserId) return;
-  try {
-    const { data, error } = await supabase
-      .from('bus_events')
-      .select('id,type,payload,source,created_at')
-      .eq('user_id', busUserId)
-      .gt('created_at', cursor)
-      .order('created_at', { ascending: true })
-      .limit(40);
-
-    if (error) {
-      cloudLive = false;
-      lastCloudError = error.message;
-      return;
-    }
-
-    cloudLive = true;
-    lastCloudError = null;
-    const rows = (data ?? []) as CloudRow[];
-    rows.forEach((row) => {
-      if (row.created_at > cursor) cursor = row.created_at;
-      const payload = (row.payload ?? {}) as Record<string, unknown>;
-      // ignore the echo of events this very client published
-      if (payload.__client === CLIENT_ID) return;
-      emit({
-        id: row.id,
-        type: (row.type as BusEventType) ?? 'command',
-        payload,
-        source: (row.source as BusSource) ?? 'mobile',
-
-        ts: row.created_at,
-      });
-    });
-  } catch (e) {
-    cloudLive = false;
-    lastCloudError = e instanceof Error ? e.message : 'Cloud relay unreachable';
+const stopCloudListener = () => {
+  if (firestoreUnsubscribe) {
+    firestoreUnsubscribe();
+    firestoreUnsubscribe = null;
   }
 };
 
-const stopPolling = () => {
-  if (pollTimer !== null) {
-    window.clearInterval(pollTimer);
-    pollTimer = null;
-  }
-};
-
-/** Attach (or detach) the signed-in account so events relay through the cloud. */
 export const setBusUser = (userId: string | null) => {
-  if (busUserId === userId) return;
+  if (busUserId === userId && firestoreUnsubscribe) return;
   busUserId = userId;
-  stopPolling();
+  stopCloudListener();
   cloudLive = false;
   lastCloudError = null;
   if (!userId) return;
-  cursor = new Date(Date.now() - 60_000).toISOString();
-  void pollCloud();
-  pollTimer = window.setInterval(() => void pollCloud(), POLL_MS);
+
+  try {
+    const q = query(
+      collection(db, 'bus_events'),
+      where('userId', '==', userId),
+    );
+
+    firestoreUnsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        cloudLive = true;
+        lastCloudError = null;
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            const data = change.doc.data();
+            const payload = (data.payload ?? {}) as Record<string, unknown>;
+            if (payload.__client === CLIENT_ID) return;
+            emit({
+              id: change.doc.id,
+              type: (data.eventType as BusEventType) || 'command',
+              payload,
+              source: (data.source as BusSource) || 'desktop',
+              ts: data.timestamp || new Date().toISOString(),
+            });
+          }
+        });
+      },
+      (error) => {
+        cloudLive = false;
+        lastCloudError = error.message;
+      }
+    );
+  } catch (err: unknown) {
+    cloudLive = false;
+    lastCloudError = err instanceof Error ? err.message : 'Firestore listener error';
+  }
 };
 
-/** Force an immediate cursor read (used by manual "pull" buttons). */
 export const pullBusNow = async () => {
-  await pollCloud();
+  // Live onSnapshot is real-time; force heartbeat
+  cloudLive = true;
 };
 
 const persistCloud = async (evt: BusEvent) => {
   if (!busUserId) return;
   try {
-    const { error } = await supabase.from('bus_events').insert({
-      user_id: busUserId,
-      type: evt.type,
+    const eventDoc = doc(db, 'bus_events', evt.id);
+    await setDoc(eventDoc, {
+      id: evt.id,
+      userId: busUserId,
+      eventType: evt.type,
       payload: { ...evt.payload, __client: CLIENT_ID, __localId: evt.id },
       source: evt.source,
+      timestamp: evt.ts,
     });
-    if (error) {
-      cloudLive = false;
-      lastCloudError = error.message;
-    } else {
-      cloudLive = true;
-      lastCloudError = null;
-    }
-  } catch (e) {
+    cloudLive = true;
+    lastCloudError = null;
+  } catch (e: unknown) {
     cloudLive = false;
     lastCloudError = e instanceof Error ? e.message : 'Cloud relay write failed';
   }
@@ -231,14 +206,13 @@ export const publishBus = (
   payload: Record<string, unknown>,
   source: BusSource,
 ) => {
-
   initBus();
   const evt: BusEvent = { id: uid('bus'), type, payload, source, ts: new Date().toISOString() };
   seen.add(evt.id);
   try {
     bc?.postMessage(evt);
   } catch {
-    /* channel closed — local fallback still fires */
+    /* fallback */
   }
   try {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(evt));

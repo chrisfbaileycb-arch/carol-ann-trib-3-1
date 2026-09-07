@@ -19,7 +19,8 @@ import {
   fetchCloudState, sendCloudSync,
 } from '@/lib/memoryStore';
 import { getTheme, type AestheticTheme } from '@/data/intake';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface CarolContextValue {
@@ -179,18 +180,18 @@ export const CarolProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }, userId);
 
       if (user) {
-        const { error: profileError } = await supabase.from('carol_ann_users').upsert(
+        const userRef = doc(db, 'users', user.id);
+        await setDoc(
+          userRef,
           {
-            user_id: user.id,
-            device_id: deviceKey,
-            device_key: deviceKey,
+            id: user.id,
             email: user.email,
             name: profile.name,
             identity: profile.identity,
             theme: profile.theme,
-            sports_teams: profile.sportsTeams,
+            sportsTeams: profile.sportsTeams,
             aesthetic: profile.aesthetic,
-            accent_color: profile.accentColor,
+            accentColor: profile.accentColor,
             preferences: {
               interests: profile.interests,
               routine: profile.routine,
@@ -198,38 +199,26 @@ export const CarolProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               professionalFocus: profile.professionalFocus,
               affirmation: profile.affirmation,
             },
+            updatedAt: new Date().toISOString(),
           },
-          { onConflict: 'user_id' },
+          { merge: true },
         );
-        if (profileError) throw profileError;
 
-        const recent = messages.slice(-25).map((m) => ({
-          id: m.id, user_id: user.id, device_key: deviceKey, domain: m.domain, role: m.role, content: m.content,
-        }));
-        if (recent.length) await supabase.from('conversation_messages').upsert(recent, { onConflict: 'id' });
-
-        const ci = checkIns.slice(0, 20).map((c) => ({
-          id: c.id, user_id: user.id, device_key: deviceKey, type: c.type, label: c.label, notes: c.notes,
-        }));
-        if (ci.length) await supabase.from('check_ins').upsert(ci, { onConflict: 'id' });
-
-        const mem = memories.slice(0, 40).map((m) => ({
-          id: m.id, user_id: user.id, device_key: deviceKey, category: m.category, content: m.content, tags: m.tags,
-        }));
-        if (mem.length) await supabase.from('memories').upsert(mem, { onConflict: 'id' });
-
-        const er = errands.map((e) => ({
-          id: e.id, user_id: user.id, device_key: deviceKey, target: e.target, title: e.title,
-          items: e.items, status: e.status, scheduled_time: e.scheduled_time ?? null,
-        }));
-        if (er.length) await supabase.from('errand_tasks').upsert(er, { onConflict: 'id' });
-
-        const days = sessions.slice(0, 14).map((s) => ({
-          id: s.id, user_id: user.id, device_key: deviceKey, date: s.date, intention: s.intention,
-          mood_score: s.mood_score, energy_level: s.energy_level,
-          reflections: s.reflections, completed_tasks: s.completed_tasks,
-        }));
-        if (days.length) await supabase.from('my_day_sessions').upsert(days, { onConflict: 'user_id,date' });
+        const workspaceRef = doc(db, 'workspaces', user.id);
+        await setDoc(
+          workspaceRef,
+          {
+            userId: user.id,
+            lastSyncedAt: new Date().toISOString(),
+            profile,
+            messages: messages.slice(-25),
+            checkIns: checkIns.slice(0, 20),
+            memories: memories.slice(0, 40),
+            errands,
+            sessions: sessions.slice(0, 14),
+          },
+          { merge: true },
+        );
       }
 
       setLastSync(new Date().toISOString());
