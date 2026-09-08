@@ -828,8 +828,12 @@ async function bootstrap() {
         callbacks: {
           onmessage: (message: LiveServerMessage) => {
             const audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
+            const text = message.serverContent?.modelTurn?.parts?.[0]?.text;
             if (audio && clientWs.readyState === WebSocket.OPEN) {
               clientWs.send(JSON.stringify({ audio }));
+            }
+            if (text && clientWs.readyState === WebSocket.OPEN) {
+              clientWs.send(JSON.stringify({ text }));
             }
             if (message.serverContent?.interrupted && clientWs.readyState === WebSocket.OPEN) {
               clientWs.send(JSON.stringify({ interrupted: true }));
@@ -837,6 +841,17 @@ async function bootstrap() {
           },
         },
       });
+
+      if (clientWs.readyState === WebSocket.OPEN) {
+        clientWs.send(
+          JSON.stringify({
+            type: 'connected',
+            model: 'gemini-3.1-flash-live-preview',
+            voice: 'Aoede',
+            status: 'ready',
+          })
+        );
+      }
 
       clientWs.on('message', (rawData) => {
         try {

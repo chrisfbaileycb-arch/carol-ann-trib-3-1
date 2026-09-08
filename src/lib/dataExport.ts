@@ -3,6 +3,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { LEDGER_COLLECTIONS } from '@/contexts/AuthContext';
 
 export const EXPORT_COLLECTIONS = [...LEDGER_COLLECTIONS, 'bus_events'] as const;
+export const EXPORT_TABLES = EXPORT_COLLECTIONS;
 export type ExportCollection = (typeof EXPORT_COLLECTIONS)[number];
 
 export interface ExportProgress {

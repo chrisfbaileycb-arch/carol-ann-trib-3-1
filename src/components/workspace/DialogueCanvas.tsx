@@ -10,6 +10,8 @@ import { AGENT_PRESETS, voiceByName } from '@/data/agents';
 import { isLightTheme } from '@/data/intake';
 import AgentAvatar from '@/components/agents/AgentAvatar';
 import VoiceOrb from '@/components/workspace/VoiceOrb';
+import LiveWaveformIndicator from '@/components/voice/LiveWaveformIndicator';
+import { liveAudioEngine, type LiveAudioState } from '@/lib/geminiLiveAudio';
 import {
   AttachmentPlusMenu,
   StagedAttachmentsBar,
@@ -54,6 +56,7 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
   const [lightboxImage, setLightboxImage] = useState<{ url: string; name: string } | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
+  const [liveAudioState, setLiveAudioState] = useState<LiveAudioState>(liveAudioEngine.getState());
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -70,6 +73,11 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isProcessing, stagedAttachments]);
+
+  // Synchronize Gemini Live voice orchestrator state
+  useEffect(() => {
+    return liveAudioEngine.subscribeState((st) => setLiveAudioState(st));
+  }, []);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return `${bytes} B`;
@@ -616,6 +624,18 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
             isLight={isLight}
           />
 
+          {/* Active Gemini Live Voice Orchestrator Waveform Banner */}
+          {(liveAudioState === 'listening' || liveAudioState === 'speaking' || liveAudioState === 'connecting' || liveAudioState === 'requesting_mic') && (
+            <div className="mb-2.5 animate-fadeIn">
+              <LiveWaveformIndicator
+                mode="inline"
+                isLight={isLight}
+                voiceName={currentAgent.geminiVoice}
+                onClose={() => liveAudioEngine.stop()}
+              />
+            </div>
+          )}
+
           {/* Input Box Card */}
           <div className={`flex items-end gap-2.5 rounded-2xl border p-3 shadow-lg transition-all ${
             isLight
@@ -666,6 +686,7 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
                 }}
                 voiceName={currentAgent.geminiVoice}
                 disabled={isProcessing}
+                isLight={isLight}
               />
             </div>
 

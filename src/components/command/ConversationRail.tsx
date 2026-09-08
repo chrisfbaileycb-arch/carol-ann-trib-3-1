@@ -8,17 +8,10 @@ import { startRun, pushLog } from '@/lib/agentRunner';
 import { publishBus, subscribeBus } from '@/lib/realtimeBus';
 import { loadSaved, saveSaved, uid } from '@/lib/memoryStore';
 import Icon from '@/components/common/Icon';
+import LiveWaveformIndicator from '@/components/voice/LiveWaveformIndicator';
 
 const VoiceWave: React.FC<{ active: boolean }> = ({ active }) => (
-  <div className="flex h-4 items-end gap-[3px]">
-    {[0, 1, 2, 3, 4].map((i) => (
-      <span
-        key={i}
-        className={`w-[3px] rounded-full ${active ? 'm-wave-bar bg-[var(--m-accent-soft)]' : 'bg-white/20'}`}
-        style={{ height: '100%', animationDelay: `${i * 0.12}s` }}
-      />
-    ))}
-  </div>
+  <LiveWaveformIndicator mode="compact" />
 );
 
 interface SpeechRecognitionInstance {

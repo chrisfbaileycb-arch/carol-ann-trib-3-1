@@ -37,6 +37,7 @@ export const LEDGER_COLLECTIONS = [
   'connectors',
   'scheduled_commands',
 ] as const;
+export const LEDGER_TABLES = LEDGER_COLLECTIONS;
 
 interface AuthContextValue {
   user: AuthUser | null;
