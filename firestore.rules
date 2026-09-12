@@ -80,6 +80,8 @@ service cloud.firestore {
 
     function isValidBusEvent(data) {
       return data.id is string &&
+             data.userId is string &&
+             data.userId == request.auth.uid &&
              data.eventType is string &&
              data.eventType.size() <= 128 &&
              data.timestamp is string;
@@ -158,11 +160,11 @@ service cloud.firestore {
       allow delete: if isValidId(workspaceId) && isOwner(resource.data.userId);
     }
 
-    // Realtime Message Bus Events
+    // Realtime Message Bus Events (strictly require authenticated user owning the event)
     match /bus_events/{eventId} {
-      allow get, list: if isValidId(eventId);
-      allow create: if isValidId(eventId) && isValidBusEvent(request.resource.data);
-      allow delete: if isValidId(eventId);
+      allow read, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(eventId) && request.resource.data.userId == request.auth.uid && isValidBusEvent(request.resource.data);
+      allow update: if isSignedIn() && isValidId(eventId) && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidBusEvent(request.resource.data);
     }
   }
 }

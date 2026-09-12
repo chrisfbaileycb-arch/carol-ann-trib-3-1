@@ -17,6 +17,7 @@ import {
   loadSessions, saveSessions,
   uid, getDeviceKey,
   fetchCloudState, sendCloudSync,
+  isFakeMemory, isFakeMessage,
 } from '@/lib/memoryStore';
 import { getTheme, type AestheticTheme } from '@/data/intake';
 import { db } from '@/lib/firebase';
@@ -67,11 +68,17 @@ export const CarolProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     fetchCloudState(userId).then((cloud) => {
       if (cloud) {
         if (cloud.profile) setProfile((p) => ({ ...p, ...(cloud.profile as Partial<UserProfile>) }));
-        if (Array.isArray(cloud.messages) && cloud.messages.length > 0) {
-          setMessages((prev) => (prev.length > (cloud.messages as ConversationMessage[]).length ? prev : (cloud.messages as ConversationMessage[])));
+        if (Array.isArray(cloud.messages)) {
+          const validMsgs = (cloud.messages as ConversationMessage[]).filter((m) => !isFakeMessage(m));
+          if (validMsgs.length > 0) {
+            setMessages((prev) => (prev.length > validMsgs.length ? prev : validMsgs));
+          }
         }
-        if (Array.isArray(cloud.memories) && cloud.memories.length > 0) {
-          setMemories((prev) => (prev.length > (cloud.memories as MemoryEntry[]).length ? prev : (cloud.memories as MemoryEntry[])));
+        if (Array.isArray(cloud.memories)) {
+          const validMems = (cloud.memories as MemoryEntry[]).filter((m) => !isFakeMemory(m));
+          if (validMems.length > 0) {
+            setMemories((prev) => (prev.length > validMems.length ? prev : validMems));
+          }
         }
         if (Array.isArray(cloud.errands) && cloud.errands.length > 0) {
           setErrands((prev) => (prev.length > (cloud.errands as ErrandTask[]).length ? prev : (cloud.errands as ErrandTask[])));

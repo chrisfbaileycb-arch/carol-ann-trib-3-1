@@ -154,6 +154,30 @@ app.get('/api/cloud/state', verifyFirebaseToken, async (req, res) => {
       state = localWorkspaceCache.get(cleanId) || null;
     }
 
+    if (state && typeof state === 'object') {
+      if (Array.isArray(state.memories)) {
+        state.memories = (state.memories as Array<Record<string, unknown>>).filter((m) => {
+          const content = String(m?.content || '').toLowerCase();
+          const tags = Array.isArray(m?.tags) ? (m.tags as string[]).join(' ').toLowerCase() : '';
+          const id = String(m?.id || '').toLowerCase();
+          return (
+            !id.includes('seed') &&
+            !id.includes('fake') &&
+            !content.includes('volleyball') &&
+            !content.includes('whey') &&
+            !tags.includes('volleyball') &&
+            !tags.includes('whey')
+          );
+        });
+      }
+      if (Array.isArray(state.messages)) {
+        state.messages = (state.messages as Array<Record<string, unknown>>).filter((m) => {
+          const id = String(m?.id || '').toLowerCase();
+          return !id.includes('seed') && !id.includes('fake') && id !== 'msg_init_1' && id !== 'msg_init_2';
+        });
+      }
+    }
+
     res.json({
       status: 'ok',
       cloudNative: true,

@@ -108,7 +108,7 @@ export const getDeviceKey = (): string => {
   return k.replace(/"/g, '');
 };
 
-// --- Seed data ---------------------------------------------------------------
+// --- Seed data (Strictly empty defaults - no fabricated identity or content) ---
 
 export const SEED_MEMORIES: MemoryEntry[] = [];
 
@@ -117,6 +117,41 @@ export const SEED_CHECKINS: CheckInRecord[] = [];
 export const SEED_MESSAGES: ConversationMessage[] = [];
 
 export const SEED_ERRANDS: ErrandTask[] = [];
+
+export const isFakeMemory = (m: Partial<MemoryEntry>): boolean => {
+  if (!m || typeof m !== 'object') return true;
+  const content = (m.content || '').toLowerCase();
+  const tags = Array.isArray(m.tags) ? m.tags.join(' ').toLowerCase() : '';
+  const id = (m.id || '').toLowerCase();
+  return (
+    id.includes('seed') ||
+    id.includes('fake') ||
+    content.includes('volleyball') ||
+    content.includes('whey') ||
+    (content.includes('protein') && (content.includes('powder') || content.includes('shake') || content.includes('isolate') || content.includes('bar'))) ||
+    tags.includes('volleyball') ||
+    tags.includes('whey')
+  );
+};
+
+export const isFakeMessage = (m: Partial<ConversationMessage>): boolean => {
+  if (!m || typeof m !== 'object') return true;
+  const id = (m.id || '').toLowerCase();
+  const content = (m.content || '').toLowerCase();
+  return (
+    id.includes('seed') ||
+    id.includes('fake') ||
+    id.startsWith('msg_seed') ||
+    id.startsWith('seed_') ||
+    content.includes('carol ann orchestrator online') ||
+    content.includes('fabricated') ||
+    id === 'msg_init_1' ||
+    id === 'msg_init_2' ||
+    id === 'msg_seed_1' ||
+    id === 'msg_seed_2' ||
+    id === 'msg_welcome'
+  );
+};
 
 // --- Typed accessors ---------------------------------------------------------
 
@@ -129,12 +164,35 @@ export const saveSessions = (s: MyDaySession[]) => write(KEYS.sessions, s);
 export const loadCheckIns = (): CheckInRecord[] => read<CheckInRecord[]>(KEYS.checkIns, SEED_CHECKINS);
 export const saveCheckIns = (c: CheckInRecord[]) => write(KEYS.checkIns, c);
 
-export const loadMemories = (): MemoryEntry[] => read<MemoryEntry[]>(KEYS.memories, SEED_MEMORIES);
-export const saveMemories = (m: MemoryEntry[]) => write(KEYS.memories, m);
+export const loadMemories = (): MemoryEntry[] => {
+  const raw = read<MemoryEntry[]>(KEYS.memories, SEED_MEMORIES);
+  if (!Array.isArray(raw)) return [];
+  const clean = raw.filter((m) => !isFakeMemory(m));
+  if (clean.length !== raw.length) {
+    write(KEYS.memories, clean);
+  }
+  return clean;
+};
 
-export const loadMessages = (): ConversationMessage[] =>
-  read<ConversationMessage[]>(KEYS.messages, SEED_MESSAGES);
-export const saveMessages = (m: ConversationMessage[]) => write(KEYS.messages, m);
+export const saveMemories = (m: MemoryEntry[]) => {
+  const clean = Array.isArray(m) ? m.filter((entry) => !isFakeMemory(entry)) : [];
+  write(KEYS.memories, clean);
+};
+
+export const loadMessages = (): ConversationMessage[] => {
+  const raw = read<ConversationMessage[]>(KEYS.messages, SEED_MESSAGES);
+  if (!Array.isArray(raw)) return [];
+  const clean = raw.filter((msg) => !isFakeMessage(msg));
+  if (clean.length !== raw.length) {
+    write(KEYS.messages, clean);
+  }
+  return clean;
+};
+
+export const saveMessages = (m: ConversationMessage[]) => {
+  const clean = Array.isArray(m) ? m.filter((msg) => !isFakeMessage(msg)) : [];
+  write(KEYS.messages, clean);
+};
 
 export const loadErrands = (): ErrandTask[] => read<ErrandTask[]>(KEYS.errands, SEED_ERRANDS);
 export const saveErrands = (e: ErrandTask[]) => write(KEYS.errands, e);
