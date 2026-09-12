@@ -93,7 +93,7 @@ export const Onboarding: React.FC<{ onComplete: () => void }> = ({ onComplete })
                   <input
                     value={profile.name}
                     onChange={(e) => updateProfile({ name: e.target.value })}
-                    placeholder="Sarah"
+                    placeholder="Your name"
                     className="mt-1.5 w-full rounded-xl border border-white/12 bg-black/30 px-4 py-3 text-base normal-case text-white placeholder:text-white/20 outline-none focus:border-[var(--m-accent)]"
                   />
                 </label>
@@ -103,7 +103,7 @@ export const Onboarding: React.FC<{ onComplete: () => void }> = ({ onComplete })
                     value={profile.identity}
                     onChange={(e) => updateProfile({ identity: e.target.value })}
                     rows={3}
-                    placeholder="Engineer, mother of two, training for a first powerlifting meet."
+                    placeholder="e.g. Founder, architect, parent, runner..."
                     className="mt-1.5 w-full resize-none rounded-xl border border-white/12 bg-black/30 px-4 py-3 text-sm normal-case text-white placeholder:text-white/20 outline-none focus:border-[var(--m-accent)]"
                   />
                 </label>
@@ -112,7 +112,8 @@ export const Onboarding: React.FC<{ onComplete: () => void }> = ({ onComplete })
                   <input
                     value={profile.affirmation}
                     onChange={(e) => updateProfile({ affirmation: e.target.value })}
-                    className="mt-1.5 w-full rounded-xl border border-white/12 bg-black/30 px-4 py-3 text-sm normal-case italic text-white outline-none focus:border-[var(--m-accent)]"
+                    placeholder="e.g. Focused, intentional, and grounded every single day."
+                    className="mt-1.5 w-full rounded-xl border border-white/12 bg-black/30 px-4 py-3 text-sm normal-case italic text-white placeholder:text-white/20 outline-none focus:border-[var(--m-accent)]"
                   />
                 </label>
               </>

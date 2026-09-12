@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import {
   ListOrdered, Terminal, FileText, ShieldAlert, CheckCircle2,
-  Clock, Play, Trash2, Check, Copy, ExternalLink, ChevronRight,
-  Sparkles, RefreshCw, ShoppingCart, Calendar, AlertTriangle,
-  Globe, Monitor, Cpu, ArrowRight, Eye, PlayCircle, ShieldCheck, Lock
+  Clock, Trash2, Check, Copy, ExternalLink, ChevronRight,
+  Sparkles, CheckSquare, Calendar, AlertTriangle,
+  Cpu, ArrowRight, Eye, ShieldCheck, Lock, ShoppingCart
 } from 'lucide-react';
 import type { ErrandTask, HydrateFormAction, UserProfile } from '@/data/schemas';
 import { isLightTheme } from '@/data/intake';
@@ -36,16 +36,9 @@ export const RightDrawer: React.FC<RightDrawerProps> = ({
   profile,
 }) => {
   const isLight = profile ? isLightTheme(profile) : false;
-  const [activeTab, setActiveTab] = useState<'browser' | 'errands' | 'functions' | 'scratchpad' | 'confirmations'>('browser');
+  const [activeTab, setActiveTab] = useState<'errands' | 'functions' | 'scratchpad' | 'confirmations'>('errands');
   const [engine, setEngine] = useState<BrowserEngine>('gemini-flash');
   const [copied, setCopied] = useState(false);
-  const [simulatingStep, setSimulatingStep] = useState<number | null>(null);
-  const [browserUrl, setBrowserUrl] = useState<string>('https://wholefoods.amazon.com/cart');
-  const [domLogs, setDomLogs] = useState<string[]>([
-    '[INIT] Browser Engine ready: Gemini 2.0 Flash Native Tool Runner',
-    '[BRIDGE] DOM inspector listening on window.sovereignBridge',
-    '[STATUS] Zero external cloud telemetry. Sandboxed in browser container.'
-  ]);
 
   const pendingActions = actions.filter((a) => a.status === 'pending_confirmation');
 
@@ -53,36 +46,6 @@ export const RightDrawer: React.FC<RightDrawerProps> = ({
     navigator.clipboard.writeText(scratchpad);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleRunBrowserSimulation = (taskName: string, targetUrl: string) => {
-    setBrowserUrl(targetUrl);
-    setSimulatingStep(1);
-    setDomLogs((prev) => [
-      `[${new Date().toLocaleTimeString()}] Navigating to ${targetUrl}...`,
-      ...prev
-    ]);
-
-    setTimeout(() => {
-      setSimulatingStep(2);
-      setDomLogs((prev) => [
-        `[${new Date().toLocaleTimeString()}] Querying selectors: input[name="search"], .cart-item-slot`,
-        `[${new Date().toLocaleTimeString()}] Hydrating items via ${engine} tool schema...`,
-        ...prev
-      ]);
-    }, 1000);
-
-    setTimeout(() => {
-      setSimulatingStep(3);
-      setDomLogs((prev) => [
-        `[${new Date().toLocaleTimeString()}] Verification successful. Awaiting operator confirmation to finalize.`,
-        ...prev
-      ]);
-    }, 2200);
-
-    setTimeout(() => {
-      setSimulatingStep(null);
-    }, 3500);
   };
 
   return (
@@ -94,8 +57,8 @@ export const RightDrawer: React.FC<RightDrawerProps> = ({
         isLight ? 'border-rose-200/60 bg-white/70' : 'border-white/8 bg-zinc-950/60'
       }`}>
         <div className="flex items-center gap-1.5">
-          <Monitor className="h-4 w-4 text-sky-500" />
-          <span className={`text-xs font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>Browser Co-Pilot</span>
+          <Terminal className="h-4 w-4 text-sky-500" />
+          <span className={`text-xs font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>Execution Co-Pilot</span>
         </div>
 
         {/* Engine Dropdown */}
@@ -103,14 +66,7 @@ export const RightDrawer: React.FC<RightDrawerProps> = ({
           <span className={`text-[10px] uppercase font-mono font-semibold ${isLight ? 'text-slate-500' : 'text-white/50'}`}>Engine:</span>
           <select
             value={engine}
-            onChange={(e) => {
-              const newEng = e.target.value as BrowserEngine;
-              setEngine(newEng);
-              setDomLogs((prev) => [
-                `[ENGINE] Switched to ${newEng === 'gemini-flash' ? 'Gemini 2.0 Flash (Native)' : newEng === 'claude-browser' ? 'Claude 3.7 Sonnet' : 'GPT-4o'}`,
-                ...prev
-              ]);
-            }}
+            onChange={(e) => setEngine(e.target.value as BrowserEngine)}
             className={`rounded-md border px-2 py-0.5 text-xs font-medium outline-none cursor-pointer ${
               isLight
                 ? 'border-rose-200 bg-white text-sky-700 shadow-xs'
@@ -129,22 +85,6 @@ export const RightDrawer: React.FC<RightDrawerProps> = ({
         isLight ? 'border-rose-200/60 bg-white/60' : 'border-white/8 bg-zinc-950/40'
       }`}>
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => setActiveTab('browser')}
-            className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition whitespace-nowrap ${
-              activeTab === 'browser'
-                ? isLight
-                  ? 'bg-sky-100 text-sky-800 border border-sky-300 font-semibold'
-                  : 'bg-sky-500/25 text-sky-200 border border-sky-500/40 font-semibold'
-                : isLight
-                ? 'text-slate-600 hover:text-slate-900'
-                : 'text-white/65 hover:text-white'
-            }`}
-          >
-            <Globe className="h-3.5 w-3.5" />
-            <span>Live DOM</span>
-          </button>
-
           <button
             onClick={() => setActiveTab('errands')}
             className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition whitespace-nowrap ${
@@ -213,150 +153,6 @@ export const RightDrawer: React.FC<RightDrawerProps> = ({
 
       {/* Drawer Content Body */}
       <div className="m-scroll flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Tab 0: LIVE DOM BRIDGE / BROWSER RUNNER */}
-        {activeTab === 'browser' && (
-          <div className="space-y-4">
-            {/* Browser Stage Viewport */}
-            <div className={`rounded-2xl border overflow-hidden shadow-xl ${
-              isLight ? 'border-rose-200/80 bg-white/90 shadow-md' : 'border-white/10 bg-[#0B0C12]'
-            }`}>
-              {/* URL Address Bar */}
-              <div className={`flex items-center gap-2 border-b px-3 py-2 ${
-                isLight ? 'border-rose-200/60 bg-rose-50/50' : 'border-white/8 bg-[#161722]'
-              }`}>
-                <span className="flex gap-1">
-                  <span className="h-2 w-2 rounded-full bg-rose-500/60" />
-                  <span className="h-2 w-2 rounded-full bg-amber-500/60" />
-                  <span className="h-2 w-2 rounded-full bg-emerald-500/60" />
-                </span>
-                <div className={`flex flex-1 items-center gap-1.5 rounded-md px-2 py-0.5 font-mono text-[10.5px] truncate ${
-                  isLight ? 'bg-white border border-rose-200/60 text-slate-700' : 'bg-black/40 text-white/70'
-                }`}>
-                  <Lock className="h-2.5 w-2.5 text-emerald-500" />
-                  <span className="truncate">{browserUrl}</span>
-                </div>
-                {simulatingStep !== null && (
-                  <RefreshCw className="h-3 w-3 text-sky-500 animate-spin shrink-0" />
-                )}
-              </div>
-
-              {/* Viewport Canvas Simulation */}
-              <div className={`relative p-4 min-h-[160px] flex flex-col justify-between ${
-                isLight ? 'bg-gradient-to-b from-rose-50/40 to-white text-slate-800' : 'bg-gradient-to-b from-[#12131C] to-[#0A0B10]'
-              }`}>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase tracking-wider font-mono text-sky-600 dark:text-sky-300 flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-sky-500 animate-ping" />
-                      DOM Automation Bridge Active
-                    </span>
-                    <span className={`text-[9.5px] font-mono ${isLight ? 'text-slate-400' : 'text-white/35'}`}>0ms Sandboxed</span>
-                  </div>
-
-                  {/* Visual Step Pipeline */}
-                  <div className="grid grid-cols-3 gap-1.5 pt-1">
-                    <div className={`rounded p-1.5 text-center text-[9.5px] font-mono border ${
-                      simulatingStep === 1
-                        ? isLight ? 'border-sky-400 bg-sky-100 text-sky-900 font-semibold' : 'border-sky-400 bg-sky-500/20 text-white'
-                        : isLight ? 'border-rose-100 bg-white/70 text-slate-500' : 'border-white/8 text-white/40'
-                    }`}>
-                      1. Navigate DOM
-                    </div>
-                    <div className={`rounded p-1.5 text-center text-[9.5px] font-mono border ${
-                      simulatingStep === 2
-                        ? isLight ? 'border-sky-400 bg-sky-100 text-sky-900 font-semibold' : 'border-sky-400 bg-sky-500/20 text-white'
-                        : isLight ? 'border-rose-100 bg-white/70 text-slate-500' : 'border-white/8 text-white/40'
-                    }`}>
-                      2. Hydrate Cart
-                    </div>
-                    <div className={`rounded p-1.5 text-center text-[9.5px] font-mono border ${
-                      simulatingStep === 3
-                        ? isLight ? 'border-emerald-400 bg-emerald-100 text-emerald-900 font-semibold' : 'border-emerald-400 bg-emerald-500/20 text-emerald-300'
-                        : isLight ? 'border-rose-100 bg-white/70 text-slate-500' : 'border-white/8 text-white/40'
-                    }`}>
-                      3. Stage & Verify
-                    </div>
-                  </div>
-                </div>
-
-                <div className={`mt-3 pt-2 border-t flex items-center justify-between ${isLight ? 'border-rose-100' : 'border-white/6'}`}>
-                  <div className={`flex items-center gap-1 text-[10px] font-mono ${isLight ? 'text-slate-500' : 'text-white/50'}`}>
-                    <span>Engine:</span>
-                    <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-white'}`}>{engine.replace('-flash', '').toUpperCase()}</span>
-                  </div>
-                  <button
-                    onClick={() => handleRunBrowserSimulation('Whole Foods Weekly Cart', 'https://wholefoods.amazon.com/cart')}
-                    className="flex items-center gap-1 rounded-lg bg-sky-600 hover:bg-sky-500 px-2.5 py-1 text-[10.5px] font-semibold text-white transition shadow-sm"
-                  >
-                    <Play className="h-3 w-3" />
-                    <span>Run Whole Foods Errand</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Automation Triggers */}
-            <div className="space-y-2">
-              <span className={`text-[11px] font-semibold uppercase tracking-wider ${isLight ? 'text-slate-500' : 'text-white/40'}`}>
-                Quick Errand DOM Triggers
-              </span>
-              <div className="grid grid-cols-1 gap-2">
-                <button
-                  onClick={() => handleRunBrowserSimulation('Google Calendar Slot Booking', 'https://calendar.google.com/scheduling')}
-                  className={`flex items-center justify-between rounded-xl border p-2.5 text-left transition ${
-                    isLight
-                      ? 'border-rose-200/80 bg-white/80 hover:bg-white shadow-xs'
-                      : 'border-white/8 bg-white/[0.02] hover:border-sky-400/40 hover:bg-white/[0.04]'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-sky-500" />
-                    <div>
-                      <p className={`text-xs font-semibold ${isLight ? 'text-slate-800' : 'text-white'}`}>Google Calendar Scheduling Buffer</p>
-                      <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-white/40'}`}>Inspect 15-min buffers for Thursday review</p>
-                    </div>
-                  </div>
-                  <PlayCircle className={`h-4 w-4 ${isLight ? 'text-slate-400' : 'text-white/40'} group-hover:text-sky-500`} />
-                </button>
-
-                <button
-                  onClick={() => handleRunBrowserSimulation('Amazon Whey Isolate Cart', 'https://amazon.com/cart')}
-                  className={`flex items-center justify-between rounded-xl border p-2.5 text-left transition ${
-                    isLight
-                      ? 'border-rose-200/80 bg-white/80 hover:bg-white shadow-xs'
-                      : 'border-white/8 bg-white/[0.02] hover:border-amber-400/40 hover:bg-white/[0.04]'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <ShoppingCart className="h-4 w-4 text-amber-500" />
-                    <div>
-                      <p className={`text-xs font-semibold ${isLight ? 'text-slate-800' : 'text-white'}`}>Amazon Cart Reorder</p>
-                      <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-white/40'}`}>Stage 5lb Vanilla Whey Isolate in checkout</p>
-                    </div>
-                  </div>
-                  <PlayCircle className={`h-4 w-4 ${isLight ? 'text-slate-400' : 'text-white/40'} group-hover:text-amber-500`} />
-                </button>
-              </div>
-            </div>
-
-            {/* Live DOM Log Stream */}
-            <div className={`rounded-xl border p-3 space-y-1.5 font-mono text-[10px] max-h-48 overflow-y-auto m-scroll ${
-              isLight
-                ? 'border-rose-200/80 bg-white/90 text-sky-800 shadow-xs'
-                : 'border-white/8 bg-black/60 text-sky-300/80'
-            }`}>
-              <p className={`uppercase tracking-widest text-[9px] border-b pb-1 ${isLight ? 'text-slate-400 border-rose-100' : 'text-white/40 border-white/8'}`}>
-                Live DOM Protocol Stream
-              </p>
-              {domLogs.map((log, idx) => (
-                <div key={idx} className="leading-relaxed">
-                  {log}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Tab 1: Active Errand Queues */}
         {activeTab === 'errands' && (
           <div className="space-y-3">

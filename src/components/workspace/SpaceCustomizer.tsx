@@ -527,10 +527,10 @@ export const SpaceCustomizer: React.FC<SpaceCustomizerProps> = ({
                     }`}
                   >
                     <div className="absolute inset-0 opacity-80" style={{ background: w.css }} />
-                    <div className="relative z-10 flex items-center justify-between">
-                      <span className="text-sm font-semibold text-white">{w.label}</span>
+                    <div className="relative z-10 flex items-center justify-between gap-2 w-full">
+                      <span className="text-sm font-semibold text-white truncate min-w-0 flex-1">{w.label}</span>
                       {isSelected && (
-                        <span className="rounded-full bg-[var(--m-accent)] p-1 text-white shadow-md">
+                        <span className="rounded-full bg-[var(--m-accent)] p-1 text-white shadow-md shrink-0">
                           <Check className="h-3.5 w-3.5" />
                         </span>
                       )}

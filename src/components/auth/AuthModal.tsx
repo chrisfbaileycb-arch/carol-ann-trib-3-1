@@ -128,7 +128,7 @@ export const AuthModal: React.FC<{ open: boolean; onClose: () => void; initialMo
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Sarah"
+                  placeholder="Your name"
                   className="flex-1 bg-transparent text-sm normal-case text-white placeholder:text-white/20 outline-none"
                 />
               </div>

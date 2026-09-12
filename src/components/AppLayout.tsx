@@ -143,10 +143,10 @@ const CarolShell: React.FC = () => {
             <span className={`h-3 w-px ${isLight ? 'bg-slate-300' : 'bg-white/15'}`} />
             <span
               className={`flex items-center gap-1.5 text-[11px] font-medium ${
-                isLight ? 'text-violet-700' : 'text-sky-300'
+                isLight ? 'text-emerald-700' : 'text-emerald-300'
               }`}
             >
-              <Cloud className="h-3.5 w-3.5" /> Cloud Agent Native · {memories.length + checkIns.length} cloud records synced
+              <Shield className="h-3.5 w-3.5 text-emerald-500" /> Sovereign On-Device Storage · {memories.length} memories on this device
             </span>
             <span className={`h-3 w-px ${isLight ? 'bg-slate-300' : 'bg-white/15'}`} />
             <span

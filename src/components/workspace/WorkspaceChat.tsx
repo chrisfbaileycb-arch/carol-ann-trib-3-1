@@ -88,20 +88,6 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
       updatedAt: new Date().toISOString(),
       agentId: 'carol-anchor',
     },
-    {
-      id: 'th_salon',
-      title: 'Executive Calendar & Styling with Coco',
-      domain: 'errands',
-      updatedAt: new Date(Date.now() - 3600e3 * 2).toISOString(),
-      agentId: 'coco',
-    },
-    {
-      id: 'th_gym',
-      title: 'Strength Conditioning Cycle with Ripp',
-      domain: 'gym',
-      updatedAt: new Date(Date.now() - 3600e3 * 5).toISOString(),
-      agentId: 'ripp',
-    },
   ]);
   const [activeThreadId, setActiveThreadId] = useState<string>('th_orchestrator');
   const [activeAgentId, setActiveAgentId] = useState<string>('carol-anchor');

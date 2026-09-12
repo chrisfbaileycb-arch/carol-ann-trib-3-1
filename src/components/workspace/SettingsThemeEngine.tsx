@@ -501,9 +501,9 @@ export const SettingsThemeEngine: React.FC<SettingsThemeEngineProps> = ({
                           className="absolute -top-3 -left-3 h-14 w-14 rounded-full blur-xl"
                           style={{ background: wp.glowColor, opacity: 0.7 }}
                         />
-                        <div className="absolute inset-0 flex items-center justify-between px-3">
+                        <div className="absolute inset-0 flex items-center justify-between px-2.5 gap-2">
                           <span
-                            className={`text-[9px] font-mono tracking-widest uppercase px-2 py-0.5 rounded-full border backdrop-blur-md ${
+                            className={`text-[9px] font-mono tracking-wider uppercase px-2 py-0.5 rounded-full border backdrop-blur-md truncate shrink-0 max-w-[48%] ${
                               wp.textColorScheme === 'dark'
                                 ? 'bg-white/85 text-slate-800 border-rose-200 shadow-xs font-semibold'
                                 : 'bg-black/60 text-white/80 border-white/10'
@@ -512,7 +512,7 @@ export const SettingsThemeEngine: React.FC<SettingsThemeEngineProps> = ({
                             {wp.mood}
                           </span>
                           <span
-                            className={`text-[9px] font-mono tracking-widest uppercase px-2 py-0.5 rounded-full border backdrop-blur-md ${
+                            className={`text-[9px] font-mono tracking-wider uppercase px-2 py-0.5 rounded-full border backdrop-blur-md truncate shrink-0 max-w-[48%] ${
                               wp.textColorScheme === 'dark'
                                 ? 'bg-white/85 text-slate-700 border-rose-200 shadow-xs'
                                 : 'bg-black/60 text-white/70 border-white/10'
@@ -523,10 +523,10 @@ export const SettingsThemeEngine: React.FC<SettingsThemeEngineProps> = ({
                         </div>
                       </div>
 
-                      <div className="flex items-start justify-between">
-                        <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
                           <p
-                            className={`font-semibold text-xs transition ${
+                            className={`font-semibold text-xs truncate transition ${
                               isLight
                                 ? 'text-slate-900 group-hover:text-rose-600'
                                 : 'text-white group-hover:text-[var(--m-accent-soft)]'
@@ -535,7 +535,7 @@ export const SettingsThemeEngine: React.FC<SettingsThemeEngineProps> = ({
                             {wp.label}
                           </p>
                           <p
-                            className={`mt-1 text-[11px] leading-relaxed line-clamp-2 ${
+                            className={`mt-1 text-[11px] leading-relaxed line-clamp-2 break-words ${
                               isLight ? 'text-slate-600' : 'text-white/50'
                             }`}
                           >
@@ -544,7 +544,7 @@ export const SettingsThemeEngine: React.FC<SettingsThemeEngineProps> = ({
                         </div>
                         {isSelected && (
                           <span
-                            className={`grid h-5 w-5 place-items-center rounded-full shrink-0 ml-2 border ${
+                            className={`grid h-5 w-5 place-items-center rounded-full shrink-0 border ${
                               isLight
                                 ? 'bg-emerald-100 text-emerald-700 border-emerald-300'
                                 : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'

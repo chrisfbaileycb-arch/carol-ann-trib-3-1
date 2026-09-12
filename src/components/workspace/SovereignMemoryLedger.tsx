@@ -80,16 +80,16 @@ export const SovereignMemoryLedger: React.FC<SovereignMemoryLedgerProps> = ({ pr
       }`}>
         <div className="flex items-center gap-2">
           <span className={`grid h-8 w-8 place-items-center rounded-xl ${
-            isLight ? 'bg-sky-500/15 text-sky-600' : 'bg-sky-500/20 text-sky-300'
+            isLight ? 'bg-emerald-500/15 text-emerald-600' : 'bg-emerald-500/20 text-emerald-400'
           }`}>
-            <Cloud className="h-4 w-4" />
+            <Shield className="h-4 w-4" />
           </span>
           <div>
             <h1 className={`font-display text-sm font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-              Cloud Agent Memory Vault
+              Sovereign Memory Ledger
             </h1>
             <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-white/45'}`}>
-              Cloud-Native Persistent Memory · Synchronized Across Deployed Web Sessions · Sovereign Operator Control
+              Local-First On-Device Vault · Hardware-Bound Storage · Sovereign Operator Control
             </p>
           </div>
         </div>
@@ -134,15 +134,15 @@ export const SovereignMemoryLedger: React.FC<SovereignMemoryLedgerProps> = ({ pr
               <Lock className="h-4 w-4" />
             </div>
             <div>
-              <p className={`text-xs font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>Cloud Tenant Memory Vault</p>
+              <p className={`text-xs font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>Local Device Memory Vault</p>
               <p className={`text-[10.5px] font-mono truncate max-w-sm ${isLight ? 'text-slate-500' : 'text-white/45'}`}>
-                Tenant Key: {deviceKey}
+                Device Key: {deviceKey}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-4 text-[11px]">
-            <span className="flex items-center gap-1 text-sky-600 dark:text-sky-400 font-medium">
-              <CheckCircle2 className="h-3.5 w-3.5" /> Cloud Agent Synced · Isolated Tenant Vault
+            <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Local-First Storage · Zero External Cloud Transmission
             </span>
             <span className={isLight ? 'text-slate-300' : 'text-white/40'}>|</span>
             <span className={isLight ? 'text-slate-600 font-medium' : 'text-white/60'}>
@@ -274,50 +274,66 @@ export const SovereignMemoryLedger: React.FC<SovereignMemoryLedgerProps> = ({ pr
 
           {/* Memories Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-            {filteredMemories.map((m) => (
-              <div
-                key={m.id}
-                className={`group relative rounded-xl border p-3.5 text-xs space-y-2 transition ${
-                  isLight
-                    ? 'border-rose-200/80 bg-white/90 hover:border-rose-300 text-slate-800 shadow-xs'
-                    : 'border-white/8 bg-white/[0.02] text-white/80 hover:border-white/20'
-                }`}
-              >
-                <div className="flex items-center justify-between text-[10px]">
-                  <span className={`uppercase font-mono tracking-wider font-semibold ${
-                    isLight ? 'text-rose-600' : 'text-[var(--m-accent-soft)]'
-                  }`}>
-                    {m.category}
-                  </span>
-                  <span className={isLight ? 'text-slate-400' : 'text-white/40'}>
-                    Recalled: {m.last_recalled}
-                  </span>
-                </div>
-                <p className={`leading-relaxed ${isLight ? 'text-slate-700' : 'text-white/85'}`}>{m.content}</p>
-                <div className={`flex items-center justify-between pt-1 border-t text-[10px] ${
-                  isLight ? 'border-rose-100' : 'border-white/6'
-                }`}>
-                  <div className="flex flex-wrap gap-1">
-                    {m.tags.map((t, idx) => (
-                      <span key={idx} className={`rounded px-1.5 py-0.5 ${
-                        isLight ? 'bg-rose-50 text-slate-600 border border-rose-100' : 'bg-white/5 text-white/50'
-                      }`}>
-                        #{t}
-                      </span>
-                    ))}
-                  </div>
-                  <button
-                    onClick={() => handleDeleteMemory(m.id)}
-                    className={`opacity-0 group-hover:opacity-100 p-1 transition ${
-                      isLight ? 'text-slate-400 hover:text-rose-600' : 'text-white/30 hover:text-rose-400'
-                    }`}
-                    title="Delete Memory"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+            {filteredMemories.length === 0 ? (
+              <div className={`col-span-full rounded-2xl border border-dashed p-10 text-center ${
+                isLight ? 'border-rose-200 bg-white/50' : 'border-white/10 bg-white/[0.01]'
+              }`}>
+                <Shield className={`h-8 w-8 mx-auto mb-2 ${isLight ? 'text-rose-400' : 'text-emerald-400/60'}`} />
+                <h3 className={`text-sm font-semibold ${isLight ? 'text-slate-800' : 'text-white'}`}>
+                  Your memory ledger is empty. What I know about you starts right here.
+                </h3>
+                <p className={`text-xs mt-1.5 max-w-md mx-auto ${isLight ? 'text-slate-500' : 'text-white/40'}`}>
+                  As you interact with Carol Ann or add entries above, your personal preferences, schedule habits, and routines will be stored strictly on this device.
+                </p>
               </div>
-            ))}
+            ) : (
+              filteredMemories.map((m) => (
+                <article
+                  key={m.id}
+                  aria-label={`Memory entry: ${m.category} - ${m.content.slice(0, 40)}`}
+                  className={`group relative rounded-xl border p-3.5 text-xs space-y-2 transition ${
+                    isLight
+                      ? 'border-rose-200/80 bg-white/90 hover:border-rose-300 text-slate-800 shadow-xs'
+                      : 'border-white/8 bg-white/[0.02] text-white/80 hover:border-white/20'
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className={`uppercase font-mono tracking-wider font-semibold ${
+                      isLight ? 'text-rose-600' : 'text-[var(--m-accent-soft)]'
+                    }`}>
+                      {m.category}
+                    </span>
+                    <span className={isLight ? 'text-slate-400' : 'text-white/40'}>
+                      Recalled: {m.last_recalled}
+                    </span>
+                  </div>
+                  <p className={`leading-relaxed ${isLight ? 'text-slate-700' : 'text-white/85'}`}>{m.content}</p>
+                  <div className={`flex items-center justify-between pt-1 border-t text-[10px] ${
+                    isLight ? 'border-rose-100' : 'border-white/6'
+                  }`}>
+                    <div className="flex flex-wrap gap-1">
+                      {m.tags.map((t, idx) => (
+                        <span key={idx} className={`rounded px-1.5 py-0.5 ${
+                          isLight ? 'bg-rose-50 text-slate-600 border border-rose-100' : 'bg-white/5 text-white/50'
+                        }`}>
+                          #{t}
+                        </span>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => handleDeleteMemory(m.id)}
+                      className={`opacity-0 group-hover:opacity-100 p-1 transition ${
+                        isLight ? 'text-slate-400 hover:text-rose-600' : 'text-white/30 hover:text-rose-400'
+                      }`}
+                      title="Delete Memory"
+                      aria-label="Delete Memory"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </article>
+              ))
+            )}
           </div>
         </div>
 

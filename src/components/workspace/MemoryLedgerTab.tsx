@@ -210,13 +210,16 @@ export const MemoryLedgerTab: React.FC<MemoryLedgerTabProps> = ({
           {/* Records List */}
           <div className="space-y-3">
             {filtered.length === 0 ? (
-              <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-10 text-center text-xs text-white/40">
-                No memories found matching your criteria. Add one using the form on the left.
+              <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-10 text-center text-xs text-white/45">
+                <Shield className="h-7 w-7 text-emerald-400/60 mx-auto mb-2" />
+                <p className="font-semibold text-white/80">Your memory ledger is empty. What I know about you starts right here.</p>
+                <p className="mt-1 text-white/40">Add your first sovereign rule, habit, or priority using the form on the left.</p>
               </div>
             ) : (
               filtered.map((m) => (
-                <div
+                <article
                   key={m.id}
+                  aria-label={`Memory entry: ${m.category} - ${m.content.slice(0, 40)}`}
                   className="rounded-2xl border border-white/8 bg-[#161724] p-4 space-y-2.5 transition hover:border-white/18"
                 >
                   <div className="flex items-center justify-between">
@@ -231,6 +234,7 @@ export const MemoryLedgerTab: React.FC<MemoryLedgerTabProps> = ({
                         onClick={() => onDeleteMemory(m.id)}
                         className="text-white/30 hover:text-rose-400 p-1 transition"
                         title="Delete memory entry"
+                        aria-label="Delete memory entry"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -249,7 +253,7 @@ export const MemoryLedgerTab: React.FC<MemoryLedgerTabProps> = ({
                       </span>
                     ))}
                   </div>
-                </div>
+                </article>
               ))
             )}
           </div>

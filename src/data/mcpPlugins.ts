@@ -1148,16 +1148,8 @@ export const MCP_PLUGINS_DIRECTORY: MCPPlugin[] = [
   },
 ];
 
-// Default pre-installed plugins for immediate rich demo capabilities
-export const DEFAULT_INSTALLED_PLUGIN_IDS: string[] = [
-  'quickbooks',
-  'tripadvisor',
-  'instagram-reels',
-  'shopify',
-  'zapier-gateway',
-  'google-calendar',
-  'gmail',
-];
+// Default installed plugins starts empty for clean slate
+export const DEFAULT_INSTALLED_PLUGIN_IDS: string[] = [];
 
 const STORAGE_INSTALLED_PLUGINS_KEY = 'carol_mcp_installed_plugins';
 const STORAGE_ZAPIER_CONFIG_KEY = 'carol_mcp_zapier_config';
@@ -1168,7 +1160,7 @@ export function loadInstalledPluginIds(): string[] {
     const raw = localStorage.getItem(STORAGE_INSTALLED_PLUGINS_KEY);
     if (!raw) return DEFAULT_INSTALLED_PLUGIN_IDS;
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    if (Array.isArray(parsed)) return parsed;
   } catch (e) {
     console.warn('Failed to load installed plugins from localStorage:', e);
   }

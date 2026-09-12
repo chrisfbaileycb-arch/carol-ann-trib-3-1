@@ -490,7 +490,7 @@ export const AgentRosterMCP: React.FC<AgentRosterMCPProps> = ({ onSelectAgentFor
               <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
                   { name: 'Cloud Workspace Storage MCP', desc: 'Read/write structured JSON archives and cloud memory vault.', status: 'Active (Cloud-Native)' },
-                  { name: 'Browser Automation Runner MCP', desc: 'Dispatches staged errand actions to Whole Foods, Amazon, and delivery portals.', status: 'Active (Isolated Sandboxed)' },
+                  { name: 'Browser Automation Runner MCP', desc: 'Dispatches staged errand actions to external portals with operator confirmation.', status: 'Active (Awaiting Operator Action)' },
                   { name: 'Executive Calendar MCP', desc: 'Syncs buffered slots with Coco and alerts on schedule overlaps.', status: 'Active (Cloud Agent Ready)' },
                   { name: 'Supabase Sovereign Storage MCP', desc: 'Optional end-to-end encrypted backup using your isolated environment credentials.', status: 'Configured' },
                 ].map((mcp, idx) => (

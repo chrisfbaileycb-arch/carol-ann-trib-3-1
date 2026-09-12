@@ -269,7 +269,7 @@ const AgentStudio: React.FC<{ onOpenChat: (agentId: string) => void }> = ({ onOp
           </div>
 
           {/* Editor Drawer */}
-          <aside className="sticky top-4 h-fit rounded-2xl border border-white/12 bg-[#12131A] p-4.5 shadow-xl">
+          <aside className="sticky top-4 max-h-[calc(100vh-2.5rem)] overflow-y-auto m-scroll rounded-2xl border border-white/12 bg-[#12131A] p-4.5 shadow-xl">
             {!editing ? (
               <div className="py-12 text-center">
                 <Sparkles className="mx-auto h-6 w-6 text-white/30" />

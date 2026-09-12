@@ -30,3 +30,12 @@ testFirebaseConnection().then((res) => {
     console.log('[Firebase] Successfully connected to live Firestore database:', firebaseConfig.firestoreDatabaseId);
   }
 });
+
+export async function getFirebaseAuthToken(): Promise<string | null> {
+  try {
+    if (!auth.currentUser) return null;
+    return await auth.currentUser.getIdToken();
+  } catch {
+    return null;
+  }
+}

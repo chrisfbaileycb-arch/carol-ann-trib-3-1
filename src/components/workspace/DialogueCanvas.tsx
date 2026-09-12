@@ -321,13 +321,13 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
                       setInput(starter);
                       inputRef.current?.focus();
                     }}
-                    className={`rounded-full border px-4 py-1.5 text-xs font-medium transition ${
+                    className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition text-left sm:text-center max-w-full break-words leading-relaxed whitespace-normal ${
                       isLight
                         ? 'border-rose-200 bg-rose-50/60 text-slate-700 hover:bg-rose-100 hover:text-slate-900 hover:border-rose-300'
                         : 'border-white/15 bg-white/[0.04] text-white/85 hover:border-[var(--m-accent)]/60 hover:bg-white/10 hover:text-white'
                     }`}
                   >
-                    "{starter}"
+                    &ldquo;{starter}&rdquo;
                   </button>
                 ))}
               </div>
@@ -604,7 +604,8 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
                 <button
                   key={i}
                   onClick={() => setInput(st)}
-                  className={`shrink-0 rounded-full border px-3 py-1 text-xs transition ${
+                  title={st}
+                  className={`shrink-0 max-w-[280px] truncate rounded-full border px-3 py-1 text-xs transition ${
                     isLight
                       ? 'border-rose-200 bg-white/80 text-slate-700 hover:bg-white hover:text-slate-900'
                       : 'border-white/12 bg-white/[0.03] text-white/80 hover:border-white/25 hover:text-white'

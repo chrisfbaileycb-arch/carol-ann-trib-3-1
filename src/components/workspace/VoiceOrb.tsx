@@ -128,24 +128,37 @@ export const VoiceOrb: React.FC<VoiceOrbProps> = ({
     <div className="relative flex items-center gap-2">
       {/* Real-Time Acoustic Waveform Reactive Indicator */}
       {isLive && (
-        <div
+        <button
+          type="button"
+          role="button"
           onClick={() => setShowExpandedWave(!showExpandedWave)}
-          className="cursor-pointer flex items-center gap-1.5 px-2 py-1 rounded-full border border-[var(--m-accent-soft)]/40 bg-[var(--m-accent-soft)]/10 hover:bg-[var(--m-accent-soft)]/20 transition-all"
+          aria-expanded={showExpandedWave}
+          aria-label="Toggle expanded real-time acoustic waveform visualizer"
+          className="cursor-pointer flex items-center gap-1.5 px-2 py-1 rounded-full border border-[var(--m-accent-soft)]/40 bg-[var(--m-accent-soft)]/10 hover:bg-[var(--m-accent-soft)]/20 transition-all outline-none focus:ring-2 focus:ring-[var(--m-accent-soft)]/50"
           title="Click to toggle expanded waveform studio"
         >
           <LiveWaveformIndicator mode="compact" voiceName={voiceMeta.name} isLight={isLight} />
           <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--m-accent-soft)]">
             {engineState === 'speaking' ? 'Aoede' : 'Live Wave'}
           </span>
-        </div>
+        </button>
       )}
 
       {/* Main Voice Toggle Orb Button */}
       <button
         id="btn-voice-orb-orchestrator"
         type="button"
+        role="button"
         onClick={toggleListening}
         disabled={disabled}
+        aria-pressed={isLive}
+        aria-label={
+          isLive
+            ? 'Disconnect Gemini Live voice session'
+            : isSpeaking
+            ? `Speaking as ${voiceMeta.name}`
+            : `Talk to Gemini Live Voice Orchestrator (${voiceMeta.name})`
+        }
         title={
           isLive
             ? 'Gemini Live Voice Active · Click to disconnect'
@@ -153,7 +166,7 @@ export const VoiceOrb: React.FC<VoiceOrbProps> = ({
             ? `Speaking as ${voiceMeta.name}`
             : `Talk to Gemini Live Voice Orchestrator (${voiceMeta.name})`
         }
-        className={`group relative flex h-8 w-8 items-center justify-center rounded-full transition-all ${
+        className={`group relative flex h-8 w-8 items-center justify-center rounded-full transition-all outline-none focus:ring-2 focus:ring-[var(--m-accent-soft)]/60 ${
           isLive
             ? 'border-2 border-[var(--m-accent-soft)] bg-[var(--m-accent-soft)]/25 text-white shadow-[0_0_16px_rgba(232,160,191,0.65)]'
             : isSpeaking

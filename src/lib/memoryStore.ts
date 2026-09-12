@@ -52,10 +52,17 @@ export function write<T>(key: string, value: T): void {
   }
 }
 
+import { getFirebaseAuthToken } from './firebase';
+
 // Cloud State Synchronization Helpers
 export async function fetchCloudState(userId = 'default'): Promise<Record<string, unknown> | null> {
   try {
-    const res = await fetch(`/api/cloud/state?userId=${encodeURIComponent(userId)}`);
+    const token = await getFirebaseAuthToken();
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const res = await fetch(`/api/cloud/state?userId=${encodeURIComponent(userId)}`, { headers });
     if (!res.ok) return null;
     const data = await res.json();
     return (data.state as Record<string, unknown>) || null;
@@ -66,9 +73,14 @@ export async function fetchCloudState(userId = 'default'): Promise<Record<string
 
 export async function sendCloudSync(state: Record<string, unknown>, userId = 'default'): Promise<boolean> {
   try {
+    const token = await getFirebaseAuthToken();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
     const res = await fetch('/api/cloud/sync', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ userId, state }),
     });
     return res.ok;
@@ -98,63 +110,20 @@ export const getDeviceKey = (): string => {
 
 // --- Seed data ---------------------------------------------------------------
 
-const today = new Date().toISOString().slice(0, 10);
+export const SEED_MEMORIES: MemoryEntry[] = [];
 
-export const SEED_MEMORIES: MemoryEntry[] = [
-  { id: 'mem_1', category: 'fitness', content: 'Trains 5x/week — pull days feel strongest on Tuesdays.', tags: ['gym', 'cadence'], last_recalled: today },
-  { id: 'mem_2', category: 'nutrition', content: 'Prefers high-protein breakfast before 7:30am, no dairy.', tags: ['kitchen', 'diet'], last_recalled: today },
-  { id: 'mem_3', category: 'habit', content: 'Evening reflection lands better after a 10 minute walk.', tags: ['core', 'ritual'], last_recalled: today },
-  { id: 'mem_4', category: 'family', content: 'Ava has volleyball Tue/Thu 5–7pm; carpool with the Ruiz family.', tags: ['school', 'logistics'], last_recalled: today },
-  { id: 'mem_5', category: 'preference', content: 'Delivery windows before 10am only — afternoons are deep work.', tags: ['errands'], last_recalled: today },
-];
+export const SEED_CHECKINS: CheckInRecord[] = [];
 
-export const SEED_CHECKINS: CheckInRecord[] = [
-  { id: 'ci_1', type: 'physical', label: 'Morning readiness', notes: 'Legs recovered, HRV steady at 62.', timestamp: new Date(Date.now() - 3600e3 * 5).toISOString() },
-  { id: 'ci_2', type: 'mindset', label: 'Mid-day reset', notes: 'Focus held through the 10am block.', timestamp: new Date(Date.now() - 3600e3 * 2).toISOString() },
-];
+export const SEED_MESSAGES: ConversationMessage[] = [];
 
-export const SEED_MESSAGES: ConversationMessage[] = [
-  {
-    id: 'msg_1',
-    domain: 'core',
-    role: 'assistant',
-    content: "Good morning. Your canvas is synced across both surfaces. Yesterday was Upper Body & Shoulders — today reads as Leg Day & Core. I've also staged three errand chains awaiting your confirm.",
-    source: 'desktop',
-    timestamp: new Date(Date.now() - 3600e3 * 3).toISOString(),
-  },
-  {
-    id: 'msg_2',
-    domain: 'family',
-    role: 'assistant',
-    content: 'School portal shows an early release Thursday at 1:15pm. That collides with your 1:00 architecture review — want me to draft a reschedule?',
-    source: 'desktop',
-    timestamp: new Date(Date.now() - 3600e3 * 2).toISOString(),
-  },
-];
-
-export const SEED_ERRANDS: ErrandTask[] = [
-  { id: 'er_1', target: 'whole-foods', title: 'Weekly grocery delivery', items: ['Organic Eggs', 'Almond Milk', 'Grass-Fed Beef', 'Spinach'], status: 'queued', scheduled_time: 'Tomorrow 8:00–10:00 AM' },
-  { id: 'er_2', target: 'dry-cleaning', title: 'Dry cleaning pickup', items: ['3 Blouses', '2 Slacks'], status: 'draft' },
-  { id: 'er_3', target: 'amazon', title: 'Reorder whey isolate', items: ['Whey Isolate Vanilla 5lb'], status: 'draft' },
-];
+export const SEED_ERRANDS: ErrandTask[] = [];
 
 // --- Typed accessors ---------------------------------------------------------
 
 export const loadProfile = (): UserProfile => read<UserProfile>(KEYS.profile, DEFAULT_PROFILE);
 export const saveProfile = (p: UserProfile) => write(KEYS.profile, p);
 
-export const loadSessions = (): MyDaySession[] =>
-  read<MyDaySession[]>(KEYS.sessions, [
-    {
-      id: 'day_1',
-      date: today,
-      intention: 'Run the day from one surface. Move heavy, think clearly, stay kind.',
-      mood_score: 7,
-      energy_level: 8,
-      reflections: ['Morning block was uninterrupted for 90 minutes.'],
-      completed_tasks: ['Leg day warmup', 'School calendar sync'],
-    },
-  ]);
+export const loadSessions = (): MyDaySession[] => read<MyDaySession[]>(KEYS.sessions, []);
 export const saveSessions = (s: MyDaySession[]) => write(KEYS.sessions, s);
 
 export const loadCheckIns = (): CheckInRecord[] => read<CheckInRecord[]>(KEYS.checkIns, SEED_CHECKINS);
@@ -170,25 +139,12 @@ export const saveMessages = (m: ConversationMessage[]) => write(KEYS.messages, m
 export const loadErrands = (): ErrandTask[] => read<ErrandTask[]>(KEYS.errands, SEED_ERRANDS);
 export const saveErrands = (e: ErrandTask[]) => write(KEYS.errands, e);
 
-export const DEFAULT_STICKERS: StickerWatermark[] = [
-  { id: 'st_1', label: 'Denver Broncos', emoji: '🐴', category: 'sports', opacity: 0.18, position: 'top-right', scale: 1.1, active: true },
-  { id: 'st_2', label: 'Fleetwood Mac / Dreams', emoji: '🪩', category: 'music', opacity: 0.16, position: 'bottom-right', scale: 1.0, active: true },
-  { id: 'st_3', label: 'Sovereign Sovereign Seal', emoji: '✨', category: 'badge', opacity: 0.2, position: 'header-accent', scale: 0.95, active: true },
-  { id: 'st_4', label: 'Olive Peace Branch', emoji: '🕊️', category: 'faith', opacity: 0.15, position: 'bottom-left', scale: 1.0, active: true },
-  { id: 'st_5', label: 'Artisan Sourdough', emoji: '🍞', category: 'culinary', opacity: 0.14, position: 'top-left', scale: 0.9, active: false },
-  { id: 'st_6', label: 'Amethyst Diamond', emoji: '💎', category: 'aesthetic', opacity: 0.1, position: 'center-subtle', scale: 1.2, active: false },
-];
+export const DEFAULT_STICKERS: StickerWatermark[] = [];
 
 export const loadStickers = (): StickerWatermark[] => read<StickerWatermark[]>(KEYS.stickers, DEFAULT_STICKERS);
 export const saveStickers = (s: StickerWatermark[]) => write(KEYS.stickers, s);
 
-export const DEFAULT_SCRATCHPAD = `# Live Co-Pilot Scratchpad
-
-- **Active Protocol:** Carol Ann Sovereign Orchestration
-- **Calendar Queue:** Friday 10:00 AM Hair Salon with Coco (Pending Confirmation)
-- **Conditioning Cycle:** Week 3 Progressive Overload / Romanian Deadlift (Ripp Coach)
-- **Local Errand Staging:** Whole Foods delivery list cached locally on device
-`;
+export const DEFAULT_SCRATCHPAD = '';
 
 export const loadScratchpad = (): string => read<string>(KEYS.scratchpad, DEFAULT_SCRATCHPAD);
 export const saveScratchpad = (text: string) => write(KEYS.scratchpad, text);

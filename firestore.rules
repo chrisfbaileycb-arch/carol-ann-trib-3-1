@@ -108,54 +108,54 @@ service cloud.firestore {
 
     // User Profile Rules
     match /users/{userId} {
-      allow get: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
-      allow create, update: if (isOwner(userId) || (!isSignedIn() && isValidId(userId))) && isValidUserProfile(request.resource.data, userId);
+      allow get: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isValidUserProfile(request.resource.data, userId);
       allow delete: if isOwner(userId);
 
       // Sub-collections under User
       match /messages/{messageId} {
-        allow get, list: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
-        allow create, update: if (isOwner(userId) || (!isSignedIn() && isValidId(userId))) && isValidId(messageId) && isValidMessage(request.resource.data, userId);
-        allow delete: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
+        allow get, list: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidId(messageId) && isValidMessage(request.resource.data, userId);
+        allow delete: if isOwner(userId);
       }
 
       match /memories/{memoryId} {
-        allow get, list: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
-        allow create, update: if (isOwner(userId) || (!isSignedIn() && isValidId(userId))) && isValidId(memoryId) && isValidMemory(request.resource.data, userId);
-        allow delete: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
+        allow get, list: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidId(memoryId) && isValidMemory(request.resource.data, userId);
+        allow delete: if isOwner(userId);
       }
 
       match /errands/{errandId} {
-        allow get, list: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
-        allow create, update: if (isOwner(userId) || (!isSignedIn() && isValidId(userId))) && isValidId(errandId) && isValidErrand(request.resource.data, userId);
-        allow delete: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
+        allow get, list: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidId(errandId) && isValidErrand(request.resource.data, userId);
+        allow delete: if isOwner(userId);
       }
 
       match /checkins/{checkinId} {
-        allow get, list: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
-        allow create, update: if (isOwner(userId) || (!isSignedIn() && isValidId(userId))) && isValidId(checkinId) && isValidCheckIn(request.resource.data, userId);
-        allow delete: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
+        allow get, list: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidId(checkinId) && isValidCheckIn(request.resource.data, userId);
+        allow delete: if isOwner(userId);
       }
 
       match /connectors/{connectorId} {
-        allow get, list: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
-        allow create, update: if (isOwner(userId) || (!isSignedIn() && isValidId(userId))) && isValidId(connectorId) && isValidConnector(request.resource.data, userId);
-        allow delete: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
+        allow get, list: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidId(connectorId) && isValidConnector(request.resource.data, userId);
+        allow delete: if isOwner(userId);
       }
 
       match /scheduled_commands/{cmdId} {
-        allow get, list: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
-        allow create, update: if (isOwner(userId) || (!isSignedIn() && isValidId(userId))) && isValidId(cmdId) && isValidScheduledCommand(request.resource.data, userId);
-        allow delete: if isOwner(userId) || (!isSignedIn() && isValidId(userId));
+        allow get, list: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidId(cmdId) && isValidScheduledCommand(request.resource.data, userId);
+        allow delete: if isOwner(userId);
       }
     }
 
-    // Workspace State Documents
+    // Workspace State Documents (managed server-side via Firebase Admin SDK, or authenticated owner)
     match /workspaces/{workspaceId} {
-      allow get: if isValidId(workspaceId);
-      allow list: if isValidId(workspaceId);
-      allow create, update: if isValidId(workspaceId) && isValidWorkspace(request.resource.data);
-      allow delete: if isValidId(workspaceId) && (isSignedIn() ? resource.data.userId == request.auth.uid : true);
+      allow get: if isValidId(workspaceId) && (isOwner(workspaceId) || isOwner(resource.data.userId));
+      allow list: if isSignedIn();
+      allow create, update: if isValidId(workspaceId) && isValidWorkspace(request.resource.data) && isOwner(request.resource.data.userId);
+      allow delete: if isValidId(workspaceId) && isOwner(resource.data.userId);
     }
 
     // Realtime Message Bus Events
