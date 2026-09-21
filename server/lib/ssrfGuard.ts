@@ -112,7 +112,7 @@ function expandV6(ip: string): bigint {
 }
 
 function isBlockedV6(ip: string): boolean {
-  let addr = ip.toLowerCase();
+  const addr = ip.toLowerCase();
   // IPv4-mapped IPv6 (::ffff:a.b.c.d) — judge by the embedded IPv4 address.
   const mapped = addr.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
   if (mapped) return isBlockedV4(mapped[1]);
@@ -163,7 +163,11 @@ export async function assertUrlSafe(rawUrl: string): Promise<UrlCheck> {
   if (url.username || url.password) {
     throw new SsrfError('URLs with embedded credentials are not allowed.');
   }
-  const hostname = url.hostname.toLowerCase();
+  const hostname = url.hostname
+    .toLowerCase()
+    .replace(/^\[/, '')
+    .replace(/\]$/, '')
+    .replace(/\.$/, '');
   if (!hostname) throw new SsrfError('URL must include a hostname.');
   if (isBlockedHostname(hostname)) {
     throw new SsrfError('That host is not allowed.');
@@ -196,7 +200,7 @@ export async function assertUrlSafe(rawUrl: string): Promise<UrlCheck> {
 export function createHostAllowCheck(): (hostname: string) => Promise<boolean> {
   const cache = new Map<string, boolean>();
   return async (hostname: string): Promise<boolean> => {
-    const key = hostname.toLowerCase();
+    const key = hostname.toLowerCase().replace(/^\[/, '').replace(/\]$/, '');
     const cached = cache.get(key);
     if (cached !== undefined) return cached;
     let ok = false;
