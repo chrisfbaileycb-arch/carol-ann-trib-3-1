@@ -241,6 +241,23 @@ const CarolShell: React.FC = () => {
             >
               <SlidersHorizontal className="h-3.5 w-3.5" /> Re-run intake
             </button>
+            <span className={`h-3 w-px ${isLight ? 'bg-slate-300' : 'bg-white/15'}`} />
+            <button
+              onClick={() => navigate('/privacy')}
+              className={`text-[11px] font-medium transition ${
+                isLight ? 'text-slate-600 hover:text-slate-900' : 'text-white/65 hover:text-white'
+              }`}
+            >
+              Privacy
+            </button>
+            <button
+              onClick={() => navigate('/terms')}
+              className={`text-[11px] font-medium transition ${
+                isLight ? 'text-slate-600 hover:text-slate-900' : 'text-white/65 hover:text-white'
+              }`}
+            >
+              Terms
+            </button>
           </div>
         </footer>
       )}
