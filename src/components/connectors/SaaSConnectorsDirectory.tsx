@@ -12,6 +12,7 @@ import {
   loadConnectedSaasIds,
   toggleConnectedSaas,
 } from '@/data/saasConnectors';
+import { apiFetch } from '@/lib/apiClient';
 
 interface SaaSConnectorsDirectoryProps {
   isLight?: boolean;
@@ -84,12 +85,12 @@ export const SaaSConnectorsDirectory: React.FC<SaaSConnectorsDirectoryProps> = (
     setTestingPing(true);
     setTestResult(null);
     try {
-      const resp = await fetch('/api/connectors/ping', {
+      const resp = await apiFetch('/api/connectors/ping', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           connectorId: conn.id,
-          authState: connectedIds.includes(conn.id) ? 'AUTHENTICATED' : 'ANONYMOUS_SANDBOX',
+          authState: 'ANONYMOUS_SANDBOX', // demo sandbox — nothing here is authenticated
           capabilities: conn.capabilities,
         }),
       });
@@ -101,13 +102,11 @@ export const SaaSConnectorsDirectory: React.FC<SaaSConnectorsDirectoryProps> = (
       }
     } catch {
       setTestResult(JSON.stringify({
-        status: '200_OK',
-        protocol: 'mcp-jsonrpc-2.0',
+        status: 'ping_failed',
         connector: conn.id,
-        latency_ms: Math.floor(Math.random() * 18) + 8,
-        capabilities_available: conn.capabilities,
-        auth_state: connectedIds.includes(conn.id) ? 'AUTHENTICATED' : 'ANONYMOUS_SANDBOX',
-        gateway: 'carol-ann.cloud-gateway.v1',
+        demo: true,
+        simulated: true,
+        error: 'The simulated ping did not return. Sign in and try again.',
       }, null, 2));
     } finally {
       setTestingPing(false);
@@ -134,29 +133,27 @@ export const SaaSConnectorsDirectory: React.FC<SaaSConnectorsDirectoryProps> = (
 
   return (
     <div className="space-y-5">
-      {/* Enterprise Highlight Banner */}
+      {/* Directory Banner — honest demo framing */}
       {!compact && (
         <div className={`relative overflow-hidden rounded-2xl border p-5 transition ${
           isLight
-            ? 'border-indigo-200/90 bg-gradient-to-r from-indigo-50/70 via-rose-50/40 to-amber-50/50 text-slate-900 shadow-sm'
-            : 'border-white/12 bg-gradient-to-r from-indigo-950/40 via-purple-950/25 to-blue-950/30 text-white'
+            ? 'border-amber-200/90 bg-amber-50/70 text-slate-900 shadow-sm'
+            : 'border-amber-500/25 bg-amber-950/20 text-white'
         }`}>
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 px-2.5 py-0.5 text-[10px] font-semibold text-indigo-500">
+                <span className="flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
                   <ShieldCheck className="h-3.5 w-3.5" />
-                  <span>ChatGPT for Work — Enterprise Data Connectors</span>
-                </span>
-                <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[9.5px] font-mono text-emerald-600 dark:text-emerald-400">
-                  SOC-2 / HIPAA Certified
+                  <span>Demo directory — no live connections</span>
                 </span>
               </div>
               <h3 className="font-display text-base font-bold">
-                170+ Pre-Engineered SaaS, Cloud, & Enterprise Data Connectors
+                SaaS Connector Directory
               </h3>
               <p className={`text-xs max-w-3xl leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/60'}`}>
-                Equip Carol Ann agents with read, query, and safe write capabilities across CRM, ERP, code repositories, productivity docs, financial ledgers, and data warehouses without exposing raw API keys.
+                Browse the integrations Carol Ann is designed to work with. "Demo connect" only shortlists an
+                integration for preview — no accounts are linked, no data is exchanged, and no service is contacted.
               </p>
             </div>
 
@@ -185,7 +182,7 @@ export const SaaSConnectorsDirectory: React.FC<SaaSConnectorsDirectoryProps> = (
                 }`}
               >
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                <span>Linked ({connectedIds.length})</span>
+                <span>Demo shortlist ({connectedIds.length})</span>
               </button>
             </div>
           </div>
@@ -413,7 +410,7 @@ export const SaaSConnectorsDirectory: React.FC<SaaSConnectorsDirectoryProps> = (
                   }`}
                 >
                   <Power className="h-3 w-3" />
-                  <span>{isConnected ? 'Disconnect' : 'Connect'}</span>
+                  <span>{isConnected ? 'Remove from demo' : 'Demo connect'}</span>
                 </button>
               </div>
             </div>

@@ -13,6 +13,7 @@ import { LeftRail, type ChatThread } from '@/components/workspace/LeftRail';
 import { DialogueCanvas } from '@/components/workspace/DialogueCanvas';
 import { RightDrawer } from '@/components/workspace/RightDrawer';
 import { ConnectorsHub } from '@/components/workspace/ConnectorsHub';
+import { apiFetch } from '@/lib/apiClient';
 import { SpaceCustomizer } from '@/components/workspace/SpaceCustomizer';
 import { MemoryLedgerTab } from '@/components/workspace/MemoryLedgerTab';
 import AgentStudio from '@/components/agents/AgentStudio';
@@ -377,7 +378,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
     // 2. Otherwise dispatch to Gemini conversational engine
     try {
       const memoryContext = memories.slice(0, 8).map((m) => `- [${m.category}] ${m.content}`).join('\n');
-      const res = await fetch('/api/gemini/chat', {
+      const res = await apiFetch('/api/gemini/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

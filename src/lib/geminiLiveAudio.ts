@@ -8,6 +8,8 @@
  * 5. Low-latency interruption handling (barge-in)
  */
 
+import { getFirebaseAuthToken } from './firebase';
+
 export type LiveAudioState =
   | 'idle'
   | 'requesting_mic'
@@ -188,9 +190,14 @@ export class GeminiLiveAudioEngine {
 
       this.setState('connecting');
 
-      // 4. Connect WebSocket to /api/gemini/live
+      // 4. Connect WebSocket to /api/gemini/live (Firebase ID token required).
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/api/gemini/live`;
+      const idToken = await getFirebaseAuthToken().catch(() => null);
+      if (!idToken) {
+        this.setState('error', 'Sign in to use live voice.');
+        return;
+      }
+      const wsUrl = `${protocol}//${window.location.host}/api/gemini/live?token=${encodeURIComponent(idToken)}`;
       const ws = new WebSocket(wsUrl);
       this.ws = ws;
 
@@ -237,7 +244,10 @@ export class GeminiLiveAudioEngine {
         this.setState('error', 'Unable to connect to Gemini Live voice orchestrator.');
       };
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
+        if (event.code === 4401) {
+          this.setState('error', 'Your sign-in expired. Sign in again to use live voice.');
+        }
         if (this.state !== 'idle') {
           this.stop();
         }

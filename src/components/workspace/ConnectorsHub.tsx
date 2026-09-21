@@ -45,9 +45,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
   const [zapierKeyInput, setZapierKeyInput] = useState(zapierConfig.apiKey);
   const [showApiKey, setShowApiKey] = useState(false);
   const [isTestingZapier, setIsTestingZapier] = useState(false);
-  const [zapierStatusMsg, setZapierStatusMsg] = useState<string | null>(
-    zapierConfig.isConnected ? 'Connected & Synchronized with Zapier MCP Gateway' : null
-  );
+  const [zapierStatusMsg, setZapierStatusMsg] = useState<string | null>(null);
 
   // Protocol Diagnostics State
   const [testOutput, setTestOutput] = useState<string | null>(null);
@@ -91,7 +89,10 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
     });
   }, [selectedCategory, searchQuery, installedPluginIds]);
 
-  // Handle Testing & Fetching Zapier Actions
+  // Handle saving the Zapier demo configuration.
+  // NOTE: this is a demo sandbox — no live Zapier connection is established.
+  // The "test" simulates a handshake locally so action payload shapes can be
+  // previewed; it never contacts Zapier or any live service.
   const handleTestAndFetchZapier = () => {
     setIsTestingZapier(true);
     setZapierStatusMsg(null);
@@ -99,16 +100,18 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
     setTimeout(() => {
       const updatedConfig: ZapierConfig = {
         endpointUrl: zapierUrlInput.trim() || 'https://actions.zapier.com/settings/mcp/',
-        apiKey: zapierKeyInput.trim() || 'zp_sec_live_9f81a7b8e4c291d',
-        isConnected: true,
-        lastSyncedAt: new Date().toISOString(),
+        apiKey: zapierKeyInput.trim(),
+        isConnected: false,
+        lastSyncedAt: null,
         actions: zapierConfig.actions,
       };
 
       setZapierConfig(updatedConfig);
       saveZapierConfig(updatedConfig);
       setIsTestingZapier(false);
-      setZapierStatusMsg(`Handshake 200 OK — Discovered ${updatedConfig.actions.length} pre-authenticated AI actions on ${updatedConfig.endpointUrl}`);
+      setZapierStatusMsg(
+        `Demo configuration saved — simulated sandbox. No live Zapier connection was established; actions below are previews only.`
+      );
 
       // Ensure Zapier Gateway is marked installed
       if (!installedPluginIds.includes('zapier-gateway')) {
@@ -120,20 +123,19 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
     }, 850);
   };
 
-  // Run Test Tool Handshake
+  // Run a SIMULATED diagnostic preview. The output below is a locally
+  // generated payload preview — no live service is contacted.
   const handleRunDiagnosticTest = (toolLabel: string, appName: string) => {
     setIsExecutingTest(true);
-    setTestOutput(`[MCP_STDIO_CALL] Dispatching "${toolLabel}" on ${appName} via Model Context Protocol...`);
+    setTestOutput(`[SIMULATED] Preparing preview of "${toolLabel}" on ${appName}...`);
     setTimeout(() => {
       setTestOutput(
-        `[MCP_RESPONSE_200 OK]\n` +
+        `[SIMULATED PAYLOAD PREVIEW — no live service contacted]\n` +
         `Timestamp: ${new Date().toISOString()}\n` +
-        `Target Host: ${appName}\n` +
-        `Tool Signature: ${toolLabel}\n` +
-        `Handshake Status: 200 OK — SSE / stdio channel verified.\n` +
-        `Schema: Hydration verified against Gemini Function Calling definition.\n` +
-        `Safety Envelope: Action requires confirmation? ${toolLabel.includes('create') || toolLabel.includes('post') || toolLabel.includes('schedule') ? 'YES (Confirmation Card Enforced)' : 'NO (Read-Only Direct Return)'}\n` +
-        `Latency: ${Math.floor(Math.random() * 18 + 12)}ms`
+        `Target: ${appName}\n` +
+        `Tool: ${toolLabel}\n` +
+        `Status: simulated locally. Nothing was transmitted or executed.\n` +
+        `Safety Envelope: Action requires confirmation? ${toolLabel.includes('create') || toolLabel.includes('post') || toolLabel.includes('schedule') ? 'YES (Confirmation Card Enforced)' : 'NO (Read-Only Direct Return)'}\n`
       );
       setIsExecutingTest(false);
     }, 600);
@@ -162,7 +164,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
               </span>
             </div>
             <p className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-white/45'}`}>
-              Universal Model Context Protocol gateways, pre-authenticated SaaS connectors & plugin marketplace
+              Universal connector directory & demo sandbox — integrations shown here are simulated previews until you connect a real service
             </p>
           </div>
         </div>
@@ -433,9 +435,15 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
           </div>
         )}
 
-        {/* VIEW 2: Connected Ecosystems & Channels Directory */}
+        {/* VIEW 2: Ecosystems & Channels Directory (demo sandbox) */}
         {activeView === 'ecosystems' && (
           <div className="mx-auto max-w-6xl space-y-8">
+            <div className={`rounded-2xl border px-5 py-3 text-xs ${
+              isLight ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-amber-500/30 bg-amber-500/10 text-amber-200'
+            }`}>
+              <strong>Demo sandbox:</strong> the integrations below are directory listings, not live connections.
+              Nothing here is connected to Instagram, Facebook, TikTok, YouTube, or any other service.
+            </div>
             {/* Banner */}
             <div className={`rounded-2xl border p-6 ${
               isLight ? 'border-rose-200/80 bg-white/90 shadow-sm' : 'border-white/10 bg-white/[0.03]'
@@ -443,10 +451,10 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className={`font-display text-lg font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                    Connected Ecosystems & Channels
+                    Ecosystems & Channels (Demo)
                   </h3>
                   <p className={`text-xs mt-1 leading-relaxed max-w-2xl ${isLight ? 'text-slate-600' : 'text-white/60'}`}>
-                    Pre-authenticated business, social, hospitality, and commerce channels wired into Carol Ann's runtime function calling. Each ecosystem provides bidirectional telemetry, automated drafting, and safe confirmation enforcement.
+                    A directory of popular business, social, hospitality, and commerce integrations. Listings are informational only — no live connections exist yet. Connect a service to enable it.
                   </p>
                 </div>
                 <button
@@ -480,36 +488,36 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                     name: 'Instagram Reels',
                     category: 'Meta Platforms',
                     icon: 'instagram' as const,
-                    status: 'Connected / Auto-Sync',
+                    status: 'Demo — not connected',
                     actions: 'Post Reels, Audio Sync, Analytics',
-                    latency: '14ms'
+                    latency: '—'
                   },
                   {
                     id: 'facebook-pages',
                     name: 'Facebook Pages & Groups',
                     category: 'Meta Platforms',
                     icon: 'facebook' as const,
-                    status: 'Connected / Webhook Ready',
+                    status: 'Demo — not connected',
                     actions: 'Community Posts, Group Feeds',
-                    latency: '16ms'
+                    latency: '—'
                   },
                   {
                     id: 'tiktok-creator',
                     name: 'TikTok Creator Studio',
                     category: 'ByteDance Ltd.',
                     icon: 'tiktok' as const,
-                    status: 'Connected / Creator API',
+                    status: 'Demo — not connected',
                     actions: 'Trending Sounds, Video Drafts',
-                    latency: '19ms'
+                    latency: '—'
                   },
                   {
                     id: 'youtube-studio',
                     name: 'YouTube Studio & Shorts',
                     category: 'Google LLC',
                     icon: 'youtube' as const,
-                    status: 'OAuth 2.0 Synced',
+                    status: 'Demo — not connected',
                     actions: 'Shorts Staging, SEO Tags',
-                    latency: '11ms'
+                    latency: '—'
                   },
                 ].map((eco) => {
                   const isInstalled = installedPluginIds.includes(eco.id);
@@ -576,7 +584,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                     icon: 'tripadvisor' as const,
                     desc: 'Live guest review monitoring, ranking tracker, and automated empathetic host response drafting.',
                     tools: ['tripadvisor_fetch_reviews', 'tripadvisor_post_reply'],
-                    status: 'Claimed Listing Synced'
+                    status: 'Demo — not connected'
                   },
                   {
                     id: 'yelp-business',
@@ -584,7 +592,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                     icon: 'yelp' as const,
                     desc: 'Local customer ratings, review notifications, and operating hours synchronization.',
                     tools: ['yelp_get_reviews', 'yelp_update_hours'],
-                    status: 'Connected'
+                    status: 'Demo — not connected'
                   },
                   {
                     id: 'google-business',
@@ -592,7 +600,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                     icon: 'google' as const,
                     desc: 'Google Maps verified customer reviews, local ranking tracking, and public announcements.',
                     tools: ['gbp_fetch_reviews', 'gbp_post_update'],
-                    status: 'Connected (Google Cloud)'
+                    status: 'Demo — not connected'
                   },
                 ].map((hosp) => (
                   <div
@@ -825,7 +833,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                     </button>
                   </div>
                   <p className={`mt-1 text-[11px] ${isLight ? 'text-slate-400' : 'text-white/40'}`}>
-                    Encrypted client-side in browser session storage. Never transmitted outside of authorized MCP requests.
+                    Stored in this browser's local storage only. Demo sandbox — nothing is transmitted to Zapier.
                   </p>
                 </div>
               </div>
@@ -840,12 +848,12 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                   {isTestingZapier ? (
                     <>
                       <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                      <span>Querying MCP Server...</span>
+                      <span>Saving demo configuration...</span>
                     </>
                   ) : (
                     <>
                       <Zap className="h-3.5 w-3.5 fill-white" />
-                      <span>Test & Fetch Actions</span>
+                      <span>Save Demo Configuration</span>
                     </>
                   )}
                 </button>
@@ -878,11 +886,11 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                     Discovered Zapier AI Actions ({zapierConfig.actions.length})
                   </h4>
                   <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-white/50'}`}>
-                    Active actions mapped directly into Carol Ann's conversational tool caller
+                    Demo action previews — simulated locally, nothing is transmitted
                   </p>
                 </div>
                 <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
-                  Tool-Calling Synchronized
+                  Demo Sandbox
                 </span>
               </div>
 
@@ -949,7 +957,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                 {isExecutingTest && (
                   <span className="flex items-center gap-1 text-xs text-amber-500 font-mono">
                     <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                    <span>Transmitting STDIO Packet...</span>
+                    <span>Generating simulated preview...</span>
                   </span>
                 )}
               </div>
@@ -958,7 +966,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                 isLight ? 'border-slate-200 bg-slate-900 text-emerald-400' : 'border-white/8 bg-black text-emerald-300'
               }`}>
                 {testOutput ||
-                  `// Carol Ann MCP Protocol Engine Ready.\n// Active Installed Plugins: ${installedPluginIds.length}\n// Zapier Remote Bridge: ${zapierConfig.isConnected ? 'ONLINE (' + zapierConfig.actions.length + ' actions)' : 'OFFLINE'}\n// Click any 'Test Ping' or 'Simulate Action' above to view live payload streams.`}
+                  `// Demo sandbox — simulated connector. No live service is connected.\n// Actions below are payload previews only; nothing is transmitted.\n// Configure a real endpoint above to move beyond the sandbox.`}
               </pre>
 
               <div className="mt-4 flex items-center justify-end gap-2">
@@ -974,7 +982,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                   onClick={() => handleRunDiagnosticTest('system_ping', 'Carol Ann Central Engine')}
                   className="rounded-lg m-gradient-bg px-4 py-1.5 text-xs font-semibold text-white shadow hover:brightness-110 transition"
                 >
-                  Run Full Protocol Handshake
+                  Run Simulated Preview
                 </button>
               </div>
             </div>

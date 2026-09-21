@@ -1,5 +1,6 @@
 import { AGENT_PRESETS, toneByKey, voiceByKey, type AgentCategory, type AgentSkin } from '@/data/agents';
 import { SEED_AGENT_MEMORIES } from '@/data/bestSkillsAgents';
+import { apiFetch } from '@/lib/apiClient';
 
 /**
  * Device-local store for the Agent Studio.
@@ -262,7 +263,7 @@ export const speak = async (text: string, voiceKey: string) => {
   if (v.key === 'silent' || typeof window === 'undefined') return;
 
   try {
-    const res = await fetch('/api/gemini/tts', {
+    const res = await apiFetch('/api/gemini/tts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: text.slice(0, 480), voiceName: v.key }),
