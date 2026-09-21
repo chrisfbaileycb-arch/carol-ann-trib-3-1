@@ -62,10 +62,9 @@ export const CarolProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [syncError, setSyncError] = useState<string | null>(null);
   const deviceKey = useMemo(() => getDeviceKey(), []);
 
-  // Hydrate from cloud state on initial mount
+  // Hydrate from cloud state on initial mount (server scopes to the signed-in user)
   useEffect(() => {
-    const userId = user?.id || deviceKey;
-    fetchCloudState(userId).then((cloud) => {
+    fetchCloudState().then((cloud) => {
       if (cloud) {
         if (cloud.profile) setProfile((p) => ({ ...p, ...(cloud.profile as Partial<UserProfile>) }));
         if (Array.isArray(cloud.messages)) {
@@ -99,10 +98,9 @@ export const CarolProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => { saveErrands(errands); }, [errands]);
   useEffect(() => { saveSessions(sessions); }, [sessions]);
 
-  // Push state to cloud backend
+  // Push state to cloud backend (server scopes to the signed-in user)
   useEffect(() => {
     const timer = setTimeout(() => {
-      const userId = user?.id || deviceKey;
       sendCloudSync({
         profile,
         messages: messages.slice(-50),
@@ -110,7 +108,7 @@ export const CarolProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         memories: memories.slice(0, 50),
         errands,
         sessions: sessions.slice(0, 14),
-      }, userId).then((ok) => {
+      }).then((ok) => {
         if (ok) setLastSync(new Date().toISOString());
       }).catch(() => undefined);
     }, 1200);
@@ -176,7 +174,6 @@ export const CarolProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setSyncing(true);
     setSyncError(null);
     try {
-      const userId = user?.id || deviceKey;
       await sendCloudSync({
         profile,
         messages: messages.slice(-50),
@@ -184,7 +181,7 @@ export const CarolProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         memories: memories.slice(0, 50),
         errands,
         sessions: sessions.slice(0, 14),
-      }, userId);
+      });
 
       if (user) {
         const userRef = doc(db, 'users', user.id);

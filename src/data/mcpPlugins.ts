@@ -86,7 +86,7 @@ export interface ZapierConfig {
   endpointUrl: string;
   apiKey: string;
   isConnected: boolean;
-  lastSyncedAt?: string;
+  lastSyncedAt: string | null;
   actions: ZapierActionMeta[];
 }
 
@@ -1247,14 +1247,18 @@ export const DEFAULT_ZAPIER_ACTIONS: ZapierActionMeta[] = [
 ];
 
 export function loadZapierConfig(): ZapierConfig {
+  // Demo sandbox defaults: no API key is ever pre-filled, and the connector
+  // is never presented as connected until the user configures it.
+  const demoDefaults: ZapierConfig = {
+    endpointUrl: 'https://actions.zapier.com/settings/mcp/',
+    apiKey: '',
+    isConnected: false,
+    lastSyncedAt: null,
+    actions: DEFAULT_ZAPIER_ACTIONS,
+  };
+
   if (typeof window === 'undefined') {
-    return {
-      endpointUrl: 'https://actions.zapier.com/settings/mcp/',
-      apiKey: 'zp_sec_live_9f81a7b8e4c291d',
-      isConnected: true,
-      lastSyncedAt: new Date(Date.now() - 3600e3 * 2).toISOString(),
-      actions: DEFAULT_ZAPIER_ACTIONS,
-    };
+    return demoDefaults;
   }
 
   try {
@@ -1262,10 +1266,12 @@ export function loadZapierConfig(): ZapierConfig {
     if (raw) {
       const parsed = JSON.parse(raw);
       return {
-        endpointUrl: parsed.endpointUrl || 'https://actions.zapier.com/settings/mcp/',
-        apiKey: parsed.apiKey || 'zp_sec_live_9f81a7b8e4c291d',
-        isConnected: Boolean(parsed.isConnected),
-        lastSyncedAt: parsed.lastSyncedAt || new Date().toISOString(),
+        endpointUrl: parsed.endpointUrl || demoDefaults.endpointUrl,
+        apiKey: typeof parsed.apiKey === 'string' ? parsed.apiKey : '',
+        // Never restore a persisted "connected" claim — the demo sandbox
+        // must not present itself as a live connection.
+        isConnected: false,
+        lastSyncedAt: null,
         actions: Array.isArray(parsed.actions) && parsed.actions.length > 0 ? parsed.actions : DEFAULT_ZAPIER_ACTIONS,
       };
     }
@@ -1273,15 +1279,8 @@ export function loadZapierConfig(): ZapierConfig {
     console.warn('Failed to load zapier config:', e);
   }
 
-  return {
-    endpointUrl: 'https://actions.zapier.com/settings/mcp/',
-    apiKey: 'zp_sec_live_9f81a7b8e4c291d',
-    isConnected: true,
-    lastSyncedAt: new Date(Date.now() - 3600e3 * 2).toISOString(),
-    actions: DEFAULT_ZAPIER_ACTIONS,
-  };
+  return demoDefaults;
 }
-
 export function saveZapierConfig(config: ZapierConfig): void {
   if (typeof window === 'undefined') return;
   try {

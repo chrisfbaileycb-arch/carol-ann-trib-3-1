@@ -4,6 +4,7 @@ import { COMPANION_DOMAINS, getDomain } from '@/data/domains';
 import type { DomainId } from '@/data/schemas';
 import { useCarol } from '@/contexts/CarolContext';
 import { parseIntent } from '@/lib/browserAgent';
+import { apiFetch } from '@/lib/apiClient';
 import { startRun, pushLog } from '@/lib/agentRunner';
 import { publishBus, subscribeBus } from '@/lib/realtimeBus';
 import { loadSaved, saveSaved, uid } from '@/lib/memoryStore';
@@ -88,7 +89,7 @@ export const ConversationRail: React.FC<{ onOpenAgent?: () => void }> = ({ onOpe
     const domainMeta = getDomain(dom);
     let reply = '';
     try {
-      const res = await fetch('/api/gemini/chat', {
+      const res = await apiFetch('/api/gemini/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

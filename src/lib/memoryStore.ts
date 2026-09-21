@@ -52,17 +52,14 @@ export function write<T>(key: string, value: T): void {
   }
 }
 
-import { getFirebaseAuthToken } from './firebase';
+import { apiFetch } from './apiClient';
 
-// Cloud State Synchronization Helpers
-export async function fetchCloudState(userId = 'default'): Promise<Record<string, unknown> | null> {
+// Cloud State Synchronization Helpers.
+// The server scopes all state to the authenticated user's Firebase UID;
+// no userId is sent, so one user can never read or write another's workspace.
+export async function fetchCloudState(): Promise<Record<string, unknown> | null> {
   try {
-    const token = await getFirebaseAuthToken();
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    const res = await fetch(`/api/cloud/state?userId=${encodeURIComponent(userId)}`, { headers });
+    const res = await apiFetch('/api/cloud/state');
     if (!res.ok) return null;
     const data = await res.json();
     return (data.state as Record<string, unknown>) || null;
@@ -71,17 +68,12 @@ export async function fetchCloudState(userId = 'default'): Promise<Record<string
   }
 }
 
-export async function sendCloudSync(state: Record<string, unknown>, userId = 'default'): Promise<boolean> {
+export async function sendCloudSync(state: Record<string, unknown>): Promise<boolean> {
   try {
-    const token = await getFirebaseAuthToken();
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    const res = await fetch('/api/cloud/sync', {
+    const res = await apiFetch('/api/cloud/sync', {
       method: 'POST',
-      headers,
-      body: JSON.stringify({ userId, state }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ state }),
     });
     return res.ok;
   } catch {

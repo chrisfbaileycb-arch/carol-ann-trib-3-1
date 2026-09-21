@@ -3,6 +3,7 @@ import { Send, Loader2, Brain, Trash2, Volume2, ShieldAlert, Plus, X } from 'luc
 import AgentAvatar from '@/components/agents/AgentAvatar';
 import { useCarol } from '@/contexts/CarolContext';
 import { AGENT_DISCLAIMER, toneByKey, voiceByKey } from '@/data/agents';
+import { apiFetch } from '@/lib/apiClient';
 import {
   type AgentConfig, type AgentMessage, type AgentMemoryEntry,
   loadThread, appendThread, clearThread,
@@ -47,7 +48,7 @@ const AgentChat: React.FC<{
     const next = appendThread(agent.id, 'user', text);
     setThread(next);
     try {
-      const res = await fetch('/api/gemini/chat', {
+      const res = await apiFetch('/api/gemini/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
