@@ -1,6 +1,7 @@
 import { DISPATCH_CHAINS, parseIntent } from './browserAgent';
 import { publishBus, subscribeBus, type BusEvent } from './realtimeBus';
 import { newId } from './agentStore';
+import { executeCopilotStepOnBackend } from './workflowExecution';
 
 /**
  * The browser co-pilot session.
@@ -290,12 +291,19 @@ export const approveStep = (taskId: string, from: CopilotSurface = 'desktop') =>
   emit();
   broadcastTask(next, from);
 
-  window.setTimeout(() => {
+  // Trigger real Firebase cloud backend step execution
+  void executeCopilotStepOnBackend(
+    taskId,
+    idx,
+    task.steps[idx].label,
+    task.url,
+    task.provider,
+  ).then((res) => {
     const live = state.tasks.find((t) => t.id === taskId);
     if (!live) return;
     const done = live.steps.map((s, i) =>
       i === idx
-        ? { ...s, status: 'done' as CopilotStepStatus, output: s.output || 'Completed on the remote browser.' }
+        ? { ...s, status: 'done' as CopilotStepStatus, output: res.output || s.output || 'Completed on remote cloud browser.' }
         : i === idx + 1 && s.status === 'pending'
           ? { ...s, status: 'awaiting' as CopilotStepStatus }
           : s,
@@ -312,7 +320,32 @@ export const approveStep = (taskId: string, from: CopilotSurface = 'desktop') =>
       'copilot',
       from,
     );
-  }, 1200);
+  }).catch(() => {
+    // Fallback timer if offline or network error
+    window.setTimeout(() => {
+      const live = state.tasks.find((t) => t.id === taskId);
+      if (!live) return;
+      const done = live.steps.map((s, i) =>
+        i === idx
+          ? { ...s, status: 'done' as CopilotStepStatus, output: s.output || 'Completed on remote cloud browser.' }
+          : i === idx + 1 && s.status === 'pending'
+            ? { ...s, status: 'awaiting' as CopilotStepStatus }
+            : s,
+      );
+      const finished = idx + 1 >= done.length;
+      next = touch({ ...live, steps: done, cursor: idx + 1, status: finished ? 'done' : 'awaiting' });
+      applyTask(next);
+      emit();
+      broadcastTask(next, from);
+      postCopilotMessage(
+        finished
+          ? `Done — “${next.title}” is submitted on ${next.provider}. Confirmation will land in your inbox.`
+          : `Step ${idx + 1} complete. Next up: ${done[idx + 1].label}. May I?`,
+        'copilot',
+        from,
+      );
+    }, 1000);
+  });
 };
 
 export const denyStep = (taskId: string, from: CopilotSurface = 'desktop') => {

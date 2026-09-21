@@ -108,6 +108,16 @@ service cloud.firestore {
              data.active is bool;
     }
 
+    function isValidWorkflowExecution(data, userId) {
+      return data.id is string &&
+             data.userId == userId &&
+             data.workflowType is string &&
+             data.workflowType.size() <= 128 &&
+             data.status is string &&
+             data.status.size() <= 64 &&
+             data.startedAt is string;
+    }
+
     // User Profile Rules
     match /users/{userId} {
       allow get: if isOwner(userId);
@@ -148,6 +158,12 @@ service cloud.firestore {
       match /scheduled_commands/{cmdId} {
         allow get, list: if isOwner(userId);
         allow create, update: if isOwner(userId) && isValidId(cmdId) && isValidScheduledCommand(request.resource.data, userId);
+        allow delete: if isOwner(userId);
+      }
+
+      match /workflow_executions/{executionId} {
+        allow get, list: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidId(executionId) && isValidWorkflowExecution(request.resource.data, userId);
         allow delete: if isOwner(userId);
       }
     }
