@@ -5,9 +5,13 @@ import { chromium } from 'playwright';
 import { WebSocketServer, WebSocket } from 'ws';
 import { GoogleGenAI, Modality, Type, type LiveServerMessage } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
-import { initializeApp, getApps, type App } from 'firebase-admin/app';
-import { getFirestore, type Firestore } from 'firebase-admin/firestore';
-import { getAuth, type Auth, type DecodedIdToken } from 'firebase-admin/auth';
+import { getAdminBackend } from './server/lib/firebaseAdmin.js';
+import {
+  requireFirebaseAuth,
+  verifyAppCheck,
+  type AuthenticatedRequest,
+} from './server/middleware/auth.js';
+import { assertUrlSafe, createHostAllowCheck, SsrfError } from './server/lib/ssrfGuard.js';
 import firebaseConfig from './firebase-applet-config.json';
 
 const app = express();
@@ -15,79 +19,8 @@ const PORT = 3000;
 
 app.use(express.json({ limit: '10mb' }));
 
-// In-memory workspace cache fallback to guarantee 100% uptime and resilience
+// In-memory workspace cache fallback used when Firestore is unreachable
 const localWorkspaceCache = new Map<string, Record<string, unknown>>();
-
-// Lazy Firebase Admin SDK initialization
-let adminAppInstance: App | null = null;
-let adminFirestoreInstance: Firestore | null = null;
-let adminAuthInstance: Auth | null = null;
-let adminInitAttempted = false;
-
-function getAdminBackend(): { app: App; db: Firestore; auth: Auth } | null {
-  if (adminInitAttempted) {
-    if (adminAppInstance && adminFirestoreInstance && adminAuthInstance) {
-      return { app: adminAppInstance, db: adminFirestoreInstance, auth: adminAuthInstance };
-    }
-    return null;
-  }
-  adminInitAttempted = true;
-  try {
-    const existingApps = getApps();
-    if (existingApps.length > 0 && existingApps[0]) {
-      adminAppInstance = existingApps[0];
-    } else if (firebaseConfig.projectId) {
-      adminAppInstance = initializeApp({
-        projectId: firebaseConfig.projectId,
-      });
-    }
-    if (adminAppInstance) {
-      adminFirestoreInstance = (firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)')
-        ? getFirestore(adminAppInstance, firebaseConfig.firestoreDatabaseId)
-        : getFirestore(adminAppInstance);
-      adminAuthInstance = getAuth(adminAppInstance);
-      return { app: adminAppInstance, db: adminFirestoreInstance, auth: adminAuthInstance };
-    }
-  } catch (err) {
-    console.warn('[Firebase Admin] Initialization notice (using resilient local cache):', err instanceof Error ? err.message : err);
-  }
-  return null;
-}
-
-interface AuthenticatedRequest extends express.Request {
-  firebaseUser?: DecodedIdToken | null;
-}
-
-// Token Verification Middleware for authenticated endpoints
-async function verifyFirebaseToken(req: express.Request, res: express.Response, next: express.NextFunction) {
-  const authReq = req as AuthenticatedRequest;
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    authReq.firebaseUser = null;
-    return next();
-  }
-  const token = authHeader.split('Bearer ')[1]?.trim();
-  if (!token) {
-    authReq.firebaseUser = null;
-    return next();
-  }
-
-  const backend = getAdminBackend();
-  if (backend?.auth) {
-    try {
-      const decodedToken = await backend.auth.verifyIdToken(token);
-      authReq.firebaseUser = decodedToken;
-      return next();
-    } catch (err: unknown) {
-      console.warn('[Firebase Auth] Verification notice for token:', err instanceof Error ? err.message : err);
-      authReq.firebaseUser = null;
-      return next();
-    }
-  }
-
-  authReq.firebaseUser = null;
-  return next();
-}
 
 // Lazy Google GenAI Client
 let genAIClient: GoogleGenAI | null = null;
@@ -122,18 +55,17 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-// Cloud state fetch endpoint backed by Firestore Admin with resilient fallback
-app.get('/api/cloud/state', verifyFirebaseToken, async (req, res) => {
+// Cloud state fetch endpoint backed by Firestore Admin with resilient fallback.
+// Requires Firebase Authentication. The workspace is always scoped to the
+// authenticated user's UID — callers can no longer read other users' state.
+app.get('/api/cloud/state', requireFirebaseAuth, verifyAppCheck, async (req, res) => {
   try {
-    const requestedUserId = (req.query.userId as string) || 'default';
     const authUser = (req as AuthenticatedRequest).firebaseUser;
-
-    // If an authenticated user is requesting state, enforce matching UID
-    if (authUser && requestedUserId !== 'default' && authUser.uid !== requestedUserId) {
-      return res.status(403).json({ error: 'Forbidden: Cannot access workspace for a different user.' });
+    if (!authUser) {
+      return res.status(401).json({ error: 'Authentication required.' });
     }
 
-    const cleanId = requestedUserId.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const cleanId = authUser.uid.replace(/[^a-zA-Z0-9_-]/g, '_');
     let state: Record<string, unknown> | null = null;
     let backendUsed = 'local_resilient_cache';
 
@@ -184,7 +116,7 @@ app.get('/api/cloud/state', verifyFirebaseToken, async (req, res) => {
       backend: backendUsed,
       databaseId: firebaseConfig.firestoreDatabaseId,
       state,
-      authenticated: Boolean(authUser),
+      authenticated: true,
     });
   } catch (err: unknown) {
     console.error('[Cloud State Error]', err);
@@ -192,20 +124,21 @@ app.get('/api/cloud/state', verifyFirebaseToken, async (req, res) => {
   }
 });
 
-// Cloud state sync endpoint backed by Firestore Admin with resilient fallback
-app.post('/api/cloud/sync', verifyFirebaseToken, async (req, res) => {
+// Cloud state sync endpoint backed by Firestore Admin with resilient fallback.
+// Requires Firebase Authentication; writes are scoped to the token's UID.
+app.post('/api/cloud/sync', requireFirebaseAuth, verifyAppCheck, async (req, res) => {
   try {
-    const { userId = 'default', state } = req.body;
+    const { state } = req.body;
     if (!state) {
       return res.status(400).json({ error: 'State payload is required.' });
     }
 
     const authUser = (req as AuthenticatedRequest).firebaseUser;
-    if (authUser && userId !== 'default' && authUser.uid !== userId) {
-      return res.status(403).json({ error: 'Forbidden: Cannot write workspace state for a different user.' });
+    if (!authUser) {
+      return res.status(401).json({ error: 'Authentication required.' });
     }
 
-    const cleanId = String(userId).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const cleanId = authUser.uid.replace(/[^a-zA-Z0-9_-]/g, '_');
     const payload: Record<string, unknown> = {
       ...state,
       userId: cleanId,
@@ -232,7 +165,7 @@ app.post('/api/cloud/sync', verifyFirebaseToken, async (req, res) => {
       backend: backendUsed,
       databaseId: firebaseConfig.firestoreDatabaseId,
       lastSyncedAt: payload.lastSyncedAt,
-      authenticated: Boolean(authUser),
+      authenticated: true,
       recordsCount: {
         memories: Array.isArray(payload.memories) ? payload.memories.length : 0,
         errands: Array.isArray(payload.errands) ? payload.errands.length : 0,
@@ -714,8 +647,8 @@ async function runAnchorChat(
 }
 }
 
-// Conversational Inference Route
-app.post('/api/gemini/chat', async (req, res) => {
+// Conversational Inference Route (requires Firebase Authentication)
+app.post('/api/gemini/chat', requireFirebaseAuth, verifyAppCheck, async (req, res) => {
   try {
     const {
       message,
@@ -759,7 +692,8 @@ app.post('/api/gemini/chat', async (req, res) => {
 });
 
 // Agent dispatch route — plans and routes a task to the right specialist
-app.post('/api/agent/dispatch', async (req, res) => {
+// (requires Firebase Authentication)
+app.post('/api/agent/dispatch', requireFirebaseAuth, verifyAppCheck, async (req, res) => {
   try {
     const { task, agentId = 'carol-anchor', agentName = 'Carol Ann', history = [], profile = {}, memoryContext = '' } = req.body;
     if (!task) {
@@ -789,19 +723,54 @@ app.post('/api/agent/dispatch', async (req, res) => {
   }
 });
 
-// Browser automation: run a navigation / DOM task
-app.post('/api/browser/run', async (req, res) => {
+// Browser automation: run a navigation / DOM task.
+// Requires Firebase Authentication. Target URLs are screened by the SSRF
+// guard: only public http(s) hosts, redirect chains re-validated, and every
+// request (including subresources) intercepted and checked.
+app.post('/api/browser/run', requireFirebaseAuth, verifyAppCheck, async (req, res) => {
   const { url, waitFor } = req.body as { url?: string; waitFor?: string };
   if (!url) {
     return res.status(400).json({ error: 'URL is required.' });
   }
 
+  let safeUrl: string;
+  try {
+    safeUrl = (await assertUrlSafe(url)).normalizedUrl;
+  } catch (err) {
+    return res
+      .status(err instanceof SsrfError ? err.statusCode : 400)
+      .json({ error: err instanceof Error ? err.message : 'URL rejected.' });
+  }
+
+  const isHostAllowed = createHostAllowCheck();
   let browser;
   try {
     browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    await context.route('**/*', async (route) => {
+      try {
+        const target = new URL(route.request().url());
+        if (await isHostAllowed(target.hostname)) {
+          await route.continue();
+        } else {
+          await route.abort('blockedbyclient');
+        }
+      } catch {
+        await route.abort('blockedbyclient');
+      }
+    });
     const page = await context.newPage();
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(safeUrl, { waitUntil: 'networkidle', timeout: 30000 });
+
+    // Re-validate the final URL — catches redirect chains into restricted hosts.
+    try {
+      await assertUrlSafe(page.url());
+    } catch (err) {
+      await browser.close();
+      return res
+        .status(err instanceof SsrfError ? err.statusCode : 400)
+        .json({ error: 'Navigation redirected to a restricted address.' });
+    }
 
     if (waitFor) {
       await page.waitForSelector(waitFor, { timeout: 15000 }).catch(() => undefined);
@@ -828,19 +797,51 @@ app.post('/api/browser/run', async (req, res) => {
   }
 });
 
-// Browser automation: capture a screenshot
-app.post('/api/browser/screenshot', async (req, res) => {
+// Browser automation: capture a screenshot.
+// Requires Firebase Authentication; same SSRF screening as /api/browser/run.
+app.post('/api/browser/screenshot', requireFirebaseAuth, verifyAppCheck, async (req, res) => {
   const { url, fullPage } = req.body as { url?: string; fullPage?: boolean };
   if (!url) {
     return res.status(400).json({ error: 'URL is required.' });
   }
 
+  let safeUrl: string;
+  try {
+    safeUrl = (await assertUrlSafe(url)).normalizedUrl;
+  } catch (err) {
+    return res
+      .status(err instanceof SsrfError ? err.statusCode : 400)
+      .json({ error: err instanceof Error ? err.message : 'URL rejected.' });
+  }
+
+  const isHostAllowed = createHostAllowCheck();
   let browser;
   try {
     browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    await context.route('**/*', async (route) => {
+      try {
+        const target = new URL(route.request().url());
+        if (await isHostAllowed(target.hostname)) {
+          await route.continue();
+        } else {
+          await route.abort('blockedbyclient');
+        }
+      } catch {
+        await route.abort('blockedbyclient');
+      }
+    });
     const page = await context.newPage();
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(safeUrl, { waitUntil: 'networkidle', timeout: 30000 });
+
+    try {
+      await assertUrlSafe(page.url());
+    } catch (err) {
+      await browser.close();
+      return res
+        .status(err instanceof SsrfError ? err.statusCode : 400)
+        .json({ error: 'Navigation redirected to a restricted address.' });
+    }
     const screenshot = await page.screenshot({ fullPage: Boolean(fullPage), type: 'png' });
     await browser.close();
     return res.json({
@@ -859,8 +860,8 @@ app.post('/api/browser/screenshot', async (req, res) => {
   }
 });
 
-// Text-to-Speech Route using Gemini TTS
-app.post('/api/gemini/tts', async (req, res) => {
+// Text-to-Speech Route using Gemini TTS (requires Firebase Authentication)
+app.post('/api/gemini/tts', requireFirebaseAuth, verifyAppCheck, async (req, res) => {
   try {
     const { text, voiceName = 'Aoede' } = req.body;
     if (!text) {
@@ -907,37 +908,43 @@ app.post('/api/gemini/tts', async (req, res) => {
   }
 });
 
-// SaaS & Enterprise Connector Live Diagnostic Ping
-app.post('/api/connectors/ping', (req, res) => {
+// SaaS connector diagnostic ping — SIMULATED (demo sandbox).
+// This endpoint never contacts a live service. It exists so the UI can
+// preview connector payload shapes during development. A simulated
+// connector must never present as connected.
+app.post('/api/connectors/ping', requireFirebaseAuth, (req, res) => {
   const { connectorId, authState, capabilities } = req.body;
-  const latencyMs = Math.floor(Math.random() * 16) + 8;
   return res.json({
     status: '200_OK',
     protocol: 'mcp-jsonrpc-2.0',
     connector: connectorId || 'generic-saas',
-    latency_ms: latencyMs,
     capabilities_available: Array.isArray(capabilities) ? capabilities : [],
     auth_state: authState || 'ANONYMOUS_SANDBOX',
-    gateway: 'carol-ann.cloud-gateway.v1',
+    demo: true,
+    simulated: true,
+    connected: false,
+    verified: false,
+    note: 'Simulated connector ping. No live service was contacted and no connector is connected.',
     server_time: new Date().toISOString(),
-    cloud_node: 'google-cloud-run-us-east5',
-    verified: true,
   });
 });
 
-// SaaS & Enterprise Connector Live Action Execution
-app.post('/api/connectors/execute', (req, res) => {
+// SaaS connector action execution — SIMULATED (demo sandbox).
+// Nothing is executed and no live service is contacted.
+app.post('/api/connectors/execute', requireFirebaseAuth, (req, res) => {
   const { connectorId, action, params } = req.body;
   return res.json({
-    status: 'executed',
+    status: 'simulated',
     connector: connectorId || 'generic-saas',
     action: action || 'sync',
     timestamp: new Date().toISOString(),
+    demo: true,
+    simulated: true,
+    executed: false,
     result: {
-      success: true,
-      message: `Executed action '${action || 'sync'}' on ${connectorId} via cloud sovereign bridge.`,
+      success: false,
+      message: `Simulated preview of action '${action || 'sync'}' on ${connectorId}. No live service was contacted and nothing was executed.`,
       paramsEcho: params || {},
-      status_code: 200,
     },
   });
 });
@@ -947,7 +954,29 @@ async function bootstrap() {
   const server = http.createServer(app);
   const wss = new WebSocketServer({ server, path: '/api/gemini/live' });
 
-  wss.on('connection', async (clientWs: WebSocket) => {
+  wss.on('connection', async (clientWs: WebSocket, req: http.IncomingMessage) => {
+    // Live voice sessions require a Firebase ID token on the handshake:
+    // wss://host/api/gemini/live?token=<idToken>
+    const wsUrl = new URL(req.url || '/', 'http://localhost');
+    const wsToken = wsUrl.searchParams.get('token');
+    const backend = getAdminBackend();
+    let wsAuthed = false;
+    if (wsToken && backend?.auth) {
+      try {
+        await backend.auth.verifyIdToken(wsToken);
+        wsAuthed = true;
+      } catch {
+        wsAuthed = false;
+      }
+    }
+    if (!wsAuthed) {
+      if (clientWs.readyState === WebSocket.OPEN) {
+        clientWs.send(JSON.stringify({ error: 'Authentication required for live voice sessions.' }));
+      }
+      clientWs.close(4401, 'unauthorized');
+      return;
+    }
+
     const ai = getGenAI();
     if (!ai) {
       clientWs.send(JSON.stringify({ error: 'Gemini API Key is not set on the server.' }));
@@ -1042,7 +1071,7 @@ async function bootstrap() {
   }
 
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Carol Ann Tribute Server running on http://0.0.0.0:${PORT}`);
+    console.log(`Carol Ann server running on http://0.0.0.0:${PORT}`);
   });
 }
 
