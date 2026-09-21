@@ -224,6 +224,20 @@ export const deleteSchedule = async (userId: string, id: string): Promise<string
 
 export const runScheduleSweep = async (userId: string): Promise<string | null> => {
   try {
+    // 1. Trigger backend sweep against Firestore scheduled commands
+    try {
+      const res = await fetch('/api/workflow/sweep', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      if (res.ok) {
+        return null;
+      }
+    } catch {
+      // Continue to direct client-side sweep fallback
+    }
+
     const { rows } = await fetchSchedules(userId);
     const now = new Date();
     for (const item of rows) {

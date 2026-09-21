@@ -139,6 +139,23 @@
         "createdAt": { "type": "string" }
       },
       "required": ["id", "userId", "name", "prompt", "schedule", "active"]
+    },
+    "WorkflowExecution": {
+      "title": "WorkflowExecution",
+      "description": "Comprehensive execution receipt and audit record for an executed workflow in Carol Ann OS",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "workflowType": { "type": "string" },
+        "title": { "type": "string" },
+        "status": { "type": "string" },
+        "actionPayload": { "type": "object" },
+        "executionResult": { "type": "object" },
+        "startedAt": { "type": "string" },
+        "completedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "workflowType", "status", "startedAt"]
     }
   },
   "firestore": {
@@ -177,6 +194,10 @@
     "/users/{userId}/scheduled_commands/{cmdId}": {
       "schema": "ScheduledCommand",
       "description": "Stores recurring scheduled commands"
+    },
+    "/users/{userId}/workflow_executions/{executionId}": {
+      "schema": "WorkflowExecution",
+      "description": "Stores verified backend workflow execution receipts"
     }
   }
 }

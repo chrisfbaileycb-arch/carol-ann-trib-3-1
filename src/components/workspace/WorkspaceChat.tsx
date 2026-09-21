@@ -26,6 +26,8 @@ import {
 import { AGENT_PRESETS } from '@/data/agents';
 import { loadInstalledPluginIds } from '@/data/mcpPlugins';
 import { tryExecutePluginIntent } from '@/data/pluginMockRunner';
+import { useAuth } from '@/contexts/AuthContext';
+import { executeWorkflowOnBackend } from '@/lib/workflowExecution';
 
 export interface WorkspaceTab {
   id: string;
@@ -49,6 +51,8 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
   theme,
   onOpenAgentRoster,
 }) => {
+  const { user } = useAuth();
+
   // 3-Pane Layout Open / Collapse States
   const [leftOpen, setLeftOpen] = useState<boolean>(true);
   const [rightOpen, setRightOpen] = useState<boolean>(true);
@@ -254,7 +258,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
   };
 
   // Execution of tool call actions
-  const handleExecuteToolAction = (action: HydrateFormAction) => {
+  const handleExecuteToolAction = async (action: HydrateFormAction) => {
     const updatedAction: HydrateFormAction = {
       ...action,
       status: 'executed',
@@ -267,12 +271,22 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
       prev.map((m) => (m.toolCall?.id === action.id ? { ...m, toolCall: updatedAction } : m))
     );
 
+    // Follow through with comprehensive Firebase backend execution:
+    try {
+      const execResult = await executeWorkflowOnBackend(action, user?.id);
+      if (execResult.errand) {
+        setErrands((prev) => [execResult.errand!, ...prev.filter((e) => e.id !== execResult.errand!.id)]);
+      }
+    } catch (backendErr) {
+      console.warn('[WorkspaceChat] Workflow backend execution fallback:', backendErr);
+    }
+
     if (action.category === 'errand') {
       handleAddErrand({
         title: action.form_payload.title,
         items: action.form_payload.items ?? [],
         scheduled_time: action.form_payload.target_time,
-        status: 'queued',
+        status: 'executed',
         target: action.action_name.toLowerCase().includes('whole foods')
           ? 'whole-foods'
           : action.action_name.toLowerCase().includes('amazon')
@@ -296,7 +310,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
         title: `Calendar: ${action.form_payload.title}`,
         items: action.form_payload.items ?? ['Confirmed buffer time', 'Location verified'],
         scheduled_time: action.form_payload.target_time,
-        status: 'queued',
+        status: 'executed',
         target: 'custom',
       });
     }

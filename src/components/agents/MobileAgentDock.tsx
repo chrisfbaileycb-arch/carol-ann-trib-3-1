@@ -18,20 +18,34 @@ interface MobileAgentDockProps {
   className?: string;
   onHandOff?: () => void;
   isLight?: boolean;
+  activeAgentId?: string | null;
+  onSelectAgent?: (id: string) => void;
 }
 
 type TabKey = 'all' | 'crew' | AgentCategory;
 
-const MobileAgentDock: React.FC<MobileAgentDockProps> = ({ className = '', onHandOff, isLight }) => {
+const MobileAgentDock: React.FC<MobileAgentDockProps> = ({
+  className = '',
+  onHandOff,
+  isLight,
+  activeAgentId,
+  onSelectAgent,
+}) => {
   const { profile } = useCarol();
   const light = isLight !== undefined ? isLight : isLightTheme(profile);
 
   const [agents, setAgents] = useState<AgentConfig[]>(() => loadAgents());
   const [crew, setCrew] = useState<string[]>(() => loadCrew());
   const [openId, setOpenId] = useState<string | null>(null);
-  const [activeRole, setActiveRole] = useState<string | null>(() => loadActiveCrewMember());
+  const [activeRole, setActiveRole] = useState<string | null>(() => activeAgentId ?? loadActiveCrewMember());
   const [activeTab, setActiveTab] = useState<TabKey>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  React.useEffect(() => {
+    if (activeAgentId !== undefined && activeAgentId !== null) {
+      setActiveRole(activeAgentId);
+    }
+  }, [activeAgentId]);
 
   const roster = useMemo(() => agents.filter((a) => a.enabled), [agents]);
 
@@ -91,6 +105,9 @@ const MobileAgentDock: React.FC<MobileAgentDockProps> = ({ className = '', onHan
     const next = activeRole === id ? null : id;
     setActiveRole(next);
     saveActiveCrewMember(next);
+    if (next) {
+      onSelectAgent?.(next);
+    }
   };
 
   const toggleCrew = (id: string) => {
