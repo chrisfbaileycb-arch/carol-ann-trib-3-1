@@ -327,7 +327,7 @@ export const SaaSConnectorsDirectory: React.FC<SaaSConnectorsDirectoryProps> = (
                         </h4>
                         {conn.isEnterpriseWork && (
                           <span
-                            title="ChatGPT for Work enterprise connector"
+                            title="Enterprise demo listing"
                             className="rounded bg-indigo-500/15 border border-indigo-500/30 px-1 py-0.2 text-[8.5px] font-semibold text-indigo-500"
                           >
                             Enterprise

@@ -280,13 +280,13 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
           : 'custom',
       });
     } else if (action.category === 'social_marketing') {
-      const addition = `\n\n### Dispatched via ${action.target_app || 'Social Hub'}\n- **Action:** ${action.action_name}\n- **Title:** ${action.form_payload.title}\n- **Scheduled Time:** ${action.form_payload.target_time ?? 'Immediate'}\n- **Status:** Verified 200 OK · Dispatched over MCP Bridge`;
+      const addition = `\n\n### Simulated preview via ${action.target_app || 'Social Hub'}\n- **Action:** ${action.action_name}\n- **Title:** ${action.form_payload.title}\n- **Scheduled Time:** ${action.form_payload.target_time ?? 'Immediate'}\n- **Status:** Simulated — nothing was dispatched or published`;
       setScratchpad((prev) => prev + addition);
     } else if (action.category === 'finance_accounting') {
-      const addition = `\n\n### Dispatched via ${action.target_app || 'Accounting Hub'}\n- **Action:** ${action.action_name}\n- **Title:** ${action.form_payload.title}\n- **Payload:** ${JSON.stringify(action.form_payload.fields ?? {})}\n- **Receipt:** Verified 200 OK via OAuth MCP Gateway`;
+      const addition = `\n\n### Simulated preview via ${action.target_app || 'Accounting Hub'}\n- **Action:** ${action.action_name}\n- **Title:** ${action.form_payload.title}\n- **Payload:** ${JSON.stringify(action.form_payload.fields ?? {})}\n- **Receipt:** Simulated — nothing was transmitted or filed`;
       setScratchpad((prev) => prev + addition);
     } else if (action.category === 'hospitality_review') {
-      const addition = `\n\n### Dispatched via ${action.target_app || 'Review Hub'}\n- **Action:** ${action.action_name}\n- **Response:** "${action.form_payload.notes ?? action.form_payload.title}"\n- **Status:** Published to platform`;
+      const addition = `\n\n### Simulated preview via ${action.target_app || 'Review Hub'}\n- **Action:** ${action.action_name}\n- **Response:** "${action.form_payload.notes ?? action.form_payload.title}"\n- **Status:** Simulated draft — not published to any platform`;
       setScratchpad((prev) => prev + addition);
     } else if (action.category === 'scratchpad_update') {
       const addition = `\n\n### Updated via ${action.action_name}\n- **Title:** ${action.form_payload.title}\n- **Items:** ${(action.form_payload.items ?? []).join(', ')}\n- **Target Time:** ${action.form_payload.target_time ?? 'N/A'}`;

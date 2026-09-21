@@ -542,7 +542,7 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
                               className="flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 px-4 py-1.5 text-xs font-bold text-white shadow-md transition hover:brightness-105"
                             >
                               <ShieldCheck className="h-3.5 w-3.5" />
-                              Approve & Execute
+                              Approve & Simulate
                             </button>
                           </div>
                         </div>
@@ -551,7 +551,7 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
                       {/* Executed Receipt Details */}
                       {msg.toolCall.status === 'executed' && (
                         <div className="mt-2.5 flex items-center justify-between text-[11px] text-emerald-700 dark:text-emerald-300 font-mono">
-                          <span>Receipt: Verified 200 OK · Transmitted over Sovereign MCP Bus</span>
+                          <span>Simulated preview — nothing was transmitted to any service</span>
                           <span>{msg.toolCall.executed_at ? new Date(msg.toolCall.executed_at).toLocaleTimeString() : 'Now'}</span>
                         </div>
                       )}
