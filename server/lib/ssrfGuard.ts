@@ -140,6 +140,8 @@ export function isBlockedIp(ip: string): boolean {
 export interface UrlCheck {
   normalizedUrl: string;
   hostname: string;
+  /** Exact IPs validated by the guard — callers must pin connections to these. */
+  addresses: string[];
 }
 
 /**
@@ -174,7 +176,7 @@ export async function assertUrlSafe(rawUrl: string): Promise<UrlCheck> {
   }
   if (net.isIP(hostname)) {
     if (isBlockedIp(hostname)) throw new SsrfError('That address is not allowed.');
-    return { normalizedUrl: url.toString(), hostname };
+    return { normalizedUrl: url.toString(), hostname, addresses: [hostname] };
   }
 
   let addresses: dns.LookupAddress[];
@@ -189,7 +191,7 @@ export async function assertUrlSafe(rawUrl: string): Promise<UrlCheck> {
       throw new SsrfError('That host resolves to a restricted address.');
     }
   }
-  return { normalizedUrl: url.toString(), hostname };
+  return { normalizedUrl: url.toString(), hostname, addresses: addresses.map((a) => a.address) };
 }
 
 /**

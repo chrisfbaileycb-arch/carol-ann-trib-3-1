@@ -101,6 +101,21 @@ describe('assertUrlSafe', () => {
     expect(check.normalizedUrl).toContain('https://example.com/');
   });
 
+  it('returns the validated addresses for a literal public IP', async () => {
+    const check = await assertUrlSafe('http://93.184.216.34/admin');
+    expect(check.addresses).toEqual(['93.184.216.34']);
+    expect(mockedLookup).not.toHaveBeenCalled();
+  });
+
+  it('returns every validated address for a resolvable hostname', async () => {
+    mockedLookup.mockResolvedValue([
+      { address: '93.184.216.34', family: 4 },
+      { address: '2606:2800:220:1:248:1893:25c8:1946', family: 6 },
+    ]);
+    const check = await assertUrlSafe('https://example.com/');
+    expect(check.addresses).toEqual(['93.184.216.34', '2606:2800:220:1:248:1893:25c8:1946']);
+  });
+
   it('rejects empty and malformed URLs', async () => {
     await expect(assertUrlSafe('')).rejects.toBeInstanceOf(SsrfError);
     await expect(assertUrlSafe('not a url')).rejects.toBeInstanceOf(SsrfError);

@@ -1,7 +1,29 @@
 import type { Express } from 'express';
+import net from 'node:net';
 import { chromium } from 'playwright';
 import { requireFirebaseAuth, verifyAppCheck } from '../middleware/auth.js';
 import { assertUrlSafe, createHostAllowCheck, SsrfError } from '../lib/ssrfGuard.js';
+
+/**
+ * Pin Chromium's DNS resolution for the guarded top-level hostname to the IP
+ * addresses the SSRF guard already vetted. Without this, Chromium would
+ * resolve the hostname independently and a DNS-rebinding record (public IP to
+ * the guard, restricted IP to Chromium) or a short-TTL flip could bypass the
+ * guard. The URL, Host header, and TLS SNI are unchanged — only resolution is
+ * remapped — so HTTPS certificate validation still works.
+ *
+ * Known residual: this pins only the attacker-controlled top-level URL.
+ * Subresource hosts a page loads (<img>, fetch, etc.) are still re-resolved
+ * by Chromium and screened (not pinned) by the route interception below.
+ * Fully closing that needs per-host pinning of every subresource
+ * (fetch-and-fulfill in the route handler, or a controlled forward proxy) —
+ * tracked as follow-up work, not claimed as solved here.
+ */
+function buildPinnedLaunchArgs(hostname: string, addresses: string[]): string[] {
+  const pinned = addresses.find((a) => net.isIP(a) === 4) ?? addresses[0];
+  const pinRepl = net.isIP(pinned) === 6 ? `[${pinned}]` : pinned;
+  return [`--host-resolver-rules=MAP ${hostname} ${pinRepl}`];
+}
 
 export function registerBrowserRoutes(app: Express) {
 // Browser automation: run a navigation / DOM task.
@@ -15,8 +37,11 @@ app.post('/api/browser/run', requireFirebaseAuth, verifyAppCheck, async (req, re
   }
 
   let safeUrl: string;
+  let launchArgs: string[];
   try {
-    safeUrl = (await assertUrlSafe(url)).normalizedUrl;
+    const check = await assertUrlSafe(url);
+    safeUrl = check.normalizedUrl;
+    launchArgs = buildPinnedLaunchArgs(check.hostname, check.addresses);
   } catch (err) {
     return res
       .status(err instanceof SsrfError ? err.statusCode : 400)
@@ -26,7 +51,7 @@ app.post('/api/browser/run', requireFirebaseAuth, verifyAppCheck, async (req, re
   const isHostAllowed = createHostAllowCheck();
   let browser;
   try {
-    browser = await chromium.launch({ headless: true });
+    browser = await chromium.launch({ headless: true, args: launchArgs });
     const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
     await context.route('**/*', async (route) => {
       try {
@@ -87,8 +112,11 @@ app.post('/api/browser/screenshot', requireFirebaseAuth, verifyAppCheck, async (
   }
 
   let safeUrl: string;
+  let launchArgs: string[];
   try {
-    safeUrl = (await assertUrlSafe(url)).normalizedUrl;
+    const check = await assertUrlSafe(url);
+    safeUrl = check.normalizedUrl;
+    launchArgs = buildPinnedLaunchArgs(check.hostname, check.addresses);
   } catch (err) {
     return res
       .status(err instanceof SsrfError ? err.statusCode : 400)
@@ -98,7 +126,7 @@ app.post('/api/browser/screenshot', requireFirebaseAuth, verifyAppCheck, async (
   const isHostAllowed = createHostAllowCheck();
   let browser;
   try {
-    browser = await chromium.launch({ headless: true });
+    browser = await chromium.launch({ headless: true, args: launchArgs });
     const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
     await context.route('**/*', async (route) => {
       try {
