@@ -126,8 +126,8 @@ export const WatermarkLayer: React.FC<WatermarkLayerProps> = ({
   };
 
   const containerPositioning = isAbsolute
-    ? 'pointer-events-none absolute inset-0 z-10 overflow-hidden select-none'
-    : 'pointer-events-none fixed inset-0 z-20 overflow-hidden select-none';
+    ? 'pointer-events-none absolute inset-0 z-0 overflow-hidden select-none'
+    : 'pointer-events-none fixed inset-0 z-0 overflow-hidden select-none';
 
   return (
     <div

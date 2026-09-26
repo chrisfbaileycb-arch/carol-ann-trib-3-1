@@ -33,6 +33,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useCarol } from '@/contexts/CarolContext';
 import { executeWorkflowOnBackend } from '@/lib/workflowExecution';
+import { apiFetch } from '@/lib/apiClient';
 
 export interface WorkspaceTab {
   id: string;
@@ -285,13 +286,13 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
           : 'custom',
       });
     } else if (action.category === 'social_marketing') {
-      const addition = `\n\n### Dispatched via ${action.target_app || 'Social Hub'}\n- **Action:** ${action.action_name}\n- **Title:** ${action.form_payload.title}\n- **Scheduled Time:** ${action.form_payload.target_time ?? 'Immediate'}\n- **Status:** Verified 200 OK · Executed on Firebase & Meta Content Graph`;
+      const addition = `\n\n### Dispatched via ${action.target_app || 'Social Hub'} (Simulated)\n- **Action:** ${action.action_name}\n- **Title:** ${action.form_payload.title}\n- **Scheduled Time:** ${action.form_payload.target_time ?? 'Immediate'}\n- **Status:** Simulated — nothing was dispatched (Demo fixture only)`;
       setScratchpad((prev) => prev + addition);
     } else if (action.category === 'finance_accounting') {
-      const addition = `\n\n### Dispatched via ${action.target_app || 'Accounting Hub'}\n- **Action:** ${action.action_name}\n- **Title:** ${action.form_payload.title}\n- **Payload:** ${JSON.stringify(action.form_payload.fields ?? {})}\n- **Receipt:** Verified 200 OK · Executed on Firebase & QuickBooks Bridge`;
+      const addition = `\n\n### Dispatched via ${action.target_app || 'Accounting Hub'} (Simulated)\n- **Action:** ${action.action_name}\n- **Title:** ${action.form_payload.title}\n- **Payload:** ${JSON.stringify(action.form_payload.fields ?? {})}\n- **Receipt:** Simulated — nothing was dispatched (Demo fixture only)`;
       setScratchpad((prev) => prev + addition);
     } else if (action.category === 'hospitality_review') {
-      const addition = `\n\n### Dispatched via ${action.target_app || 'Review Hub'}\n- **Action:** ${action.action_name}\n- **Response:** "${action.form_payload.notes ?? action.form_payload.title}"\n- **Status:** Published to platform · Executed on Firebase`;
+      const addition = `\n\n### Dispatched via ${action.target_app || 'Review Hub'} (Simulated)\n- **Action:** ${action.action_name}\n- **Response:** "${action.form_payload.notes ?? action.form_payload.title}"\n- **Status:** Simulated — nothing was dispatched (Demo fixture only)`;
       setScratchpad((prev) => prev + addition);
     } else if (action.category === 'scratchpad_update') {
       const addition = `\n\n### Updated via ${action.action_name}\n- **Title:** ${action.form_payload.title}\n- **Items:** ${(action.form_payload.items ?? []).join(', ')}\n- **Target Time:** ${action.form_payload.target_time ?? 'N/A'}`;
@@ -369,6 +370,8 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
           agentId,
           pluginExecution: pluginResult.chip,
           toolCall: pluginResult.actionCard,
+          isMock: true,
+          badge: 'DEMO',
         };
 
         setMessages((prev) => [...prev, assistantMsg]);
@@ -390,7 +393,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
         .map((m) => `- [${m.category}] ${m.content}`)
         .join('\n');
 
-      const res = await fetch('/api/gemini/chat', {
+      const res = await apiFetch('/api/gemini/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

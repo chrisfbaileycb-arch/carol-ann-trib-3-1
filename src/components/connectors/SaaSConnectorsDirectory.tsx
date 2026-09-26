@@ -104,6 +104,8 @@ export const SaaSConnectorsDirectory: React.FC<SaaSConnectorsDirectoryProps> = (
       setTestResult(JSON.stringify({
         status: 'ping_failed',
         connector: conn.id,
+        isMock: true,
+        badge: 'DEMO',
         demo: true,
         simulated: true,
         error: 'The simulated ping did not return. Sign in and try again.',

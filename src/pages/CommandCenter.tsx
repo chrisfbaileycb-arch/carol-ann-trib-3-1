@@ -2,26 +2,29 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   Sparkles, MessagesSquare, Users, Shield, Palette,
   Smartphone, Cloud, Loader2, UserCircle2, Settings,
-  LogOut, LogIn, ShieldCheck, Wifi, CloudCog
+  LogOut, LogIn, ShieldCheck, Wifi, CloudCog, Code2
 } from 'lucide-react';
 import { WorkspaceChat } from '@/components/workspace/WorkspaceChat';
 import { AgentRosterMCP } from '@/components/workspace/AgentRosterMCP';
 import { SovereignMemoryLedger } from '@/components/workspace/SovereignMemoryLedger';
 import { SettingsThemeEngine } from '@/components/workspace/SettingsThemeEngine';
+import { WorkspaceCanvas } from '@/components/canvas/WorkspaceCanvas';
 import { WatermarkLayer } from '@/components/workspace/WatermarkLayer';
 import AuthModal from '@/components/auth/AuthModal';
 import AccountSettings from '@/components/auth/AccountSettings';
 import { useCarol } from '@/contexts/CarolContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAgentRouting } from '@/contexts/AgentRoutingContext';
 import { subscribeBus, isCloudBusLive, pullBusNow } from '@/lib/realtimeBus';
 import { loadStickers } from '@/lib/memoryStore';
 import type { StickerWatermark } from '@/data/schemas';
 import { isLightTheme } from '@/data/intake';
 
-type TabId = 'chat' | 'roster' | 'ledger' | 'theme';
+type TabId = 'chat' | 'canvas' | 'roster' | 'ledger' | 'theme';
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'chat', label: 'Workspace Chat', icon: MessagesSquare },
+  { id: 'canvas', label: 'Workspace Canvas', icon: Code2 },
   { id: 'roster', label: 'Agent Studio', icon: Users },
   { id: 'ledger', label: 'Sovereign Memory', icon: Shield },
   { id: 'theme', label: 'Design & Wallpaper', icon: Palette },
@@ -30,7 +33,9 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
 export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRemote }) => {
   const { profile, updateProfile, theme, syncToCloud, syncing, lastSync, syncError, addCheckIn, stickers } = useCarol();
   const { user, signOut } = useAuth();
-  const [tab, setTab] = useState<TabId>('chat');
+  const { activeTab, setActiveTab, transitionToCanvasWithAgent } = useAgentRouting();
+  const tab = activeTab;
+  const setTab = setActiveTab;
 
   const [authOpen, setAuthOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -243,11 +248,17 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
             onOpenAgentRoster={() => setTab('roster')}
           />
         )}
+        {tab === 'canvas' && (
+          <WorkspaceCanvas />
+        )}
         {tab === 'roster' && (
           <AgentRosterMCP
             profile={profile}
             onSelectAgentForChat={(agentId) => {
               setTab('chat');
+            }}
+            onSelectAgentForCanvas={(agentId) => {
+              transitionToCanvasWithAgent(agentId);
             }}
           />
         )}

@@ -427,11 +427,20 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
                           <Zap className="h-2.5 w-2.5 fill-current" />
                         </span>
                         <span className="font-semibold text-[11px]">{msg.pluginExecution.pluginName}</span>
+                        {(msg.pluginExecution.badge === 'DEMO' || msg.pluginExecution.isMock) && (
+                          <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 text-[9px] font-mono font-bold text-amber-600 dark:text-amber-400">
+                            DEMO
+                          </span>
+                        )}
                         <span className="text-slate-400">·</span>
                         <span className="font-mono text-[11px] text-sky-600 dark:text-sky-400">{msg.pluginExecution.toolName}()</span>
-                        <span className="ml-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
+                        <span className="ml-1 text-[10px] text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-0.5">
                           <CheckCircle2 className="h-3 w-3" />
-                          {msg.pluginExecution.status === 'executed' ? 'Executed' : 'Staged'}
+                          {msg.pluginExecution.isMock || msg.pluginExecution.badge === 'DEMO'
+                            ? 'Demo fixture only'
+                            : msg.pluginExecution.status === 'executed'
+                            ? 'Executed'
+                            : 'Staged'}
                         </span>
                         {msg.pluginExecution.latencyMs && (
                           <span className="font-mono text-[10px] text-slate-400 dark:text-white/40">
@@ -479,11 +488,16 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
                           <span className="rounded-md border border-[var(--m-accent)]/50 bg-[var(--m-accent)]/25 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider font-semibold text-[var(--m-accent-soft)]">
                             {msg.toolCall.target_app || 'MCP TOOL'}: {msg.toolCall.action_name}
                           </span>
+                          {(msg.toolCall.badge === 'DEMO' || msg.toolCall.isMock) && (
+                            <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 text-[9px] font-mono font-bold text-amber-600 dark:text-amber-400">
+                              DEMO
+                            </span>
+                          )}
                         </div>
 
                         {msg.toolCall.status === 'executed' ? (
-                          <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-300 font-semibold">
-                            <CheckCircle2 className="h-3.5 w-3.5" /> Dispatched via MCP Bridge
+                          <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-semibold">
+                            <CheckCircle2 className="h-3.5 w-3.5" /> Simulated — nothing was dispatched
                           </span>
                         ) : msg.toolCall.status === 'cancelled' ? (
                           <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-white/50 font-semibold">
@@ -548,7 +562,7 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
                         <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
                           <p className={`text-[11px] flex items-center gap-1 ${isLight ? 'text-amber-800' : 'text-amber-200/80'}`}>
                             <Shield className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-                            <span>Safety Guard: External write action will not dispatch until approved.</span>
+                            <span>Safety Guard: Simulated action will not stage until approved.</span>
                           </p>
                           <div className="flex items-center justify-end gap-2 shrink-0">
                             {onCancelToolAction && (
@@ -577,8 +591,8 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
 
                       {/* Executed Receipt Details */}
                       {msg.toolCall.status === 'executed' && (
-                        <div className="mt-2.5 flex items-center justify-between text-[11px] text-emerald-700 dark:text-emerald-300 font-mono">
-                          <span>Simulated preview — nothing was transmitted to any service</span>
+                        <div className="mt-2.5 flex items-center justify-between text-[11px] text-amber-700 dark:text-amber-300 font-mono">
+                          <span>Simulated — nothing was dispatched (Demo fixture only)</span>
                           <span>{msg.toolCall.executed_at ? new Date(msg.toolCall.executed_at).toLocaleTimeString() : 'Now'}</span>
                         </div>
                       )}

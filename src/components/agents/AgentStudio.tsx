@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   Plus, Trash2, MessageSquare, ShieldCheck, Sparkles, Eraser, Save, Palette, Clock,
-  Search, X, Brain, Check,
+  Search, X, Brain, Check, Code2
 } from 'lucide-react';
 import AgentAvatar from '@/components/agents/AgentAvatar';
 import {
@@ -12,6 +12,7 @@ import {
   type AgentConfig, loadAgents, saveAgents, blankAgent, purgeAgent, clearMemory,
   loadMemory, addMemory, removeMemory, detectTimeZone, timeZoneLabel,
 } from '@/lib/agentStore';
+import { useAgentRouting } from '@/contexts/AgentRoutingContext';
 
 const SKIN_SWATCHES: [string, string][] = [
   ['#F472B6', '#A855F7'], ['#38BDF8', '#818CF8'], ['#34D399', '#22D3EE'],
@@ -21,7 +22,11 @@ const SKIN_SWATCHES: [string, string][] = [
 const PROPS = ['hat', 'cap', 'bow', 'halo', 'headset', 'glasses', 'visor'] as const;
 
 /** Agent Studio: build, style, tune and delete your own little agents. */
-const AgentStudio: React.FC<{ onOpenChat: (agentId: string) => void }> = ({ onOpenChat }) => {
+const AgentStudio: React.FC<{
+  onOpenChat: (agentId: string) => void;
+  onOpenCanvas?: (agentId: string) => void;
+}> = ({ onOpenChat, onOpenCanvas }) => {
+  const { transitionToCanvasWithAgent } = useAgentRouting();
   const [agents, setAgents] = useState<AgentConfig[]>(() => loadAgents());
   const [filter, setFilter] = useState<AgentCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -247,16 +252,29 @@ const AgentStudio: React.FC<{ onOpenChat: (agentId: string) => void }> = ({ onOp
                     </div>
                   </div>
 
-                  <div className="mt-3 flex gap-2 border-t border-white/6 pt-2.5">
+                  <div className="mt-3 flex gap-1.5 border-t border-white/6 pt-2.5">
+                    <button
+                      onClick={() => {
+                        if (onOpenCanvas) {
+                          onOpenCanvas(a.id);
+                        } else {
+                          transitionToCanvasWithAgent(a);
+                        }
+                      }}
+                      className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-sky-400/30 bg-sky-400/10 py-1.5 text-[11px] font-semibold text-sky-300 transition hover:bg-sky-400/20"
+                      title="Open in Workspace Canvas"
+                    >
+                      <Code2 className="h-3.5 w-3.5" /> Canvas
+                    </button>
                     <button
                       onClick={() => onOpenChat(a.id)}
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg m-gradient-bg py-2 text-[11px] font-semibold text-white transition hover:opacity-90"
+                      className="flex flex-1 items-center justify-center gap-1 rounded-lg m-gradient-bg py-1.5 text-[11px] font-semibold text-white transition hover:opacity-90"
                     >
                       <MessageSquare className="h-3.5 w-3.5" /> Chat
                     </button>
                     <button
                       onClick={() => setEditingId(editingId === a.id ? null : a.id)}
-                      className={`rounded-lg border px-3 text-[11px] font-medium transition ${
+                      className={`rounded-lg border px-2.5 text-[11px] font-medium transition ${
                         editingId === a.id ? 'border-[var(--m-accent)] bg-[var(--m-accent)]/20 text-white' : 'border-white/12 text-white/60 hover:border-white/30 hover:text-white'
                       }`}
                     >

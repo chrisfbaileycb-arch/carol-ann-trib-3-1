@@ -80,6 +80,8 @@ export interface PluginExecutionChip {
   toolName: string;
   status: 'executed' | 'staged' | 'confirmed';
   latencyMs?: number;
+  isMock?: boolean;
+  badge?: string;
 }
 
 export interface ChatAttachment {
@@ -108,6 +110,8 @@ export interface ConversationMessage {
   agentId?: string;
   toolCall?: HydrateFormAction;
   pluginExecution?: PluginExecutionChip;
+  isMock?: boolean;
+  badge?: string;
 }
 
 export type HydrateCategory =
@@ -140,6 +144,8 @@ export interface HydrateFormAction {
   timestamp: string;
   executed_at?: string;
   execution_receipt?: string;
+  isMock?: boolean;
+  badge?: string;
 }
 
 export interface StickerWatermark {

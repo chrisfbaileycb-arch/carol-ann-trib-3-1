@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Monitor, Smartphone, Cloud, Sparkles, SlidersHorizontal, Shield, Bot, Palette } from 'lucide-react';
+import { Monitor, Smartphone, Cloud, Sparkles, SlidersHorizontal, Shield, Bot, Palette, Code2 } from 'lucide-react';
 import { CarolProvider, useCarol } from '@/contexts/CarolContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAgentRouting } from '@/contexts/AgentRoutingContext';
 import CommandCenter from '@/pages/CommandCenter';
 import AgentPage from '@/pages/AgentPage';
 import MemoryPage from '@/pages/MemoryPage';
@@ -17,6 +18,7 @@ import WatermarkLayer from '@/components/workspace/WatermarkLayer';
 
 const CarolShell: React.FC = () => {
   const { profile, updateProfile, theme, memories, checkIns, stickers } = useCarol();
+  const { activeTab, setActiveTab } = useAgentRouting();
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -190,9 +192,12 @@ const CarolShell: React.FC = () => {
             }`}
           >
             <button
-              onClick={() => navigate('/')}
+              onClick={() => {
+                setActiveTab('chat');
+                navigate('/');
+              }}
               className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold transition ${
-                currentPath === '/'
+                currentPath === '/' && activeTab !== 'canvas'
                   ? isLight
                     ? 'bg-white text-slate-900 shadow-sm'
                     : 'bg-white/20 text-white shadow-sm'
@@ -202,6 +207,23 @@ const CarolShell: React.FC = () => {
               }`}
             >
               <Monitor className="h-3 w-3" /> Workspace
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('canvas');
+                if (currentPath !== '/') navigate('/?tab=canvas');
+              }}
+              className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold transition ${
+                currentPath === '/' && activeTab === 'canvas'
+                  ? isLight
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'bg-white/20 text-white shadow-sm'
+                  : isLight
+                  ? 'text-slate-600 hover:text-slate-900'
+                  : 'text-white/60 hover:text-white'
+              }`}
+            >
+              <Code2 className="h-3 w-3" /> Canvas
             </button>
             <button
               onClick={() => navigate('/agent')}

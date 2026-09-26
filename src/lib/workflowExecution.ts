@@ -1,4 +1,5 @@
 import { auth } from './firebase';
+import { apiFetch } from './apiClient';
 import type { HydrateFormAction, ErrandTask } from '@/data/schemas';
 
 export interface WorkflowExecutionResult {
@@ -11,6 +12,8 @@ export interface WorkflowExecutionResult {
   backend: string;
   databaseId?: string;
   timestamp: string;
+  isMock?: boolean;
+  badge?: string;
 }
 
 export interface CopilotStepExecutionResult {
@@ -26,25 +29,21 @@ export interface CopilotStepExecutionResult {
     timestamp: string;
   };
   output: string;
+  isMock?: boolean;
+  badge?: string;
 }
 
 export async function executeWorkflowOnBackend(
   action: HydrateFormAction,
   userId?: string | null,
 ): Promise<WorkflowExecutionResult> {
-  const token = await auth.currentUser?.getIdToken().catch(() => null);
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
   const effectiveUserId = userId || auth.currentUser?.uid || 'default';
 
-  const res = await fetch('/api/workflow/execute', {
+  const res = await apiFetch('/api/workflow/execute', {
     method: 'POST',
-    headers,
+    headers: {
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({
       userId: effectiveUserId,
       actionId: action.id,
@@ -71,19 +70,13 @@ export async function executeCopilotStepOnBackend(
   provider?: string,
   userId?: string | null,
 ): Promise<CopilotStepExecutionResult> {
-  const token = await auth.currentUser?.getIdToken().catch(() => null);
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
   const effectiveUserId = userId || auth.currentUser?.uid || 'default';
 
-  const res = await fetch('/api/workflow/copilot/step', {
+  const res = await apiFetch('/api/workflow/copilot/step', {
     method: 'POST',
-    headers,
+    headers: {
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({
       userId: effectiveUserId,
       taskId,
@@ -105,19 +98,13 @@ export async function executeCopilotStepOnBackend(
 export async function triggerBackendScheduleSweep(
   userId?: string | null,
 ): Promise<{ ok: boolean; sweptCount: number; commands: Array<Record<string, unknown>> }> {
-  const token = await auth.currentUser?.getIdToken().catch(() => null);
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
   const effectiveUserId = userId || auth.currentUser?.uid || 'default';
 
-  const res = await fetch('/api/workflow/sweep', {
+  const res = await apiFetch('/api/workflow/sweep', {
     method: 'POST',
-    headers,
+    headers: {
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({ userId: effectiveUserId }),
   });
 
@@ -132,17 +119,9 @@ export async function triggerBackendScheduleSweep(
 export async function fetchWorkflowExecutionHistory(
   userId?: string | null,
 ): Promise<Array<Record<string, unknown>>> {
-  const token = await auth.currentUser?.getIdToken().catch(() => null);
-  const headers: Record<string, string> = {};
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
   const effectiveUserId = userId || auth.currentUser?.uid || 'default';
 
-  const res = await fetch(`/api/workflow/history?userId=${encodeURIComponent(effectiveUserId)}`, {
-    headers,
-  });
+  const res = await apiFetch(`/api/workflow/history?userId=${encodeURIComponent(effectiveUserId)}`);
 
   if (!res.ok) {
     return [];

@@ -22,6 +22,7 @@ import WallpaperBackground from '@/components/workspace/WallpaperBackground';
 import { SaaSConnectorsDirectory } from '@/components/connectors/SaaSConnectorsDirectory';
 import { loadConnectedSaasIds } from '@/data/saasConnectors';
 import { isLightTheme, FONT_OPTIONS } from '@/data/intake';
+import { apiFetch } from '@/lib/apiClient';
 import {
   type AgentConfig, type AgentMessage,
   loadAgents, loadThread, appendThread, clearThread,
@@ -182,7 +183,7 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
     setAgentBusy(true);
 
     try {
-      const res = await fetch('/api/gemini/chat', {
+      const res = await apiFetch('/api/gemini/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

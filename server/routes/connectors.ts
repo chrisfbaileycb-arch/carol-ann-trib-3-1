@@ -5,7 +5,9 @@ export function registerConnectorRoutes(app: Express) {
 app.post('/api/connectors/ping', requireFirebaseAuth, (req, res) => {
   const { connectorId, capabilities } = req.body;
   return res.json({
-    status: '200_OK',
+    status: 'simulated',
+    isMock: true,
+    badge: 'DEMO',
     protocol: 'mcp-jsonrpc-2.0',
     connector: connectorId || 'generic-saas',
     capabilities_available: Array.isArray(capabilities) ? capabilities : [],
@@ -15,7 +17,7 @@ app.post('/api/connectors/ping', requireFirebaseAuth, (req, res) => {
     simulated: true,
     connected: false,
     verified: false,
-    note: 'Simulated connector ping. No live service was contacted and no connector is connected.',
+    note: 'Simulated connector ping. No live service was contacted and no connector is connected (Demo fixture only).',
     server_time: new Date().toISOString(),
   });
 });
@@ -26,6 +28,8 @@ app.post('/api/connectors/execute', requireFirebaseAuth, (req, res) => {
   const { connectorId, action, params } = req.body;
   return res.json({
     status: 'simulated',
+    isMock: true,
+    badge: 'DEMO',
     connector: connectorId || 'generic-saas',
     action: action || 'sync',
     timestamp: new Date().toISOString(),
@@ -34,7 +38,7 @@ app.post('/api/connectors/execute', requireFirebaseAuth, (req, res) => {
     executed: false,
     result: {
       success: false,
-      message: `Simulated preview of action '${action || 'sync'}' on ${connectorId}. No live service was contacted and nothing was executed.`,
+      message: `Simulated — nothing was dispatched. Demo fixture only: preview of action '${action || 'sync'}' on ${connectorId}. No live service was contacted.`,
       paramsEcho: params || {},
     },
   });

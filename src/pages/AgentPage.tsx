@@ -68,6 +68,9 @@ const AgentPage: React.FC = () => {
           onOpenChat={(agentId) => {
             navigate(`/?agent=${encodeURIComponent(agentId)}`);
           }}
+          onOpenCanvas={(agentId) => {
+            navigate(`/?tab=canvas&agent=${encodeURIComponent(agentId)}`);
+          }}
         />
       </div>
     </div>

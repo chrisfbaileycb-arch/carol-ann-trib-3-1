@@ -8,13 +8,20 @@ import { AGENT_PRESETS, AGENT_CATEGORIES, GEMINI_VOICE_OPTIONS, HYDRATE_FORM_TOO
 import { isLightTheme } from '@/data/intake';
 import type { UserProfile } from '@/data/schemas';
 import AgentAvatar from '@/components/agents/AgentAvatar';
+import { useAgentRouting, detectRoleType } from '@/contexts/AgentRoutingContext';
 
 interface AgentRosterMCPProps {
   onSelectAgentForChat: (agentId: string) => void;
+  onSelectAgentForCanvas?: (agentId: string) => void;
   profile?: UserProfile;
 }
 
-export const AgentRosterMCP: React.FC<AgentRosterMCPProps> = ({ onSelectAgentForChat, profile }) => {
+export const AgentRosterMCP: React.FC<AgentRosterMCPProps> = ({
+  onSelectAgentForChat,
+  onSelectAgentForCanvas,
+  profile,
+}) => {
+  const { transitionToCanvasWithAgent } = useAgentRouting();
   const isLight = isLightTheme(profile);
   const [selectedAgentId, setSelectedAgentId] = useState<string>('carol-anchor');
   const [testSpeaking, setTestSpeaking] = useState<string | null>(null);
@@ -270,6 +277,44 @@ export const AgentRosterMCP: React.FC<AgentRosterMCPProps> = ({ onSelectAgentFor
                           View details <ChevronRight className="h-3 w-3" />
                         </span>
                       </div>
+
+                      {/* Instant Action Strip: Open in Canvas & Chat */}
+                      <div className="mt-2.5 flex items-center gap-1.5 border-t border-white/6 pt-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onSelectAgentForCanvas) {
+                              onSelectAgentForCanvas(agent.id);
+                            } else {
+                              transitionToCanvasWithAgent(agent.id);
+                            }
+                          }}
+                          className={`flex-1 flex items-center justify-center gap-1 rounded-lg border py-1.5 text-[10.5px] font-semibold transition ${
+                            isLight
+                              ? 'border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100'
+                              : 'border-sky-400/30 bg-sky-400/10 text-sky-300 hover:bg-sky-400/20'
+                          }`}
+                        >
+                          <Code2 className="h-3 w-3" />
+                          <span>Canvas</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectAgentForChat(agent.id);
+                          }}
+                          className={`flex-1 flex items-center justify-center gap-1 rounded-lg border py-1.5 text-[10.5px] font-semibold transition ${
+                            isLight
+                              ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                              : 'border-rose-400/30 bg-rose-400/10 text-rose-300 hover:bg-rose-400/20'
+                          }`}
+                        >
+                          <Sparkles className="h-3 w-3" />
+                          <span>Chat</span>
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -369,14 +414,30 @@ export const AgentRosterMCP: React.FC<AgentRosterMCPProps> = ({ onSelectAgentFor
                   </div>
                 </div>
 
-                {/* Direct Action: Jump into Chat with this Agent */}
-                <button
-                  onClick={() => onSelectAgentForChat(selectedAgent.id)}
-                  className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl m-gradient-bg py-2.5 text-xs font-semibold text-white shadow-md hover:brightness-110 transition"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  <span>Open Dialogue with {selectedAgent.name}</span>
-                </button>
+                {/* Direct Action: Jump into Canvas or Chat with this Agent */}
+                <div className="mt-4 space-y-2">
+                  <button
+                    onClick={() => {
+                      if (onSelectAgentForCanvas) {
+                        onSelectAgentForCanvas(selectedAgent.id);
+                      } else {
+                        transitionToCanvasWithAgent(selectedAgent.id);
+                      }
+                    }}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl border border-sky-400/40 bg-sky-400/15 hover:bg-sky-400/25 py-2.5 text-xs font-semibold text-sky-200 shadow-md transition"
+                  >
+                    <Code2 className="h-4 w-4 text-sky-300" />
+                    <span>Launch Workspace Canvas with {selectedAgent.name}</span>
+                  </button>
+
+                  <button
+                    onClick={() => onSelectAgentForChat(selectedAgent.id)}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl m-gradient-bg py-2.5 text-xs font-semibold text-white shadow-md hover:brightness-110 transition"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    <span>Open Dialogue with {selectedAgent.name}</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

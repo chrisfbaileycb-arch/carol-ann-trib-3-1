@@ -10,6 +10,7 @@ import {
 import { detectTimeZone } from './agentStore';
 import { uid } from './memoryStore';
 import { publishBus } from './realtimeBus';
+import { apiFetch } from './apiClient';
 
 export interface ScheduledCommand {
   id: string;
@@ -226,7 +227,7 @@ export const runScheduleSweep = async (userId: string): Promise<string | null> =
   try {
     // 1. Trigger backend sweep against Firestore scheduled commands
     try {
-      const res = await fetch('/api/workflow/sweep', {
+      const res = await apiFetch('/api/workflow/sweep', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),

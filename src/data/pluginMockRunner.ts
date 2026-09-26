@@ -19,6 +19,8 @@ export interface PluginExecutionResult {
   chip?: PluginExecutionChip;
   actionCard?: HydrateFormAction;
   data?: Record<string, unknown>;
+  isMock?: boolean;
+  badge?: string;
 }
 
 // ----------------------------------------------------------------------------
@@ -39,6 +41,7 @@ export function executeGoogleBusinessTool(
         date: 'Yesterday',
         comment: 'The executive consultation and concierge service were world-class. Quiet, elegant, and perfectly organized.',
         answered: false,
+        isMock: true,
       },
       {
         review_id: 'rev_g_8814',
@@ -47,6 +50,7 @@ export function executeGoogleBusinessTool(
         date: '3 days ago',
         comment: 'Outstanding attention to detail and pristine private work suites. Seamless executive experience.',
         answered: true,
+        isMock: true,
       },
       {
         review_id: 'rev_g_8802',
@@ -55,6 +59,7 @@ export function executeGoogleBusinessTool(
         date: 'Last week',
         comment: 'Serene atmosphere and prompt assistance. Highly recommended for executive retreats.',
         answered: false,
+        isMock: true,
       }
     ];
 
@@ -66,27 +71,32 @@ export function executeGoogleBusinessTool(
       pluginId: 'google-business',
       pluginName: 'Google Business Profile',
       toolName: 'gbp_fetch_reviews',
-      status: 'executed',
+      status: 'staged',
       latencyMs: 15,
+      isMock: true,
+      badge: 'DEMO',
     };
 
     const reviewsFormatted = filteredReviews.map((r) =>
-      `⭐ **${r.reviewer_name} — ${r.star_rating}/5 Stars** *(${r.date})*\n` +
+      `⭐ **${r.reviewer_name} — ${r.star_rating}/5 Stars** *(${r.date})* [DEMO FIXTURE]\n` +
       `> *"${r.comment}"*\n` +
-      `Status: ${r.answered ? '✅ Answered' : '⚠️ Pending management reply'}`
+      `Status: ${r.answered ? 'Answered (Mock)' : 'Pending reply (Mock)'}`
     ).join('\n\n');
 
     const replyText =
-      `I connected to your **Google Business Profile** and retrieved verified listing reviews:\n\n` +
-      `📍 **Location Rating:** **${averageRating} / 5.0** · **${unansweredCount} review${unansweredCount !== 1 ? 's' : ''}** pending response.\n\n` +
+      `[DEMO FIXTURE] **Google Business Profile (Demo Data — not live)**\n` +
+      `*Notice: Simulated response — no live Google Business Profile was contacted.*\n\n` +
+      `📍 **Demo Location Rating:** **${averageRating} / 5.0** · **${unansweredCount} review${unansweredCount !== 1 ? 's' : ''}** (Demo fixtures).\n\n` +
       `${reviewsFormatted}\n\n` +
-      `Would you like me to draft an official host reply to Genevieve M.?`;
+      `*(Demo fixture only — no live data was retrieved from Google).*`;
 
     return {
       handled: true,
       replyText,
       chip,
-      data: { averageRating, unansweredCount, reviews: filteredReviews }
+      data: { isMock: true, badge: 'DEMO', averageRating, unansweredCount, reviews: filteredReviews },
+      isMock: true,
+      badge: 'DEMO',
     };
   }
 
@@ -96,25 +106,27 @@ export function executeGoogleBusinessTool(
   const actionCard: HydrateFormAction = {
     id: `act_gbp_${Date.now()}`,
     category: 'profile_intake',
-    action_name: 'Publish Google Business Update',
-    target_app: 'Google Business Profile',
+    action_name: 'Stage Google Business Update (Demo)',
+    target_app: 'Google Business Profile (Demo)',
     requires_user_confirmation: true,
     status: 'pending_confirmation',
     timestamp: new Date().toISOString(),
+    isMock: true,
+    badge: 'DEMO',
     form_payload: {
-      title: 'Google Maps Business Update',
+      title: '[DEMO] Google Maps Business Update (Simulation)',
       items: [
         `Summary: "${summary}"`,
         `Call-to-Action: ${cta} button enabled`,
-        'Placement: Google Search Knowledge Panel & Google Maps Listing',
-        'Visibility: Public (Immediate verification upon approval)'
+        'Status: Simulated — nothing will be dispatched',
+        'Placement: Demo Knowledge Panel Preview'
       ],
-      target_time: 'Immediate on approval',
-      notes: summary,
+      target_time: 'Simulated on approval',
+      notes: `Simulated — nothing was dispatched. Demo fixture only: "${summary}"`,
       fields: {
         action_button: cta,
         destination_url: 'https://carolann.executive/reserve',
-        api_version: 'GBP v1 API (OAuth 2.0 verified)'
+        demo_mode: 'Demo Fixture (isMock: true)'
       }
     }
   };
@@ -125,14 +137,18 @@ export function executeGoogleBusinessTool(
     toolName: 'gbp_post_update',
     status: 'staged',
     latencyMs: 18,
+    isMock: true,
+    badge: 'DEMO',
   };
 
   return {
     handled: true,
-    replyText: `I have prepared your official Google Business Profile announcement. Please verify the copy and click **Approve & Execute** to publish directly to Google Search & Maps.`,
+    replyText: `[DEMO FIXTURE] I have prepared a simulated Google Business Profile announcement. Review below (Simulated — nothing will be dispatched to Google Search or Maps).`,
     chip,
     actionCard,
-    data: { staged: true, summary, cta }
+    data: { staged: true, summary, cta, isMock: true, badge: 'DEMO' },
+    isMock: true,
+    badge: 'DEMO',
   };
 }
 
@@ -148,24 +164,29 @@ export function executeShopifyTool(
       pluginId: 'shopify',
       pluginName: 'Shopify Storefront & Orders',
       toolName: 'shopify_get_orders',
-      status: 'executed',
+      status: 'staged',
       latencyMs: 18,
+      isMock: true,
+      badge: 'DEMO',
     };
 
     const replyText =
-      `I queried your active **Shopify Storefront** via the direct Admin MCP bridge:\n\n` +
-      `### 🛍️ Real-Time Store Performance (Today):\n` +
-      `- **Gross Merchandise Value (GMV):** **$18,420.00** across **42 orders**\n` +
-      `- **Average Order Value (AOV):** **$438.57**\n` +
-      `- **Wholesale B2B Order #SO-9821:** **$15,000.00** from *Luxe Living Retail Partners*\n` +
-      `- **Fulfillment Status:** 36 fulfilled · **${unfulfilledCount} unfulfilled / staged for 2:00 PM courier pickup**\n\n` +
-      `All Shopify webhooks are operational and synchronized with your ledger.`;
+      `[DEMO FIXTURE] **Shopify Storefront & Orders (Demo Data — not live)**\n` +
+      `*Notice: Simulated response — no live Shopify storefront was contacted.*\n\n` +
+      `### 🛍️ Demo Store Performance Fixture:\n` +
+      `- **Gross Merchandise Value (GMV):** **$18,420.00** across **42 orders** (Mock)\n` +
+      `- **Average Order Value (AOV):** **$438.57** (Mock)\n` +
+      `- **Wholesale B2B Order #SO-9821:** **$15,000.00** from *Luxe Living Retail Partners* (Mock)\n` +
+      `- **Fulfillment Status:** 36 fulfilled · **${unfulfilledCount} unfulfilled** (Mock)\n\n` +
+      `*(Demo fixture only — no real storefront records were queried).*`;
 
     return {
       handled: true,
       replyText,
       chip,
-      data: { totalGmv, ordersCount, unfulfilledCount }
+      data: { isMock: true, badge: 'DEMO', totalGmv, ordersCount, unfulfilledCount },
+      isMock: true,
+      badge: 'DEMO',
     };
   }
 
@@ -175,24 +196,29 @@ export function executeShopifyTool(
       pluginId: 'shopify',
       pluginName: 'Shopify Storefront & Orders',
       toolName: 'shopify_get_inventory',
-      status: 'executed',
+      status: 'staged',
       latencyMs: 16,
+      isMock: true,
+      badge: 'DEMO',
     };
 
     const replyText =
-      `I checked live inventory levels in your **Shopify Catalog** for \`${query}\`:\n\n` +
+      `[DEMO FIXTURE] **Shopify Catalog Inventory (Demo Data — not live)**\n` +
+      `*Notice: Simulated response — no live Shopify catalog was queried.*\n\n` +
       `| Variant / SKU | Title | Live Stock | Status |\n` +
       `| :--- | :--- | :--- | :--- |\n` +
-      `| **SKU-LUM-01** | Executive Leather Planner (Obsidian) | **84 units** | ✅ In Stock |\n` +
-      `| **SKU-LUM-02** | Executive Leather Planner (Rose Blush) | **12 units** | ⚠️ Low Stock Alert |\n` +
-      `| **SKU-LUM-03** | Brass Fountain Pen Edition | **140 units** | ✅ In Stock |\n\n` +
-      `Rose Blush is approaching reorder threshold. Would you like me to stage a reorder purchase order?`;
+      `| **SKU-LUM-01** | Executive Leather Planner (Obsidian) | **84 units** | In Stock (Mock) |\n` +
+      `| **SKU-LUM-02** | Executive Leather Planner (Rose Blush) | **12 units** | Low Stock Alert (Mock) |\n` +
+      `| **SKU-LUM-03** | Brass Fountain Pen Edition | **140 units** | In Stock (Mock) |\n\n` +
+      `*(Demo fixture only — nothing was queried from Shopify).*`;
 
     return {
       handled: true,
       replyText,
       chip,
-      data: { query, lowStock: true }
+      data: { isMock: true, badge: 'DEMO', query, lowStock: true },
+      isMock: true,
+      badge: 'DEMO',
     };
   }
 
@@ -204,25 +230,28 @@ export function executeShopifyTool(
   const actionCard: HydrateFormAction = {
     id: `act_shopify_${Date.now()}`,
     category: 'profile_intake',
-    action_name: 'Update Shopify Product Catalog',
-    target_app: 'Shopify Storefront & Orders',
+    action_name: 'Update Shopify Product Catalog (Demo)',
+    target_app: 'Shopify Storefront & Orders (Demo)',
     requires_user_confirmation: true,
     status: 'pending_confirmation',
     timestamp: new Date().toISOString(),
+    isMock: true,
+    badge: 'DEMO',
     form_payload: {
-      title: `Update Product Catalog (${productId})`,
+      title: `[DEMO] Update Product Catalog (${productId})`,
       items: [
         `Target: Shopify Store Catalog (${productId})`,
         `Adjusted Unit Price: $${price} USD`,
         `Inventory Adjustment: ${inventoryDelta >= 0 ? `+${inventoryDelta}` : inventoryDelta} units`,
-        'Channel Sync: Online Store, Shop App, Point of Sale'
+        'Status: Simulated — nothing will be dispatched'
       ],
-      target_time: 'Immediate upon confirmation',
-      notes: 'Price adjustment scheduled for live storefront channels.',
+      target_time: 'Simulated on approval',
+      notes: 'Simulated — nothing was dispatched. Demo fixture only.',
       fields: {
         product_id: productId,
         new_price: `$${price}`,
-        inventory_delta: String(inventoryDelta)
+        inventory_delta: String(inventoryDelta),
+        demo_mode: 'Demo Fixture (isMock: true)'
       }
     }
   };
@@ -233,14 +262,18 @@ export function executeShopifyTool(
     toolName: 'shopify_update_product',
     status: 'staged',
     latencyMs: 20,
+    isMock: true,
+    badge: 'DEMO',
   };
 
   return {
     handled: true,
-    replyText: `I have staged the Shopify product catalog update for \`${productId}\` at $${price}. Please review and authorize execution in the safety tray below.`,
+    replyText: `[DEMO FIXTURE] I have staged a simulated Shopify product catalog update for \`${productId}\` at $${price}. Review below (Simulated — nothing will be dispatched to Shopify).`,
     chip,
     actionCard,
-    data: { productId, price, inventoryDelta }
+    data: { isMock: true, badge: 'DEMO', productId, price, inventoryDelta },
+    isMock: true,
+    badge: 'DEMO',
   };
 }
 
@@ -253,24 +286,29 @@ export function executeStripeTool(
       pluginId: 'stripe',
       pluginName: 'Stripe Payments & Billing',
       toolName: 'stripe_get_charges',
-      status: 'executed',
+      status: 'staged',
       latencyMs: 12,
+      isMock: true,
+      badge: 'DEMO',
     };
 
     const replyText =
-      `I connected to your **Stripe Payments** account and inspected real-time settlements:\n\n` +
-      `### 💳 Stripe Volume (Last 24 Hours):\n` +
-      `- **Gross Volume:** **$24,650.00** across 18 transactions\n` +
-      `- **Net Payout Staged:** **$23,935.15** (Stripe processing fees: $714.85)\n` +
-      `- **Latest Succeeded Charge:** **$5,000.00** from *Meridian Ventures* (ACH Direct Debit)\n` +
-      `- **Failed Charges:** **0** (Dispute rate: 0.00% · All radar risk checks passed)\n\n` +
-      `Next automated payout to your Operating Reserve will settle tomorrow at 9:00 AM EST.`;
+      `[DEMO FIXTURE] **Stripe Payments & Billing (Demo Data — not live)**\n` +
+      `*Notice: Simulated response — no live Stripe account was contacted.*\n\n` +
+      `### 💳 Demo Volume Fixture (Last 24 Hours):\n` +
+      `- **Gross Volume:** **$24,650.00** across 18 transactions (Simulated)\n` +
+      `- **Net Payout Staged:** **$23,935.15** (Simulated Stripe processing fees: $714.85)\n` +
+      `- **Latest Succeeded Charge:** **$5,000.00** from *Meridian Ventures* (ACH Direct Debit — Mock)\n` +
+      `- **Failed Charges:** **0** (Demo radar risk check)\n\n` +
+      `*(Demo fixture only — no real financial accounts were queried or affected).*`;
 
     return {
       handled: true,
       replyText,
       chip,
-      data: { grossVolume: 24650.00, netVolume: 23935.15, failedCount: 0 }
+      data: { isMock: true, badge: 'DEMO', grossVolume: 24650.00, netVolume: 23935.15, failedCount: 0 },
+      isMock: true,
+      badge: 'DEMO',
     };
   }
 
@@ -282,26 +320,29 @@ export function executeStripeTool(
   const actionCard: HydrateFormAction = {
     id: `act_stripe_${Date.now()}`,
     category: 'profile_intake',
-    action_name: 'Generate Stripe Payment Link',
-    target_app: 'Stripe Payments & Billing',
+    action_name: 'Generate Stripe Payment Link (Demo)',
+    target_app: 'Stripe Payments & Billing (Demo)',
     requires_user_confirmation: true,
     status: 'pending_confirmation',
     timestamp: new Date().toISOString(),
+    isMock: true,
+    badge: 'DEMO',
     form_payload: {
-      title: `Checkout Link: ${itemName} (${formattedAmount})`,
+      title: `[DEMO] Checkout Link: ${itemName} (${formattedAmount})`,
       items: [
         `Service / Retainer: ${itemName}`,
         `Total Amount: ${formattedAmount} USD`,
         'Payment Methods: Credit Card, Apple Pay, Google Pay, US Bank Transfer (ACH)',
-        'Invoice Receipt: Automatic branded customer receipt upon settlement'
+        'Status: Simulated — nothing will be dispatched'
       ],
-      target_time: 'Ready to dispatch',
-      notes: `Hosted Stripe checkout link for ${itemName} (${formattedAmount}).`,
+      target_time: 'Ready to stage',
+      notes: `Simulated — nothing was dispatched. Demo fixture only for ${itemName} (${formattedAmount}).`,
       fields: {
         item_name: itemName,
         amount: formattedAmount,
         currency: 'USD',
-        hosted_url: 'https://buy.stripe.com/live_carolann_exec_99012'
+        hosted_url: 'https://buy.stripe.com/live_carolann_exec_99012',
+        demo_mode: 'Demo Fixture (isMock: true)'
       }
     }
   };
@@ -312,14 +353,18 @@ export function executeStripeTool(
     toolName: 'stripe_create_payment_link',
     status: 'staged',
     latencyMs: 14,
+    isMock: true,
+    badge: 'DEMO',
   };
 
   return {
     handled: true,
-    replyText: `I have prepared a hosted **Stripe Checkout link** for **${itemName}** (${formattedAmount}). Please review the payment parameters below and click **Approve & Execute** to generate the live URL.`,
+    replyText: `[DEMO FIXTURE] I have prepared a hosted **Stripe Checkout link preview** for **${itemName}** (${formattedAmount}). Review below (Simulated — nothing will be dispatched to Stripe).`,
     chip,
     actionCard,
-    data: { itemName, amountCents, formattedAmount }
+    data: { isMock: true, badge: 'DEMO', itemName, amountCents, formattedAmount },
+    isMock: true,
+    badge: 'DEMO',
   };
 }
 
@@ -332,23 +377,28 @@ export function executeQuickBooksTool(
       pluginId: 'quickbooks',
       pluginName: 'QuickBooks Online',
       toolName: 'quickbooks_get_balances',
-      status: 'executed',
+      status: 'staged',
       latencyMs: 24,
+      isMock: true,
+      badge: 'DEMO',
     };
 
     const replyText =
-      `I connected to **QuickBooks Online** and inspected your current Chart of Accounts:\n\n` +
-      `- **Liquid Operating Checking:** **$142,850.00**\n` +
-      `- **Accounts Receivable (Open):** **$6,970.00**\n` +
-      `- **Accounts Payable (Due in 30d):** **$3,210.00**\n` +
-      `- **Net Cash Flow (Month-to-Date):** **+$18,420.00**\n\n` +
-      `Your ledger is balanced and fully reconciled against Stripe settlements.`;
+      `[DEMO FIXTURE] **QuickBooks Online (Demo Data — not live)**\n` +
+      `*Notice: Simulated response — no live Intuit QuickBooks Online ledger was contacted.*\n\n` +
+      `- **Liquid Operating Checking (Mock):** **$142,850.00**\n` +
+      `- **Accounts Receivable (Mock Open):** **$6,970.00**\n` +
+      `- **Accounts Payable (Mock Due in 30d):** **$3,210.00**\n` +
+      `- **Net Cash Flow (Mock MTD):** **+$18,420.00**\n\n` +
+      `*(Demo fixture only — no financial records were retrieved from QuickBooks).*`;
 
     return {
       handled: true,
       replyText,
       chip,
-      data: { operatingCash: 142850, arTotal: 6970, apTotal: 3210 }
+      data: { isMock: true, badge: 'DEMO', operatingCash: 142850, arTotal: 6970, apTotal: 3210 },
+      isMock: true,
+      badge: 'DEMO',
     };
   }
 
@@ -357,24 +407,30 @@ export function executeQuickBooksTool(
       pluginId: 'quickbooks',
       pluginName: 'QuickBooks Online',
       toolName: 'quickbooks_get_invoices',
-      status: 'executed',
+      status: 'staged',
       latencyMs: 18,
+      isMock: true,
+      badge: 'DEMO',
     };
 
     const replyText =
-      `I connected to QuickBooks Online and inspected your active Accounts Receivable ledger. You currently have **3 unpaid invoices** totaling **$6,970.00**:\n\n` +
+      `[DEMO FIXTURE] **QuickBooks Online Accounts Receivable (Demo Data — not live)**\n` +
+      `*Notice: Simulated response — no live QuickBooks service was contacted.*\n\n` +
+      `Demo AR ledger: **3 unpaid invoices** totaling **$6,970.00** (Mock data):\n\n` +
       `| Invoice | Client | Amount | Due Date | Status |\n` +
       `| :--- | :--- | :--- | :--- | :--- |\n` +
-      `| **#INV-1042** | Apex Creative Co. | **$4,250.00** | 3 days ago | ⚠️ Overdue (Aging: 3d) |\n` +
-      `| **#INV-1039** | Horizon Media LLC | **$1,800.00** | Next Friday | ⏱️ Net 30 Pending |\n` +
-      `| **#INV-1035** | Blue Ridge Studio | **$920.00** | In 14 days | ⏱️ Net 15 Normal |\n\n` +
-      `💡 **Recommendation:** Apex Creative Co. is past its payment terms. Would you like me to draft a reminder email via your Gmail connector, or stage an updated QuickBooks balance statement?`;
+      `| **#INV-1042** | Apex Creative Co. | **$4,250.00** | 3 days ago | Overdue (Aging: 3d · Mock) |\n` +
+      `| **#INV-1039** | Horizon Media LLC | **$1,800.00** | Next Friday | Net 30 Pending (Mock) |\n` +
+      `| **#INV-1035** | Blue Ridge Studio | **$920.00** | In 14 days | Net 15 Normal (Mock) |\n\n` +
+      `*(Demo fixture only — nothing was queried from QuickBooks).*`;
 
     return {
       handled: true,
       replyText,
       chip,
-      data: { totalUnpaid: 6970, overdueCount: 1 }
+      data: { isMock: true, badge: 'DEMO', totalUnpaid: 6970, overdueCount: 1 },
+      isMock: true,
+      badge: 'DEMO',
     };
   }
 
@@ -390,27 +446,30 @@ export function executeQuickBooksTool(
   const actionCard: HydrateFormAction = {
     id: `act_qb_${Date.now()}`,
     category: 'profile_intake',
-    action_name: 'Create & Dispatch QuickBooks Invoice',
-    target_app: 'QuickBooks Online',
+    action_name: 'Create & Dispatch QuickBooks Invoice (Demo)',
+    target_app: 'QuickBooks Online (Demo)',
     requires_user_confirmation: true,
     status: 'pending_confirmation',
     timestamp: new Date().toISOString(),
+    isMock: true,
+    badge: 'DEMO',
     form_payload: {
-      title: `Invoice: ${customerName} (${formattedAmount})`,
+      title: `[DEMO] Invoice: ${customerName} (${formattedAmount})`,
       items: [
         `Client: ${customerName}`,
         `Amount: ${formattedAmount} USD`,
         `Line Items: ${lineItems.join('; ')}`,
         `Terms: ${dueDate}`,
-        'Payment Option: Stripe Hosted Credit Card & Bank ACH enabled'
+        'Status: Simulated — nothing will be dispatched'
       ],
       target_time: dueDate,
-      notes: `Professional services rendered. Thank you for your partnership.`,
+      notes: `Simulated — nothing was dispatched. Demo fixture only for ${customerName} (${formattedAmount}).`,
       fields: {
         customer_name: customerName,
         total_amount: formattedAmount,
         currency: 'USD',
-        tax_rate: '0.00% (Exempt)'
+        tax_rate: '0.00% (Exempt)',
+        demo_mode: 'Demo Fixture (isMock: true)'
       }
     }
   };
@@ -421,14 +480,18 @@ export function executeQuickBooksTool(
     toolName: 'quickbooks_create_invoice',
     status: 'staged',
     latencyMs: 20,
+    isMock: true,
+    badge: 'DEMO',
   };
 
   return {
     handled: true,
-    replyText: `I have generated a formal QuickBooks Online draft invoice for **${customerName}** in the amount of **${formattedAmount}**. Before it is recorded and dispatched, please review and approve it below:`,
+    replyText: `[DEMO FIXTURE] I have prepared a mock QuickBooks Online invoice draft for **${customerName}** in the amount of **${formattedAmount}**. Review below (Simulated — nothing will be dispatched to QuickBooks Online).`,
     chip,
     actionCard,
-    data: { customerName, amount, formattedAmount, dueDate }
+    data: { isMock: true, badge: 'DEMO', customerName, amount, formattedAmount, dueDate },
+    isMock: true,
+    badge: 'DEMO',
   };
 }
 
@@ -442,25 +505,30 @@ export function executeGmailTool(
       pluginId: 'gmail',
       pluginName: 'Gmail & Google Workspace Mail',
       toolName: 'gmail_search_threads',
-      status: 'executed',
+      status: 'staged',
       latencyMs: 14,
+      isMock: true,
+      badge: 'DEMO',
     };
 
     const replyText =
-      `I searched your **Google Workspace Gmail inbox** for \`${query}\`:\n\n` +
+      `[DEMO FIXTURE] **Gmail & Google Workspace Mail (Demo Data — not live)**\n` +
+      `*Notice: Simulated response — no live Gmail account was searched.*\n\n` +
       `- **"Q3 Executive Roadmap & Deliverables"** — *Sarah Jenkins (VP Strategy, Apex)*\n` +
       `  > *"Carol Ann, could you review the final draft by Friday? Looking forward to our sync."*\n` +
-      `  *(Received 42 mins ago · Priority Inbox)*\n\n` +
+      `  *(Received 42 mins ago · Priority Inbox · Mock)*\n\n` +
       `- **"Invoice #INV-1042 Settlement Confirmation"** — *billing@apexcreative.design*\n` +
       `  > *"Wire transfer initiated for our outstanding retainer balance."*\n` +
-      `  *(Received 2 hours ago)*\n\n` +
-      `Would you like me to draft a confirmation response to Sarah Jenkins?`;
+      `  *(Received 2 hours ago · Mock)*\n\n` +
+      `*(Demo fixture only — no live mail was accessed).*`;
 
     return {
       handled: true,
       replyText,
       chip,
-      data: { query, threadCount: 2 }
+      data: { isMock: true, badge: 'DEMO', query, threadCount: 2 },
+      isMock: true,
+      badge: 'DEMO',
     };
   }
 
@@ -475,25 +543,28 @@ export function executeGmailTool(
   const actionCard: HydrateFormAction = {
     id: `act_gmail_${Date.now()}`,
     category: 'profile_intake',
-    action_name: 'Draft Gmail Message',
-    target_app: 'Gmail & Google Workspace Mail',
+    action_name: 'Draft Gmail Message (Demo)',
+    target_app: 'Gmail & Google Workspace Mail (Demo)',
     requires_user_confirmation: true,
     status: 'pending_confirmation',
     timestamp: new Date().toISOString(),
+    isMock: true,
+    badge: 'DEMO',
     form_payload: {
-      title: `Draft to ${to}: "${subject}"`,
+      title: `[DEMO] Draft to ${to}: "${subject}"`,
       items: [
         `Recipient: ${to}`,
         `Subject: ${subject}`,
-        'Action: Stage draft in Gmail (Safe Mode: will NOT auto-send)',
-        'Safety: Requires operator approval before dispatch'
+        'Action: Stage draft in demo sandbox',
+        'Status: Simulated — nothing will be dispatched'
       ],
-      target_time: 'Ready to stage in inbox',
-      notes: body,
+      target_time: 'Ready to stage in demo sandbox',
+      notes: `Simulated — nothing was dispatched. Demo fixture only: ${body}`,
       fields: {
         to,
         subject,
-        body
+        body,
+        demo_mode: 'Demo Fixture (isMock: true)'
       }
     }
   };
@@ -504,14 +575,18 @@ export function executeGmailTool(
     toolName: 'gmail_draft_message',
     status: 'staged',
     latencyMs: 16,
+    isMock: true,
+    badge: 'DEMO',
   };
 
   return {
     handled: true,
-    replyText: `I have prepared a polished email draft for **${to}** in your Gmail workspace. Please review the wording below and click **Approve & Execute** to place it in your outbox:`,
+    replyText: `[DEMO FIXTURE] I have prepared a mock email draft for **${to}**. Review below (Simulated — nothing will be dispatched to Gmail).`,
     chip,
     actionCard,
-    data: { to, subject, body }
+    data: { isMock: true, badge: 'DEMO', to, subject, body },
+    isMock: true,
+    badge: 'DEMO',
   };
 }
 
@@ -526,8 +601,10 @@ export function executeZapierTool(
       pluginId: 'zapier-gateway',
       pluginName: 'Zapier Universal MCP Gateway',
       toolName: 'zapier_list_actions',
-      status: 'executed',
+      status: 'staged',
       latencyMs: 38,
+      isMock: true,
+      badge: 'DEMO',
     };
 
     const actionsList = zapConfig.actions
@@ -535,16 +612,19 @@ export function executeZapierTool(
       .join('\n');
 
     const replyText =
-      `Zapier Universal MCP Gateway is connected to \`${zapConfig.endpointUrl}\`.\n\n` +
-      `Here are the enabled actions synchronized into Carol Ann's active runtime schema:\n\n` +
+      `[DEMO FIXTURE] **Zapier Universal MCP Gateway (Demo Data — not live)**\n` +
+      `*Notice: Simulated response — no live Zapier webhook was triggered.*\n\n` +
+      `Here are the enabled actions in the demo runtime schema:\n\n` +
       `${actionsList}\n\n` +
-      `You can invoke any of these actions in natural dialogue (e.g., *"Sync VIP lead to HubSpot CRM"* or *"Sync Stripe charge to QuickBooks"*).`;
+      `*(Demo fixture only — no live integrations were invoked).*`;
 
     return {
       handled: true,
       replyText,
       chip,
-      data: { endpoint: zapConfig.endpointUrl, actions: zapConfig.actions }
+      data: { isMock: true, badge: 'DEMO', endpoint: zapConfig.endpointUrl, actions: zapConfig.actions },
+      isMock: true,
+      badge: 'DEMO',
     };
   }
 
@@ -555,24 +635,27 @@ export function executeZapierTool(
   const actionCard: HydrateFormAction = {
     id: `act_zapier_${Date.now()}`,
     category: 'profile_intake',
-    action_name: `Execute Zapier Action: ${actionName}`,
-    target_app: 'Zapier Universal MCP Gateway',
+    action_name: `Execute Zapier Action: ${actionName} (Demo)`,
+    target_app: 'Zapier Universal MCP Gateway (Demo)',
     requires_user_confirmation: true,
     status: 'pending_confirmation',
     timestamp: new Date().toISOString(),
+    isMock: true,
+    badge: 'DEMO',
     form_payload: {
-      title: `Zapier Workflow: ${actionName}`,
+      title: `[DEMO] Zapier Workflow: ${actionName}`,
       items: [
         `Action: ${actionName}`,
-        'Gateway: Universal MCP Endpoint (https://actions.zapier.com/settings/mcp/)',
+        'Gateway: Universal MCP Endpoint (Demo Preview)',
         `Payload: ${paramsJson}`,
-        'Security: Encrypted token authentication with zero external telemetry'
+        'Status: Simulated — nothing will be dispatched'
       ],
-      target_time: 'Instant trigger upon approval',
-      notes: `Executing ${actionName} across connected SaaS ecosystem.`,
+      target_time: 'Simulated on approval',
+      notes: `Simulated — nothing was dispatched. Demo fixture only for ${actionName}.`,
       fields: {
         action_name: actionName,
-        params: paramsJson
+        params: paramsJson,
+        demo_mode: 'Demo Fixture (isMock: true)'
       }
     }
   };
@@ -583,14 +666,18 @@ export function executeZapierTool(
     toolName: 'zapier_execute_action',
     status: 'staged',
     latencyMs: 35,
+    isMock: true,
+    badge: 'DEMO',
   };
 
   return {
     handled: true,
-    replyText: `I have prepared the **Zapier Action (${actionName})** in your safety verification tray. Authorize execution below to trigger the workflow.`,
+    replyText: `[DEMO FIXTURE] I have prepared a simulated **Zapier Action (${actionName})** in your safety verification tray. Review below (Simulated — nothing will be dispatched to Zapier or connected apps).`,
     chip,
     actionCard,
-    data: { actionName, paramsJson }
+    data: { isMock: true, badge: 'DEMO', actionName, paramsJson },
+    isMock: true,
+    badge: 'DEMO',
   };
 }
 
@@ -671,29 +758,34 @@ export function tryExecutePluginIntent(
         pluginId: 'shopify',
         pluginName: 'Shopify & QuickBooks Reconciliation',
         toolName: 'shopify_get_orders',
-        status: 'executed',
+        status: 'staged',
         latencyMs: 24,
+        isMock: true,
+        badge: 'DEMO',
       };
 
       const replyText =
-        `I queried your **Shopify Storefront** and cross-referenced with your **QuickBooks Online** ledger via parallel MCP bridges:\n\n` +
-        `### 🛍️ Shopify Store Performance (Today):\n` +
-        `- **Gross Merchandise Value (GMV):** **$18,420.00** across 42 orders\n` +
-        `- **Direct Consumer Sales:** $3,420.00 (Average Order Value: $83.41)\n` +
-        `- **B2B Wholesale Order #SO-9821:** **$15,000.00** from *Luxe Living Retail Partners*\n` +
-        `- **Fulfillment Pipeline:** 36 fulfilled / 6 staged for 2:00 PM courier pickup\n\n` +
-        `### 📚 QuickBooks Online Cross-Verification:\n` +
-        `- **Invoice Reference:** **#INV-1043** ($15,000.00) issued to *Luxe Living Retail Partners*\n` +
-        `- **Ledger Status:** ✅ **Recorded & Matched** in Accounts Receivable\n` +
-        `- **Payment Settlement:** Received via Stripe ACH Transfer · Deposited to Operating Reserve\n` +
-        `- **Discrepancy Delta:** **$0.00** (100% reconciled between Shopify and QuickBooks)\n\n` +
-        `Both systems are synchronized. Would you like me to generate a 30-day revenue forecast or draft a customer thank-you update?`;
+        `[DEMO FIXTURE] **Shopify & QuickBooks Reconciliation (Demo Data — not live)**\n` +
+        `*Notice: Simulated response — no live Shopify or QuickBooks service was contacted.*\n\n` +
+        `### 🛍️ Demo Store Performance Fixture:\n` +
+        `- **Gross Merchandise Value (GMV):** **$18,420.00** across 42 orders (Mock)\n` +
+        `- **Direct Consumer Sales:** $3,420.00 (Average Order Value: $83.41 · Mock)\n` +
+        `- **B2B Wholesale Order #SO-9821:** **$15,000.00** from *Luxe Living Retail Partners* (Mock)\n` +
+        `- **Fulfillment Pipeline:** 36 fulfilled / 6 staged for courier pickup (Mock)\n\n` +
+        `### 📚 QuickBooks Online Demo Ledger Cross-Verification:\n` +
+        `- **Invoice Reference:** **#INV-1043** ($15,000.00) issued to *Luxe Living Retail Partners* (Mock)\n` +
+        `- **Ledger Status:** Matched in Accounts Receivable (Mock Demo)\n` +
+        `- **Payment Settlement:** Stripe ACH Transfer fixture · Deposited to Operating Reserve\n` +
+        `- **Discrepancy Delta:** **$0.00** (Simulated 100% reconciliation)\n\n` +
+        `*(Demo fixture only — no live services were queried or affected).*`;
 
       return {
         handled: true,
         replyText,
         chip,
-        data: { reconciled: true, gmv: 18420.00, delta: 0 }
+        data: { isMock: true, badge: 'DEMO', reconciled: true, gmv: 18420.00, delta: 0 },
+        isMock: true,
+        badge: 'DEMO',
       };
     }
   }
@@ -787,46 +879,51 @@ export function tryExecutePluginIntent(
         pluginId: 'instagram-reels',
         pluginName: 'Meta / Instagram Reels',
         toolName: 'insta_generate_caption',
-        status: 'executed',
+        status: 'staged',
         latencyMs: 16,
+        isMock: true,
+        badge: 'DEMO',
       };
 
       const replyText =
-        `I have drafted an aesthetic high-engagement caption optimized for the Instagram Reels algorithm, aligned with your workspace identity:\n\n` +
-        `🎬 **Draft Caption:**\n` +
+        `[DEMO FIXTURE] **Meta / Instagram Reels (Demo Data — not live)**\n` +
+        `*Notice: Simulated response — no live Meta Content Graph API was contacted.*\n\n` +
+        `🎬 **Demo Caption Fixture:**\n` +
         `> *"Crafted for sovereign minds who value calm execution and quiet luxury. ✨ Meet our latest release — where minimalist form meets daily intentionality.\n\n` +
         `> Available now in limited editions. Link in bio to reserve yours.\n\n` +
         `> #ExecutiveLiving #IntentionalDesign #QuietLuxury #CarolAnnOS #ModernMinimalism #ProductLaunch2026"*\n\n` +
-        `🎵 **Recommended Audio Sync:** *"Refined Ambient Waves"* (Trending in Business/Lifestyle — 84k Reels created this week)\n` +
+        `🎵 **Recommended Audio Sync (Mock):** *"Refined Ambient Waves"* (Trending in Business/Lifestyle)\n` +
         `📐 **Format Specs:** 9:16 Vertical HD (1080x1920) · First 3-sec visual hook verified.\n\n` +
-        `I have staged this Reel draft in your safety verification tray. Review the payload and authorize scheduling below.`;
+        `*(Demo fixture only — no live update will be broadcast to Meta Content Graph).*`;
 
       const actionCard: HydrateFormAction = {
         id: `act_insta_${Date.now()}`,
         category: 'profile_intake',
-        action_name: 'Schedule Instagram Reel Draft',
-        target_app: 'Meta / Instagram Reels',
+        action_name: 'Schedule Instagram Reel Draft (Demo)',
+        target_app: 'Meta / Instagram Reels (Demo)',
         requires_user_confirmation: true,
         status: 'pending_confirmation',
         timestamp: new Date().toISOString(),
+        isMock: true,
+        badge: 'DEMO',
         form_payload: {
-          title: 'New Product Showcase Reel (Draft)',
+          title: '[DEMO] New Product Showcase Reel (Simulation)',
           items: [
             'Video Asset: staged_showcase_4k_9x16.mp4',
             'Aspect Ratio: 9:16 Vertical (1080x1920)',
-            'Audio Tag: Refined Ambient Waves (Trending Audio ID: #AU-9021)',
-            'Scheduled Window: Tomorrow at 11:30 AM EST (Peak Audience Engagement)'
+            'Status: Simulated — nothing will be dispatched'
           ],
           target_time: 'Tomorrow at 11:30 AM EST',
-          notes: 'Crafted for sovereign minds who value calm execution and quiet luxury.',
+          notes: 'Simulated — nothing was dispatched. Demo fixture only.',
           fields: {
             channel: '@carolann.executive',
-            placement: 'Reels Hopper & Feed Preview'
+            placement: 'Reels Hopper Preview (Demo)',
+            demo_mode: 'Demo Fixture (isMock: true)'
           }
         },
       };
 
-      return { handled: true, replyText, chip, actionCard };
+      return { handled: true, replyText, chip, actionCard, isMock: true, badge: 'DEMO' };
     }
   }
 
@@ -840,47 +937,48 @@ export function tryExecutePluginIntent(
         pluginId: 'tripadvisor',
         pluginName: 'TripAdvisor Reviews & Listings',
         toolName: 'tripadvisor_fetch_reviews',
-        status: 'executed',
+        status: 'staged',
         latencyMs: 22,
+        isMock: true,
+        badge: 'DEMO',
       };
 
       const replyText =
-        `I connected to your claimed TripAdvisor listing via the MCP Bridge and retrieved your 2 most recent guest reviews:\n\n` +
-        `⭐ **Elena V. — 5/5 Stars** *(Stayed 2 days ago in Oceanfront Executive Suite 402)*\n` +
+        `[DEMO FIXTURE] **TripAdvisor Reviews & Listings (Demo Data — not live)**\n` +
+        `*Notice: Simulated response — no live TripAdvisor service was contacted.*\n\n` +
+        `⭐ **Elena V. — 5/5 Stars** *(Stayed 2 days ago in Oceanfront Executive Suite 402 · Mock)*\n` +
         `> *"Breathtaking ocean views, impeccable hospitality, and seamless executive workspace amenities. The high-speed desk setup on the private terrace was immaculate for remote deep work."*\n\n` +
-        `⭐ **Marcus K. — 4/5 Stars** *(Stayed 5 days ago in Grand Deluxe)*\n` +
+        `⭐ **Marcus K. — 4/5 Stars** *(Stayed 5 days ago in Grand Deluxe · Mock)*\n` +
         `> *"Exceptional dining and spa service. Check-in had a brief 10-minute wait during the afternoon peak, but the concierge was warm and offered chilled champagne."*\n\n` +
-        `---\n` +
-        `### Drafted Host Response to Elena V.:\n` +
-        `*"Dear Elena, thank you sincerely for choosing our suites and for taking a moment to share your lovely experience! We are delighted that the quiet terrace workspace and ocean views provided the focused, serene atmosphere you needed. Our team looks forward to welcoming you back for another inspiring stay."*\n\n` +
-        `I have staged this official response in your verification tray below. Please review and click **Approve & Execute** to transmit directly to TripAdvisor.`;
+        `*(Demo fixture only — no live reviews were queried).*`;
 
       const actionCard: HydrateFormAction = {
         id: `act_tripadvisor_${Date.now()}`,
         category: 'profile_intake',
-        action_name: 'Post Official Host Response',
-        target_app: 'TripAdvisor Reviews & Listings',
+        action_name: 'Post Official Host Response (Demo)',
+        target_app: 'TripAdvisor Reviews & Listings (Demo)',
         requires_user_confirmation: true,
         status: 'pending_confirmation',
         timestamp: new Date().toISOString(),
+        isMock: true,
+        badge: 'DEMO',
         form_payload: {
-          title: 'Reply to Elena V. (Review #TR-88219)',
+          title: '[DEMO] Reply to Elena V. (Simulation)',
           items: [
             'Target: TripAdvisor Oceanfront Executive Suite 402',
-            'Guest: Elena V. (Verified Booking, 5/5 Stars)',
-            'Action: Dispatch official management reply to public listing',
-            'Sentiment: Positive / Appreciation & Invitation'
+            'Guest: Elena V. (Mock Booking, 5/5 Stars)',
+            'Status: Simulated — nothing will be dispatched'
           ],
-          notes: 'Dear Elena, thank you sincerely for choosing our suites and for taking a moment to share your lovely experience! We are delighted that the quiet terrace workspace and ocean views provided the focused, serene atmosphere you needed. Our team looks forward to welcoming you back for another inspiring stay.',
+          notes: 'Simulated — nothing was dispatched. Demo fixture only.',
           fields: {
             review_id: 'TR-88219',
-            platform: 'TripAdvisor Partner API v1',
-            status: 'Ready to dispatch'
+            platform: 'TripAdvisor Partner API v1 (Demo Sandbox)',
+            status: 'Simulated preview'
           }
         },
       };
 
-      return { handled: true, replyText, chip, actionCard };
+      return { handled: true, replyText, chip, actionCard, isMock: true, badge: 'DEMO' };
     }
   }
 

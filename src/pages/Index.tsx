@@ -2,11 +2,14 @@
 import React from 'react';
 import AppLayout from '@/components/AppLayout';
 import { AppProvider } from '@/contexts/AppContext';
+import { AgentRoutingProvider } from '@/contexts/AgentRoutingContext';
 
 const Index: React.FC = () => {
   return (
     <AppProvider>
-      <AppLayout />
+      <AgentRoutingProvider>
+        <AppLayout />
+      </AgentRoutingProvider>
     </AppProvider>
   );
 };

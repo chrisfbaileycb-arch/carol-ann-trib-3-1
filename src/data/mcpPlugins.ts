@@ -83,6 +83,7 @@ export interface MCPPlugin {
     | 'expensify'
     | 'wave';
   badge?: string;
+  isMock?: boolean;
   ecosystemGroup?: 'social' | 'hospitality' | 'commerce' | 'universal';
   authType: 'OAuth 2.0' | 'API Key' | 'Zapier Bridge' | 'Sovereign Bus';
   endpoint: string;
@@ -123,7 +124,8 @@ export const MCP_PLUGINS_DIRECTORY: MCPPlugin[] = [
     description: 'Local search rankings, verified Google Maps customer reviews, business announcements, and Q&A.',
     vendor: 'Google LLC',
     iconType: 'google',
-    badge: 'Verified',
+    badge: 'DEMO',
+    isMock: true,
     ecosystemGroup: 'hospitality',
     authType: 'OAuth 2.0',
     endpoint: 'https://mybusinessbusinessinformation.googleapis.com/v1/mcp',
@@ -185,7 +187,7 @@ export const MCP_PLUGINS_DIRECTORY: MCPPlugin[] = [
         },
         returns: {
           type: 'OBJECT',
-          description: 'Published post status on Google Maps listing',
+          description: 'Post status on Google Maps listing',
           properties: {
             post_id: { type: 'STRING', description: 'Unique GBP post reference ID' },
             status: { type: 'STRING', description: 'LIVE or SCHEDULED' },
@@ -204,7 +206,8 @@ export const MCP_PLUGINS_DIRECTORY: MCPPlugin[] = [
     description: 'Real-time GMV sales numbers, order fulfillment tracking, customer order history, and inventory levels.',
     vendor: 'Shopify Inc.',
     iconType: 'shopify',
-    badge: 'High Demand',
+    badge: 'DEMO',
+    isMock: true,
     ecosystemGroup: 'commerce',
     authType: 'OAuth 2.0',
     endpoint: 'https://api.shopify.com/admin/2024-01/mcp',
@@ -314,7 +317,8 @@ export const MCP_PLUGINS_DIRECTORY: MCPPlugin[] = [
     description: 'Payment intents, customer balance queries, failed transaction diagnostics, and checkout payment links.',
     vendor: 'Stripe Inc.',
     iconType: 'stripe',
-    badge: 'Essential',
+    badge: 'DEMO',
+    isMock: true,
     ecosystemGroup: 'commerce',
     authType: 'API Key',
     endpoint: 'https://api.stripe.com/v1/mcp',
@@ -396,7 +400,8 @@ export const MCP_PLUGINS_DIRECTORY: MCPPlugin[] = [
     description: 'Accounts receivable, balance sheets, expense tracking, and automated client invoice dispatch.',
     vendor: 'Intuit Inc.',
     iconType: 'quickbooks',
-    badge: 'Enterprise',
+    badge: 'DEMO',
+    isMock: true,
     ecosystemGroup: 'commerce',
     authType: 'OAuth 2.0',
     endpoint: 'https://quickbooks.api.intuit.com/v3/company/mcp',
@@ -511,7 +516,8 @@ export const MCP_PLUGINS_DIRECTORY: MCPPlugin[] = [
     description: 'Triage correspondence, search VIP threads, draft polite executive replies, and track attachments.',
     vendor: 'Google LLC',
     iconType: 'gmail',
-    badge: 'Active Native',
+    badge: 'DEMO',
+    isMock: true,
     ecosystemGroup: 'social',
     authType: 'OAuth 2.0',
     endpoint: 'https://gmail.googleapis.com/gmail/v1/mcp',
@@ -595,7 +601,8 @@ export const MCP_PLUGINS_DIRECTORY: MCPPlugin[] = [
     description: 'One single endpoint connecting Carol Ann to 7,000+ pre-authenticated SaaS actions & AI workflows.',
     vendor: 'Zapier Inc.',
     iconType: 'zapier',
-    badge: 'Universal Bridge',
+    badge: 'DEMO',
+    isMock: true,
     ecosystemGroup: 'universal',
     authType: 'Zapier Bridge',
     endpoint: 'https://actions.zapier.com/settings/mcp/',
@@ -662,7 +669,8 @@ export const MCP_PLUGINS_DIRECTORY: MCPPlugin[] = [
     description: 'Schedule Instagram Reels, generate trend-aligned captions, sync viral audios, and monitor video reach.',
     vendor: 'Meta Platforms Inc.',
     iconType: 'instagram',
-    badge: 'Trending',
+    badge: 'DEMO',
+    isMock: true,
     ecosystemGroup: 'social',
     authType: 'OAuth 2.0',
     endpoint: 'https://graph.instagram.com/v19.0/mcp',
@@ -726,7 +734,8 @@ export const MCP_PLUGINS_DIRECTORY: MCPPlugin[] = [
     description: 'Fetch guest reviews, track hospitality rankings, and draft empathetic, polite host responses.',
     vendor: 'Tripadvisor LLC',
     iconType: 'tripadvisor',
-    badge: 'Essential',
+    badge: 'DEMO',
+    isMock: true,
     ecosystemGroup: 'hospitality',
     authType: 'API Key',
     endpoint: 'https://api.content.tripadvisor.com/api/v1/mcp',
