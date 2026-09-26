@@ -48,7 +48,7 @@ export const SPORTS_TEAMS_CATALOG: SportsTeam[] = [
     primaryColor: '#002244', // Midnight Navy
     secondaryColor: '#FB4F14', // Sunset Orange
     accentColor: '#FFFFFF', // Summit White
-    badgeEmoji: '🐴',
+    badgeEmoji: '🏈',
     defaultPosition: 'top-right',
   },
   {

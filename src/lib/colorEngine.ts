@@ -62,8 +62,53 @@ export function getContrastTextColor(
   lightColor = '#FFFFFF'
 ): string {
   const lum = getRelativeLuminance(bgHex);
-  // Colors with luminance > 0.52 (e.g. yellows, light cyans, white, cream) require dark text
-  return lum > 0.52 ? darkColor : lightColor;
+  // Colors with luminance > 0.42 (e.g. yellows, light cyans, bright orange, white, cream) require dark text
+  return lum > 0.42 ? darkColor : lightColor;
+}
+
+/**
+ * Calculates WCAG contrast ratio between two hex colors.
+ */
+export function calculateContrastRatio(hex1: string, hex2: string): number {
+  const lum1 = getRelativeLuminance(hex1);
+  const lum2 = getRelativeLuminance(hex2);
+  const brightest = Math.max(lum1, lum2);
+  const darkest = Math.min(lum1, lum2);
+  return (brightest + 0.05) / (darkest + 0.05);
+}
+
+export interface ColorSchemeAuditResult {
+  id: string;
+  label: string;
+  accent: string;
+  fontColor: string;
+  contrastRatio: number;
+  wcagCompliant: boolean;
+  status: 'passed' | 'warning' | 'failed';
+  details: string;
+}
+
+/**
+ * Comprehensive color audit ensuring zero visually grounded elements across all schemes.
+ */
+export function runFullColorSchemeAudit(
+  schemes: Array<{ id: string; label: string; accent: string }>
+): ColorSchemeAuditResult[] {
+  return schemes.map((s) => {
+    const fontColor = getContrastTextColor(s.accent);
+    const ratio = calculateContrastRatio(s.accent, fontColor);
+    const wcagCompliant = ratio >= 4.5;
+    return {
+      id: s.id,
+      label: s.label,
+      accent: s.accent,
+      fontColor,
+      contrastRatio: parseFloat(ratio.toFixed(2)),
+      wcagCompliant,
+      status: ratio >= 4.5 ? 'passed' : ratio >= 3.0 ? 'warning' : 'failed',
+      details: `${ratio.toFixed(1)}:1 contrast ratio with ${fontColor === '#0F172A' ? 'Dark Slate' : 'Crisp White'} font`,
+    };
+  });
 }
 
 /**

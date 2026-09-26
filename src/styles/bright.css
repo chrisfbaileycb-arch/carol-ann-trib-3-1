@@ -228,12 +228,18 @@ html:not(.dark) textarea::placeholder,
 /* Dynamic Font Adjustment on Accent Elements (Buttons, Pills, Badges) */
 .m-gradient-bg,
 button[class*="bg-[var(--m-accent)]"],
-.bg-\[var\(--m-accent\)\] {
+.bg-\[var\(--m-accent\)\],
+.badge-accent,
+.pill-accent-active,
+[data-accent-bg="true"] {
   color: var(--m-accent-foreground, var(--accent-foreground, #FFFFFF)) !important;
 }
 
 .m-gradient-bg *,
 button[class*="bg-[var(--m-accent)]"] *,
-.bg-\[var\(--m-accent\)\] * {
+.bg-\[var\(--m-accent\)\] *,
+.badge-accent *,
+.pill-accent-active *,
+[data-accent-bg="true"] * {
   color: var(--m-accent-foreground, var(--accent-foreground, #FFFFFF)) !important;
 }

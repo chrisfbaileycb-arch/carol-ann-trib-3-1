@@ -187,6 +187,8 @@ export async function runAnchorChat(
   history: { role: string; content: string }[],
   profile: Record<string, unknown>,
   memoryContext: string,
+  systemPersona = '',
+  memoryPartition = '',
 ) {
   const ai = getGenAI();
 
@@ -194,7 +196,22 @@ export async function runAnchorChat(
     return evaluateLocalFallback(message, agentId, agentName);
   }
 
-  const systemInstruction = `${ANCHOR_SYSTEM_INSTRUCTION}\n\nIdentity context:\n- User Name: ${(profile.name as string) || 'Operator'}\n- User Focus: ${(profile.identity as string) || 'Cloud-native lifestyle and executive management'}\n- Wellness Goal: ${(profile.wellnessGoal as string) || 'Balanced energy and recovery'}\n- Professional Focus: ${(profile.professionalFocus as string) || 'Personal projects'}\n- Cloud Memories:\n${memoryContext || 'None recorded yet.'}\n\nYou are ${agentName}, ${agentRole}.`;
+  const personaPrompt = systemPersona
+    ? `${systemPersona}\n\nOperating Persona: You are ${agentName} (${agentRole}).`
+    : `${ANCHOR_SYSTEM_INSTRUCTION}\nYou are ${agentName}, ${agentRole}.`;
+
+  const systemInstruction = `${personaPrompt}
+
+Executive User Identity context:
+- User Name: ${(profile.name as string) || 'Operator'}
+- User Focus: ${(profile.identity as string) || 'Sovereign lifestyle and executive management'}
+- Wellness Goal: ${(profile.wellnessGoal as string) || 'Balanced energy and recovery'}
+- Professional Focus: ${(profile.professionalFocus as string) || 'Personal projects'}
+- Active Memory Partition: ${memoryPartition || 'General'}
+- Partitioned Memories:
+${memoryContext || 'None recorded yet in this partition.'}
+
+Stay strictly in character as ${agentName}. Speak with serene intelligence, human warmth, and quiet luxury. Never break character.`;
 
   const contents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
   for (const h of history.slice(-10)) {

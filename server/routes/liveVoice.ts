@@ -4,14 +4,14 @@ import { getAdminBackend } from '../lib/firebaseAdmin.js';
 import { getGenAI, ANCHOR_SYSTEM_INSTRUCTION } from '../lib/inference.js';
 import { GoogleGenAI, Modality, type LiveServerMessage } from '@google/genai';
 
-export function attachLiveVoice(server: HttpServer) {
+export function attachLiveVoice(server: HttpServer, customBackend?: ReturnType<typeof getAdminBackend>) {
   const wss = new WebSocketServer({ server, path: '/api/gemini/live' });
 
   wss.on('connection', async (clientWs: WebSocket, req: IncomingMessage) => {
       // wss://host/api/gemini/live?token=<idToken>
       const wsUrl = new URL(req.url || '/', 'http://localhost');
       const wsToken = wsUrl.searchParams.get('token');
-      const backend = getAdminBackend();
+      const backend = customBackend !== undefined ? customBackend : getAdminBackend();
       let wsAuthed = false;
       if (wsToken && backend?.auth) {
         try {

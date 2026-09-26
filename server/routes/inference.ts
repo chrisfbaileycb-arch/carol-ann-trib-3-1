@@ -11,6 +11,8 @@ app.post('/api/gemini/chat', requireFirebaseAuth, verifyAppCheck, async (req, re
       agentId = 'carol-anchor',
       agentName = 'Carol Ann',
       agentRole = 'Warm Anchor & Workspace Orchestrator',
+      systemPersona = '',
+      memoryPartition = '',
       history = [],
       profile = {},
       memoryContext = '',
@@ -37,7 +39,17 @@ app.post('/api/gemini/chat', requireFirebaseAuth, verifyAppCheck, async (req, re
       fullMessage = fullMessage ? `${fullMessage}\n\nAttachments & Attached Context:\n${attachmentSummaries}` : `Attachments:\n${attachmentSummaries}`;
     }
 
-    const result = await runAnchorChat(fullMessage, agentId, agentName, agentRole, history, profile, memoryContext);
+    const result = await runAnchorChat(
+      fullMessage,
+      agentId,
+      agentName,
+      agentRole,
+      history,
+      profile,
+      memoryContext,
+      systemPersona,
+      memoryPartition
+    );
     return res.json(result);
   } catch (error) {
     console.error('Error in /api/gemini/chat:', error);
