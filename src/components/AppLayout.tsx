@@ -11,7 +11,9 @@ import Onboarding from '@/pages/Onboarding';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { initBus } from '@/lib/realtimeBus';
 import { FONT_OPTIONS, WALLPAPER_PRESETS, isLightTheme } from '@/data/intake';
+import { resolveColorPaletteReference } from '@/lib/colorEngine';
 import WallpaperBackground from '@/components/workspace/WallpaperBackground';
+import WatermarkLayer from '@/components/workspace/WatermarkLayer';
 
 const CarolShell: React.FC = () => {
   const { profile, updateProfile, theme, memories, checkIns, stickers } = useCarol();
@@ -40,6 +42,14 @@ const CarolShell: React.FC = () => {
   }, [profile.wallpaperPreset]);
 
   const isLight = useMemo(() => isLightTheme(profile), [profile]);
+
+  const paletteRef = useMemo(() => {
+    return resolveColorPaletteReference(
+      profile.accentColor || theme.accent,
+      isLight,
+      activePreset.foundationColor
+    );
+  }, [profile.accentColor, theme.accent, isLight, activePreset.foundationColor]);
 
   // Inject wallpaper and foundation settings state directly onto <body> and <html>
   useEffect(() => {
@@ -90,24 +100,37 @@ const CarolShell: React.FC = () => {
         ? `linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.65)), url(${profile.wallpaperCustomImage})`
         : `linear-gradient(rgba(10, 11, 18, 0.35), rgba(10, 11, 18, 0.55)), url(${profile.wallpaperCustomImage})`
       : activePreset.css,
-    backgroundColor: activePreset.foundationColor || (isLight ? '#FFF7F7' : '#0A0B10'),
+    backgroundColor: paletteRef.background,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
-    '--m-accent': profile.accentColor || theme.accent,
-    '--m-accent-soft': theme.accentSoft,
+    '--m-accent': paletteRef.accent,
+    '--m-accent-soft': paletteRef.accentSoft,
+    '--m-accent-foreground': paletteRef.accentForeground,
+    '--accent': paletteRef.accent,
+    '--accent-soft': paletteRef.accentSoft,
+    '--accent-foreground': paletteRef.accentForeground,
+    '--background': paletteRef.background,
+    '--foreground': paletteRef.foreground,
+    '--muted-foreground': paletteRef.mutedForeground,
+    '--border': paletteRef.border,
     '--font-display': currentFont.displayFont,
     '--font-body': currentFont.bodyFont,
+    '--font-primary': currentFont.bodyFont,
   } as React.CSSProperties;
 
   return (
     <div
+      data-theme={profile.theme}
       className={`carol-ann-root relative flex h-screen flex-col overflow-hidden transition-colors duration-500 ${
-        isLight ? 'text-slate-800' : 'text-white'
+        isLight ? 'is-light text-slate-800' : 'dark text-white'
       }`}
       style={rootBgStyle}
     >
       {/* Root Atmospheric Wallpaper Layer with Glows & Ambient Highlights */}
       <WallpaperBackground profile={profile} stickers={stickers} />
+
+      {/* Persistent Floating Watermark Layer */}
+      <WatermarkLayer stickers={stickers} />
 
       {/* Active Route Surface Container */}
       <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent">

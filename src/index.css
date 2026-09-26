@@ -142,18 +142,28 @@
 
 /* ===================== Carol: Lumina Edition ===================== */
 
+:root {
+  --font-primary: 'Plus Jakarta Sans', Inter, sans-serif;
+  --font-display: 'Outfit', sans-serif;
+  --accent: #FF4D8D;
+  --accent-soft: #FF8EB8;
+  --background: #0A0B10;
+  --foreground: #FFFFFF;
+  --border: rgba(255, 255, 255, 0.14);
+}
+
 .font-display {
   font-family: var(--font-display, 'Outfit', 'Playfair Display', sans-serif);
 }
 
 .carol-ann-root {
-  --m-accent: #FF4D8D;
-  --m-accent-soft: #FF8EB8;
+  --m-accent: var(--accent, #FF4D8D);
+  --m-accent-soft: var(--accent-soft, #FF8EB8);
   --m-surface: #12131C;
   --m-surface-alt: #181926;
-  --m-ink: #FFFFFF;
-  color: #FFFFFF;
-  font-family: var(--font-body, 'Plus Jakarta Sans', Inter, sans-serif);
+  --m-ink: var(--foreground, #FFFFFF);
+  color: var(--foreground, #FFFFFF);
+  font-family: var(--font-primary, var(--font-body, 'Plus Jakarta Sans', Inter, sans-serif));
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;

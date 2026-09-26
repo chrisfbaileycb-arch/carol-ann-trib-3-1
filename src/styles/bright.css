@@ -1,142 +1,239 @@
 /**
- * Bright welcome layer — white + sage canvas with purple lining.
+ * Sovereign Executive OS - High-Fidelity Theme & Typography Engine.
  *
- * This layer NEVER changes a single stored value: every theme, accent colour and
- * agent skin the operator picked stays exactly as saved. It only re-paints the
- * shell surfaces so the first experience reads bright and welcoming. Turning
- * "Bright canvas" off in AI settings removes `.m-bright` and the original
- * midnight architecture returns untouched.
+ * Resolves color & font fading/dissolving across active themes:
+ * - Luminous Rose (Glowing soft rose blush on obsidian pitch)
+ * - Electric Lavender (Radiant electric violet & lilac on pure black)
+ * - Aurora Cyan & Sky (Electric celestial luminescence on obsidian)
+ * - Obsidian Noir Titanium (Crisp luminous white & titanium silver on deep noir)
+ *
+ * Ensures theme CSS variables (--background, --foreground, --accent, --border, --font-primary)
+ * are cleanly bound to root styles without conflicting with inline Tailwind classes.
+ * Enforces crisp text contrast across all cards, modals, and input fields.
  */
 
-.m-bright {
-  --m-bright-ink: #2C2740;
-  --m-bright-ink-soft: #5B5473;
-  --m-bright-ink-faint: #857EA0;
-  --m-bright-sage: #E9F1E8;
-  --m-bright-sage-deep: #D6E6D4;
-  --m-bright-panel: #FFFFFF;
-  --m-bright-line: rgba(124, 58, 237, 0.18);
-  --m-bright-line-strong: rgba(124, 58, 237, 0.32);
+:root {
+  --font-primary: 'Plus Jakarta Sans', Inter, -apple-system, sans-serif;
+  --font-display: 'Outfit', sans-serif;
+  --background: #0A0B10;
+  --foreground: #FFFFFF;
+  --card: rgba(18, 19, 28, 0.75);
+  --card-foreground: #FFFFFF;
+  --popover: #12131C;
+  --popover-foreground: #FFFFFF;
+  --primary: #FF4D8D;
+  --primary-foreground: #FFFFFF;
+  --secondary: #1E1F2E;
+  --secondary-foreground: #FFFFFF;
+  --muted: rgba(255, 255, 255, 0.08);
+  --muted-foreground: rgba(255, 255, 255, 0.75);
+  --accent: #FF4D8D;
+  --accent-soft: #FF94BF;
+  --accent-foreground: #FFFFFF;
+  --m-accent: #FF4D8D;
+  --m-accent-soft: #FF94BF;
+  --m-accent-foreground: #FFFFFF;
+  --border: rgba(255, 255, 255, 0.14);
+  --input: rgba(255, 255, 255, 0.16);
+  --ring: #FF4D8D;
+  --radius: 0.75rem;
 }
 
-.m-bright body,
-.m-bright .carol-ann-root {
-  background-color: #FBFDFA !important;
-  background-image:
-    radial-gradient(circle at 12% 8%, rgba(214, 230, 212, 0.85), transparent 42%),
-    radial-gradient(circle at 88% 4%, rgba(196, 181, 253, 0.35), transparent 40%),
-    radial-gradient(circle at 70% 96%, rgba(233, 241, 232, 0.9), transparent 45%) !important;
-  color: var(--m-bright-ink);
+/* Light / Luminous Theme Foundation */
+html:not(.dark),
+.is-light,
+.m-bright:not(.dark) {
+  --background: #FCFDFC;
+  --foreground: #0F172A;
+  --card: rgba(255, 255, 255, 0.88);
+  --card-foreground: #0F172A;
+  --popover: #FFFFFF;
+  --popover-foreground: #0F172A;
+  --muted: rgba(15, 23, 42, 0.06);
+  --muted-foreground: #475569;
+  --border: rgba(226, 232, 240, 0.85);
+  --input: rgba(203, 213, 225, 0.9);
+  --m-bright-ink: #0F172A;
+  --m-bright-ink-soft: #334155;
+  --m-bright-ink-faint: #64748B;
 }
 
-/* ---------- panels: every dark hex surface becomes white / sage ---------- */
-.m-bright [class*="bg-[#101118]"],
-.m-bright [class*="bg-[#0F1016]"],
-.m-bright [class*="bg-[#0E0F14]"],
-.m-bright [class*="bg-[#0B0C11]"],
-.m-bright [class*="bg-[#0A0B0F]"],
-.m-bright [class*="bg-[#0D0E14]"] {
-  background-color: #F6FAF5 !important;
+/* Dark / OLED Obsidian Foundation */
+html.dark,
+.dark {
+  --background: #0A0B10;
+  --foreground: #FFFFFF;
+  --card: rgba(18, 19, 28, 0.75);
+  --card-foreground: #FFFFFF;
+  --popover: #12131C;
+  --popover-foreground: #FFFFFF;
+  --muted: rgba(255, 255, 255, 0.08);
+  --muted-foreground: rgba(255, 255, 255, 0.75);
+  --border: rgba(255, 255, 255, 0.14);
+  --input: rgba(255, 255, 255, 0.16);
 }
 
-.m-bright [class*="bg-[#15161C]"],
-.m-bright [class*="bg-[#16171F]"],
-.m-bright [class*="bg-[#14151C]"],
-.m-bright [class*="bg-[#13141B]"],
-.m-bright [class*="bg-[#131319]"],
-.m-bright [class*="bg-[#1B1C24]"],
-.m-bright [class*="bg-[#1F2029]"],
-.m-bright [class*="bg-[#1D1E28]"] {
-  background-color: #FFFFFF !important;
+/* Theme Presets: Explicit Color Bindings */
+
+/* 1. Luminous Rose */
+[data-theme='luminous-rose'],
+.theme-luminous-rose {
+  --accent: #FF4D8D;
+  --accent-soft: #FF94BF;
+  --accent-foreground: #FFFFFF;
+  --m-accent: #FF4D8D;
+  --m-accent-soft: #FF94BF;
+  --m-accent-foreground: #FFFFFF;
+  --ring: #FF4D8D;
+  --font-display: 'Outfit', sans-serif;
 }
 
-.m-bright [class*="bg-white/"],
-.m-bright [class*="bg-white/[0."] {
-  background-color: rgba(214, 230, 212, 0.4) !important;
+/* 2. Electric Lavender */
+[data-theme='electric-lavender'],
+.theme-electric-lavender {
+  --accent: #A855F7;
+  --accent-soft: #D8B4FE;
+  --accent-foreground: #FFFFFF;
+  --m-accent: #A855F7;
+  --m-accent-soft: #D8B4FE;
+  --m-accent-foreground: #FFFFFF;
+  --ring: #A855F7;
+  --font-display: 'Outfit', sans-serif;
 }
 
-.m-bright [class*="bg-black/"] {
-  background-color: rgba(255, 255, 255, 0.72) !important;
+/* 3. Aurora Cyan & Sky */
+[data-theme='radiant-cyan'],
+.theme-radiant-cyan {
+  --accent: #06B6D4;
+  --accent-soft: #67E8F9;
+  --accent-foreground: #0F172A;
+  --m-accent: #06B6D4;
+  --m-accent-soft: #67E8F9;
+  --m-accent-foreground: #0F172A;
+  --ring: #06B6D4;
+  --font-display: 'Space Grotesk', sans-serif;
 }
 
-/* Scrim behind modals stays a soft sage wash instead of a black-out. */
-.m-bright .fixed[class*="bg-black/"] {
-  background-color: rgba(44, 39, 64, 0.28) !important;
+/* 4. Obsidian Noir Titanium */
+[data-theme='minimalist-obsidian'],
+.theme-minimalist-obsidian {
+  --accent: #F1F5F9;
+  --accent-soft: #94A3B8;
+  --accent-foreground: #0F172A;
+  --m-accent: #F1F5F9;
+  --m-accent-soft: #94A3B8;
+  --m-accent-foreground: #0F172A;
+  --ring: #F1F5F9;
+  --font-display: 'Space Grotesk', sans-serif;
 }
 
-/* ---------- lining: purple architecture ---------- */
-.m-bright [class*="border-white/"] {
-  border-color: var(--m-bright-line) !important;
+/* 5. Honey Gold & Sunbeam */
+[data-theme='sunbeam-gold'],
+.theme-sunbeam-gold {
+  --accent: #FBBF24;
+  --accent-soft: #FEF08A;
+  --accent-foreground: #0F172A;
+  --m-accent: #FBBF24;
+  --m-accent-soft: #FEF08A;
+  --m-accent-foreground: #0F172A;
+  --ring: #FBBF24;
+  --font-display: 'Outfit', sans-serif;
 }
 
-.m-bright [class*="divide-white/"] > * + * {
-  border-color: var(--m-bright-line) !important;
+/* Prevent Typography & Color Dissolve: High Contrast Rules */
+.carol-ann-root {
+  color: var(--foreground);
+  font-family: var(--font-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.m-bright [class*="border-dashed"][class*="border-white/"] {
-  border-color: var(--m-bright-line-strong) !important;
+/* Ensure secondary and tertiary text remains readable, never dissolving to invisible */
+.carol-ann-root .text-white\/40,
+.carol-ann-root .text-white\/30,
+.carol-ann-root .text-white\/20 {
+  color: rgba(255, 255, 255, 0.65) !important;
 }
 
-/* ---------- ink ---------- */
-.m-bright [class*="text-white"] {
-  color: var(--m-bright-ink) !important;
+.carol-ann-root .text-white\/50,
+.carol-ann-root .text-white\/60 {
+  color: rgba(255, 255, 255, 0.78) !important;
 }
 
-.m-bright [class*="text-white/1"],
-.m-bright [class*="text-white/2"],
-.m-bright [class*="text-white/3"] {
-  color: var(--m-bright-ink-faint) !important;
+.carol-ann-root .text-white\/70,
+.carol-ann-root .text-white\/80 {
+  color: rgba(255, 255, 255, 0.90) !important;
 }
 
-.m-bright [class*="text-white/4"],
-.m-bright [class*="text-white/5"],
-.m-bright [class*="text-white/6"] {
-  color: var(--m-bright-ink-soft) !important;
+/* In light mode, maintain rich dark slate contrasts */
+.is-light .text-white\/40,
+.is-light .text-white\/30,
+.is-light .text-white\/20,
+.m-bright:not(.dark) .text-white\/40,
+.m-bright:not(.dark) .text-white\/30,
+.m-bright:not(.dark) .text-white\/20 {
+  color: #64748B !important;
 }
 
-.m-bright [class*="placeholder:text-white"]::placeholder,
-.m-bright input::placeholder,
-.m-bright textarea::placeholder {
-  color: var(--m-bright-ink-faint) !important;
+.is-light .text-white\/50,
+.is-light .text-white\/60,
+.m-bright:not(.dark) .text-white\/50,
+.m-bright:not(.dark) .text-white\/60 {
+  color: #475569 !important;
 }
 
-/* Gradient buttons keep white ink so they stay readable. */
-.m-bright .m-gradient-bg,
-.m-bright .m-gradient-bg [class*="text-white"] {
+.is-light .text-white\/70,
+.is-light .text-white\/80,
+.is-light .text-white,
+.m-bright:not(.dark) .text-white {
+  color: #0F172A !important;
+}
+
+/* Form Inputs & Textarea Crisp Contrast */
+input, textarea, select {
+  font-family: inherit;
+}
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: rgba(18, 19, 28, 0.7);
   color: #FFFFFF !important;
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
-/* Accent chips read purple rather than washed out. */
-.m-bright [class*="text-[var(--m-accent-soft)]"] {
-  color: #7C3AED !important;
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: rgba(255, 255, 255, 0.45) !important;
 }
 
-/* Status colours nudged darker so they survive a white background. */
-.m-bright .text-emerald-300,
-.m-bright [class*="text-emerald-3"],
-.m-bright [class*="text-emerald-4"] {
-  color: #157F52 !important;
+html:not(.dark) input,
+html:not(.dark) textarea,
+html:not(.dark) select,
+.is-light input,
+.is-light textarea,
+.is-light select {
+  background-color: #FFFFFF;
+  color: #0F172A !important;
+  border-color: rgba(203, 213, 225, 0.9);
 }
 
-.m-bright [class*="text-rose-3"],
-.m-bright [class*="text-rose-4"] {
-  color: #BE123C !important;
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder,
+.is-light input::placeholder,
+.is-light textarea::placeholder {
+  color: #94A3B8 !important;
 }
 
-.m-bright [class*="text-amber-3"],
-.m-bright [class*="text-amber-4"] {
-  color: #B45309 !important;
+/* Dynamic Font Adjustment on Accent Elements (Buttons, Pills, Badges) */
+.m-gradient-bg,
+button[class*="bg-[var(--m-accent)]"],
+.bg-\[var\(--m-accent\)\] {
+  color: var(--m-accent-foreground, var(--accent-foreground, #FFFFFF)) !important;
 }
 
-.m-bright [class*="text-sky-3"] {
-  color: #0369A1 !important;
-}
-
-.m-bright select option {
-  color: #2C2740;
-  background: #FFFFFF;
-}
-
-.m-bright .m-scroll::-webkit-scrollbar-thumb {
-  background: rgba(124, 58, 237, 0.28);
+.m-gradient-bg *,
+button[class*="bg-[var(--m-accent)]"] *,
+.bg-\[var\(--m-accent\)\] * {
+  color: var(--m-accent-foreground, var(--accent-foreground, #FFFFFF)) !important;
 }

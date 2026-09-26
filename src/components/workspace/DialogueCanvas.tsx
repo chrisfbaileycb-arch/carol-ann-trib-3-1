@@ -8,6 +8,13 @@ import {
 import type { ConversationMessage, HydrateFormAction, UserProfile, ChatAttachment, MemoryEntry } from '@/data/schemas';
 import { AGENT_PRESETS, voiceByName } from '@/data/agents';
 import { isLightTheme } from '@/data/intake';
+import {
+  getAgentExecutionProfile,
+  partitionMemoriesForAgent,
+  SUB_AGENTS_COCKPIT
+} from '@/lib/agentRunner';
+import WatermarkLayer from '@/components/workspace/WatermarkLayer';
+import { useCarol } from '@/contexts/CarolContext';
 import AgentAvatar from '@/components/agents/AgentAvatar';
 import VoiceOrb from '@/components/workspace/VoiceOrb';
 import LiveWaveformIndicator from '@/components/voice/LiveWaveformIndicator';
@@ -64,8 +71,11 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
 
+  const carol = useCarol();
+  const execProfile = getAgentExecutionProfile(activeAgentId);
+  const partitionInfo = partitionMemoriesForAgent(activeAgentId, memories || carol.memories || []);
   const currentAgent = AGENT_PRESETS.find((a) => a.id === activeAgentId) ?? AGENT_PRESETS[0];
-  const geminiVoice = voiceByName(currentAgent.geminiVoice);
+  const geminiVoice = voiceByName(execProfile.voice.geminiVoice);
 
   // Auto-scroll to bottom of conversation
   useEffect(() => {
@@ -73,6 +83,14 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isProcessing, stagedAttachments]);
+
+  // Cancel any active speech when switching sub-agents
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      setSpeakingMsgId(null);
+    }
+  }, [activeAgentId]);
 
   // Synchronize Gemini Live voice orchestrator state
   useEffect(() => {
@@ -165,12 +183,12 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
 
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = geminiVoice.rate;
-    utterance.pitch = geminiVoice.pitch;
+    utterance.rate = execProfile.voice.rate;
+    utterance.pitch = execProfile.voice.pitch;
 
     const voices = window.speechSynthesis.getVoices();
     const hit = voices.find((v) =>
-      geminiVoice.speechSynthMatch.some((m) => v.name.toLowerCase().includes(m.toLowerCase()))
+      execProfile.voice.speechSynthMatches.some((m) => v.name.toLowerCase().includes(m.toLowerCase()))
     );
     if (hit) utterance.voice = hit;
 
@@ -242,35 +260,38 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
       />
 
       {/* Dialogue Canvas Top Banner */}
-      <div className={`flex shrink-0 items-center justify-between border-b px-6 py-2.5 backdrop-blur-md ${
+      <div className={`flex shrink-0 items-center justify-between border-b px-4 py-2.5 backdrop-blur-md gap-3 ${
         isLight ? 'border-rose-200/60 bg-white/75' : 'border-white/8 bg-zinc-950/60'
       }`}>
-        <div className="flex items-center gap-3">
-          <AgentAvatar skin={currentAgent.skin} size={30} />
-          <div>
-            <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 min-w-0">
+          <AgentAvatar skin={execProfile.skin || currentAgent.skin} size={32} />
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className={`font-display text-base font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                {currentAgent.name}
+                {execProfile.name}
               </span>
-              <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-mono font-medium ${
-                isLight ? 'border-rose-200 bg-rose-50/70 text-slate-700' : 'border-white/15 bg-white/[0.06] text-white/75'
-              }`}>
-                Voice: {currentAgent.geminiVoice}
+              <span className={`rounded-full border px-2 py-0.5 text-[10px] font-mono font-medium ${
+                isLight ? 'border-rose-200 bg-rose-50/70 text-slate-700' : 'border-white/15 bg-white/[0.06] text-white/80'
+              }`} title={execProfile.voice.timbre}>
+                Voice: {execProfile.voice.geminiVoice}
               </span>
-              {currentAgent.id === 'carol-anchor' && (
-                <span className="rounded-full border border-[var(--m-accent)]/45 bg-[var(--m-accent)]/20 px-2 py-0.5 text-[10px] font-semibold text-[var(--m-accent-soft)]">
-                  Sovereign Router
-                </span>
-              )}
+              <span className={`rounded-full border px-2 py-0.5 text-[10px] font-mono font-medium flex items-center gap-1 ${
+                isLight ? 'border-emerald-200 bg-emerald-50/80 text-emerald-800' : 'border-emerald-500/25 bg-emerald-950/30 text-emerald-300'
+              }`} title={partitionInfo.partitionDescription}>
+                <ShieldCheck className="h-3 w-3" />
+                {partitionInfo.partitionName} · {partitionInfo.totalCount} {partitionInfo.totalCount === 1 ? 'memory' : 'memories'}
+              </span>
             </div>
-            <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-white/65'}`}>{currentAgent.role}</p>
+            <p className={`text-xs truncate ${isLight ? 'text-slate-500' : 'text-white/65'}`}>
+              {execProfile.role}
+            </p>
           </div>
         </div>
 
-        {/* Sub-Agent Quick Switcher Tabs */}
-        <div className="hidden items-center gap-1.5 sm:flex">
+        {/* Sub-Agent Quick Switcher Tabs (Carol Ann, Archivist, Muse, Keeper, Coach) */}
+        <div className="hidden items-center gap-1.5 sm:flex shrink-0">
           {AGENT_PRESETS.map((ag) => {
-            const isSelected = ag.id === currentAgent.id;
+            const isSelected = ag.id === activeAgentId;
             return (
               <button
                 key={ag.id}
@@ -296,8 +317,11 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
       </div>
 
       {/* Messages Scroll Area */}
-      <div ref={scrollRef} className="m-scroll flex-1 overflow-y-auto px-4 py-6 md:px-8 lg:px-16">
-        <div className="mx-auto max-w-3xl space-y-6">
+      <div ref={scrollRef} className="m-scroll flex-1 overflow-y-auto px-4 py-6 md:px-8 lg:px-16 relative">
+        {/* Non-blocking Watermark Layer positioned directly over active Dialogue Canvas */}
+        <WatermarkLayer isAbsolute stickers={carol.stickers} />
+
+        <div className="mx-auto max-w-3xl space-y-6 relative z-10">
           {/* Welcome Card if first load */}
           {messages.length === 0 && (
             <div className={`rounded-2xl border p-8 text-center shadow-xl ${
@@ -307,14 +331,17 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
                 <Sparkles className="h-7 w-7 text-white" />
               </div>
               <h2 className={`mt-4 font-display text-xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                Carol Ann Cloud-Agent Orchestrator
+                {execProfile.name}
               </h2>
-              <p className={`mt-1.5 text-sm max-w-md mx-auto leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/75'}`}>
-                Adaptive executive intelligence for {profile.name || 'Operator'}. Cloud-agent native, real-time voice orchestration, and persistent cloud memory.
+              <p className={`mt-1 text-xs font-medium text-[var(--m-accent-soft)] uppercase tracking-wider`}>
+                {execProfile.role}
+              </p>
+              <p className={`mt-2 text-sm max-w-md mx-auto leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/75'}`}>
+                {execProfile.systemPersona.split('\n')[0]}
               </p>
 
               <div className="mt-6 flex flex-wrap justify-center gap-2">
-                {currentAgent.starters.map((starter, i) => (
+                {(execProfile.starters || currentAgent.starters).map((starter, i) => (
                   <button
                     key={i}
                     onClick={() => {
@@ -659,7 +686,7 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
               isLight ? 'border-rose-200 bg-rose-50 text-slate-800' : 'border-white/12 bg-white/[0.06] text-white'
             }`}>
               <span className="h-2 w-2 rounded-full bg-[var(--m-accent-soft)]" />
-              <span>{currentAgent.name}</span>
+              <span>{execProfile.name}</span>
             </div>
 
             {/* Input Textarea */}
@@ -672,7 +699,7 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
                 e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
               }}
               onKeyDown={handleKeyDown}
-              placeholder={`Message ${currentAgent.name}, or click + to add files, photos, video, context, or connectors...`}
+              placeholder={`Message ${execProfile.name} (${execProfile.role})...`}
               rows={1}
               className={`min-h-[38px] max-h-[140px] flex-1 resize-none bg-transparent px-2 py-1 text-sm outline-none leading-relaxed font-normal ${
                 isLight ? 'text-slate-900 placeholder:text-slate-400' : 'text-white placeholder:text-white/45'

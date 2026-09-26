@@ -228,7 +228,8 @@ export const CULINARY_LIFESTYLE = [
 ];
 
 export const RETRO_WATERMARKS = [
-  { id: 'stk_broncos', label: 'Denver Broncos', emoji: '🐴', category: 'sports' as const, position: 'top-right' as const, opacity: 0.18, scale: 1.0, active: true },
+  { id: 'stk_broncos', label: 'Denver Broncos', emoji: '🏈', category: 'sports' as const, position: 'top-right' as const, opacity: 0.28, scale: 1.0, active: true },
+  { id: 'stk_steelers', label: 'Pittsburgh Steelers', emoji: '⚙️', category: 'sports' as const, position: 'top-right' as const, opacity: 0.25, scale: 1.0, active: false },
   { id: 'stk_sparkle', label: 'Y2K Holographic Star', emoji: '✨', category: 'aesthetic' as const, position: 'header-accent' as const, opacity: 0.22, scale: 1.1, active: true },
   { id: 'stk_fleetwood', label: 'Fleetwood Mac', emoji: '🪩', category: 'music' as const, position: 'bottom-right' as const, opacity: 0.15, scale: 0.95, active: false },
   { id: 'stk_sourdough', label: 'Artisan Sourdough', emoji: '🍞', category: 'culinary' as const, position: 'top-left' as const, opacity: 0.14, scale: 0.9, active: false },

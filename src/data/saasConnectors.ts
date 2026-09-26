@@ -2370,6 +2370,32 @@ export const SAAS_CONNECTORS_DIRECTORY: SaaSConnector[] = [
     capabilities: ['trigger_custom_webhook', 'run_scenario_once', 'inspect_execution_log'],
     featured: true,
   },
+  {
+    id: 'zapier-gateway',
+    name: 'Zapier Universal MCP Gateway',
+    category: 'courses_nocode',
+    categoryLabel: 'Courses, No-Code & Automation',
+    description: 'One single endpoint connecting Carol Ann to 7,000+ pre-authenticated SaaS actions and AI workflows.',
+    vendor: 'Zapier Inc.',
+    accentColor: '#FF4A00',
+    authType: 'OAuth 2.0',
+    capabilities: ['zapier_list_actions', 'zapier_execute_action', 'sync_multi_app_workflows'],
+    featured: true,
+    endpointUrl: 'https://actions.zapier.com/settings/mcp/',
+  },
+  {
+    id: 'google-business',
+    name: 'Google Business Profile',
+    category: 'property_events',
+    categoryLabel: 'Property & Events',
+    description: 'Local search rankings, Google Maps verified reviews, customer Q&A, and business announcements.',
+    vendor: 'Google LLC',
+    accentColor: '#4285F4',
+    authType: 'OAuth 2.0',
+    capabilities: ['gbp_fetch_reviews', 'gbp_post_update', 'monitor_local_seo_rankings'],
+    featured: true,
+    endpointUrl: 'https://mybusinessbusinessinformation.googleapis.com/v1/mcp',
+  },
 
   // ==========================================
   // 25. ChatGPT for Work — Enterprise Data Connectors (10 platforms)

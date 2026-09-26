@@ -232,7 +232,7 @@ export const defaultAISettings = (): AISettings => ({
   timeZone: detectTimeZone(),
   sandboxOpen: true,
   confirmBeforeSubmit: true,
-  brightCanvas: true,
+  brightCanvas: false,
 });
 
 /** Push (or remove) the bright canvas class on the document root. */

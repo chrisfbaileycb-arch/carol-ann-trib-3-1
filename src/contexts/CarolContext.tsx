@@ -7,6 +7,7 @@ import type {
   ErrandTask,
   MyDaySession,
   DomainId,
+  StickerWatermark,
 } from '@/data/schemas';
 import {
   loadProfile, saveProfile,
@@ -15,6 +16,7 @@ import {
   loadMemories, saveMemories,
   loadErrands, saveErrands,
   loadSessions, saveSessions,
+  loadStickers, saveStickers,
   uid, getDeviceKey,
   fetchCloudState, sendCloudSync,
   isFakeMemory, isFakeMessage,
@@ -40,6 +42,11 @@ interface CarolContextValue {
   upsertErrand: (e: ErrandTask) => void;
   sessions: MyDaySession[];
   updateToday: (patch: Partial<MyDaySession>) => void;
+  stickers: StickerWatermark[];
+  addSticker: (s: StickerWatermark) => void;
+  updateSticker: (s: StickerWatermark) => void;
+  deleteSticker: (id: string) => void;
+  toggleSticker: (id: string) => void;
   syncing: boolean;
   lastSync: string | null;
   syncError: string | null;
@@ -57,14 +64,16 @@ export const CarolProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [memories, setMemories] = useState<MemoryEntry[]>(loadMemories);
   const [errands, setErrands] = useState<ErrandTask[]>(loadErrands);
   const [sessions, setSessions] = useState<MyDaySession[]>(loadSessions);
+  const [stickers, setStickers] = useState<StickerWatermark[]>(loadStickers);
   const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(new Date().toISOString());
   const [syncError, setSyncError] = useState<string | null>(null);
   const deviceKey = useMemo(() => getDeviceKey(), []);
 
-  // Hydrate from cloud state on initial mount (server scopes to the signed-in user)
+  // Hydrate from cloud state on initial mount
   useEffect(() => {
-    fetchCloudState().then((cloud) => {
+    const userId = user?.id || deviceKey;
+    fetchCloudState(userId).then((cloud) => {
       if (cloud) {
         if (cloud.profile) setProfile((p) => ({ ...p, ...(cloud.profile as Partial<UserProfile>) }));
         if (Array.isArray(cloud.messages)) {
@@ -85,6 +94,9 @@ export const CarolProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (Array.isArray(cloud.checkIns) && cloud.checkIns.length > 0) {
           setCheckIns((prev) => (prev.length > (cloud.checkIns as CheckInRecord[]).length ? prev : (cloud.checkIns as CheckInRecord[])));
         }
+        if (Array.isArray(cloud.stickers) && cloud.stickers.length > 0) {
+          setStickers(cloud.stickers as StickerWatermark[]);
+        }
       }
     }).catch(() => {
       /* Cloud hydration fallback */
@@ -97,10 +109,12 @@ export const CarolProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => { saveMemories(memories); }, [memories]);
   useEffect(() => { saveErrands(errands); }, [errands]);
   useEffect(() => { saveSessions(sessions); }, [sessions]);
+  useEffect(() => { saveStickers(stickers); }, [stickers]);
 
-  // Push state to cloud backend (server scopes to the signed-in user)
+  // Push state to cloud backend
   useEffect(() => {
     const timer = setTimeout(() => {
+      const userId = user?.id || deviceKey;
       sendCloudSync({
         profile,
         messages: messages.slice(-50),
@@ -108,13 +122,14 @@ export const CarolProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         memories: memories.slice(0, 50),
         errands,
         sessions: sessions.slice(0, 14),
-      }).then((ok) => {
+        stickers,
+      }, userId).then((ok) => {
         if (ok) setLastSync(new Date().toISOString());
       }).catch(() => undefined);
     }, 1200);
 
     return () => clearTimeout(timer);
-  }, [profile, messages, checkIns, memories, errands, sessions, user?.id, deviceKey]);
+  }, [profile, messages, checkIns, memories, errands, sessions, stickers, user?.id, deviceKey]);
 
   const theme = useMemo(() => getTheme(profile.theme), [profile.theme]);
 
@@ -170,10 +185,30 @@ export const CarolProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   }, []);
 
+  const addSticker = useCallback((s: StickerWatermark) => {
+    setStickers((prev) => {
+      const filtered = prev.filter((existing) => existing.id !== s.id && existing.label !== s.label);
+      return [s, ...filtered];
+    });
+  }, []);
+
+  const updateSticker = useCallback((s: StickerWatermark) => {
+    setStickers((prev) => prev.map((item) => (item.id === s.id ? s : item)));
+  }, []);
+
+  const deleteSticker = useCallback((id: string) => {
+    setStickers((prev) => prev.filter((item) => item.id !== id));
+  }, []);
+
+  const toggleSticker = useCallback((id: string) => {
+    setStickers((prev) => prev.map((item) => (item.id === id ? { ...item, active: !item.active } : item)));
+  }, []);
+
   const syncToCloud = useCallback(async () => {
     setSyncing(true);
     setSyncError(null);
     try {
+      const userId = user?.id || deviceKey;
       await sendCloudSync({
         profile,
         messages: messages.slice(-50),
@@ -181,7 +216,8 @@ export const CarolProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         memories: memories.slice(0, 50),
         errands,
         sessions: sessions.slice(0, 14),
-      });
+        stickers,
+      }, userId);
 
       if (user) {
         const userRef = doc(db, 'users', user.id);
@@ -220,6 +256,7 @@ export const CarolProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             memories: memories.slice(0, 40),
             errands,
             sessions: sessions.slice(0, 14),
+            stickers,
           },
           { merge: true },
         );
@@ -231,7 +268,7 @@ export const CarolProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } finally {
       setSyncing(false);
     }
-  }, [user, deviceKey, profile, messages, checkIns, memories, errands, sessions]);
+  }, [user, deviceKey, profile, messages, checkIns, memories, errands, sessions, stickers]);
 
   const value: CarolContextValue = {
     profile, updateProfile, theme,
@@ -240,6 +277,7 @@ export const CarolProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     memories, addMemory, removeMemory,
     errands, upsertErrand,
     sessions, updateToday,
+    stickers, addSticker, updateSticker, deleteSticker, toggleSticker,
     syncing, lastSync, syncError, syncToCloud, deviceKey,
   };
 

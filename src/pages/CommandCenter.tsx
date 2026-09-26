@@ -28,10 +28,9 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
 ];
 
 export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRemote }) => {
-  const { profile, updateProfile, theme, syncToCloud, syncing, lastSync, syncError, addCheckIn } = useCarol();
+  const { profile, updateProfile, theme, syncToCloud, syncing, lastSync, syncError, addCheckIn, stickers } = useCarol();
   const { user, signOut } = useAuth();
   const [tab, setTab] = useState<TabId>('chat');
-  const [stickers, setStickers] = useState<StickerWatermark[]>(() => loadStickers());
 
   const [authOpen, setAuthOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
