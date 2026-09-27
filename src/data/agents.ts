@@ -35,6 +35,12 @@ export interface AgentPreset {
   starters: string[];
   skin: AgentSkin;
   geminiVoice: 'Aoede' | 'Kore' | 'Charon' | 'Fenrir' | 'Puck' | 'Zephyr' | 'Pegasus';
+  /**
+   * Skill ids from AGENT_SKILLS (src/data/skills.ts) this agent can access.
+   * Empty / undefined = the agent has no attached skills (e.g. orchestrators
+   * that route to specialists, or creative agents with no skill domain fit).
+   */
+  skillIds?: string[];
   caution?: string;
   vendor?: string;
   wis?: number;
@@ -200,6 +206,14 @@ export const CORE_AGENT_PRESETS: AgentPreset[] = [
     ],
     skin: { body: ['#34D399', '#22D3EE'], hat: '#FCD34D', prop: 'cap' },
     geminiVoice: 'Charon',
+    skillIds: [
+      'school-scheduler',
+      'daycare-tracker',
+      'holiday-planner',
+      'home-ops',
+      'grocery-runner',
+      'appointment-booker',
+    ],
   },
   {
     id: 'coach',
@@ -216,6 +230,7 @@ export const CORE_AGENT_PRESETS: AgentPreset[] = [
     ],
     skin: { body: ['#F97316', '#EF4444'], hat: '#111827', prop: 'visor' },
     geminiVoice: 'Fenrir',
+    skillIds: ['appointment-booker'],
   },
   {
     id: 'architect',
@@ -232,6 +247,7 @@ export const CORE_AGENT_PRESETS: AgentPreset[] = [
     ],
     skin: { body: ['#22D3EE', '#3B82F6'], hat: '#0F172A', prop: 'headset' },
     geminiVoice: 'Zephyr',
+    skillIds: ['calendar-mesh', 'grocery-runner'],
   },
   {
     id: 'scout',

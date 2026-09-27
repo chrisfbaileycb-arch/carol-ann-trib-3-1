@@ -9,6 +9,8 @@ import { isLightTheme } from '@/data/intake';
 import type { UserProfile } from '@/data/schemas';
 import AgentAvatar from '@/components/agents/AgentAvatar';
 import { useAgentRouting, detectRoleType } from '@/contexts/AgentRoutingContext';
+import { getSkill, SKILL_CATEGORIES } from '@/data/skills';
+import { loadRegistry, toggleSkill } from '@/lib/skillRegistry';
 
 interface AgentRosterMCPProps {
   onSelectAgentForChat: (agentId: string) => void;
@@ -28,6 +30,7 @@ export const AgentRosterMCP: React.FC<AgentRosterMCPProps> = ({
   const [activeSubTab, setActiveSubTab] = useState<'roster' | 'orchestrator_prompt' | 'tool_schema' | 'mcp_connectors'>('roster');
   const [categoryFilter, setCategoryFilter] = useState<AgentCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [skillRegistry, setSkillRegistry] = useState(loadRegistry);
 
   const selectedAgent = AGENT_PRESETS.find((a) => a.id === selectedAgentId) ?? AGENT_PRESETS[0];
   const voiceMeta = voiceByName(selectedAgent.geminiVoice);
@@ -413,6 +416,65 @@ export const AgentRosterMCP: React.FC<AgentRosterMCPProps> = ({
                     ))}
                   </div>
                 </div>
+
+                {/* Agent Skills — attached skill fixtures this agent can access */}
+                {selectedAgent.skillIds && selectedAgent.skillIds.length > 0 && (
+                  <div className="mt-3.5">
+                    <p className={`text-[10.5px] font-semibold uppercase tracking-wider mb-1.5 ${
+                      isLight ? 'text-slate-500' : 'text-white/40'
+                    }`}>
+                      Agent Skills · Demo fixtures
+                    </p>
+                    <div className="space-y-1.5">
+                      {selectedAgent.skillIds.map((sid) => {
+                        const skill = getSkill(sid);
+                        if (!skill) return null;
+                        const installed = skillRegistry.installed.includes(sid);
+                        const cat = SKILL_CATEGORIES.find((c) => c.id === skill.category);
+                        return (
+                          <div
+                            key={sid}
+                            className={`rounded-lg border p-2.5 ${
+                              isLight ? 'border-rose-100 bg-white/80' : 'border-white/6 bg-white/[0.02]'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className={`text-[11px] font-semibold truncate ${isLight ? 'text-slate-800' : 'text-white/85'}`}>
+                                  {skill.name}
+                                </p>
+                                <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-white/45'}`}>
+                                  {cat?.label ?? skill.category} · {skill.capabilities.length} capabilities · v{skill.version}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setSkillRegistry(toggleSkill(sid))}
+                                className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold transition ${
+                                  installed
+                                    ? isLight
+                                      ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                                      : 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300'
+                                    : isLight
+                                      ? 'border-slate-200 bg-white text-slate-500 hover:text-slate-800'
+                                      : 'border-white/15 bg-white/[0.03] text-white/50 hover:text-white'
+                                }`}
+                              >
+                                {installed ? 'Active' : 'Activate'}
+                              </button>
+                            </div>
+                            <p className={`mt-1 text-[10.5px] leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/55'}`}>
+                              {skill.summary}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <p className={`mt-1.5 text-[10px] ${isLight ? 'text-slate-400' : 'text-white/35'}`}>
+                      Demo fixtures — simulated until wired to live services.
+                    </p>
+                  </div>
+                )}
 
                 {/* Direct Action: Jump into Canvas or Chat with this Agent */}
                 <div className="mt-4 space-y-2">
