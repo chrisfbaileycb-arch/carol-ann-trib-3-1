@@ -72,7 +72,58 @@ export function detectRoleType(agent: {
   return 'ui';
 }
 
-export const DEFAULT_UI_COMPONENT = '';
+export const DEFAULT_UI_COMPONENT = `import React, { useState, useEffect } from 'react';
+
+interface SovereignExecutiveDeckProps {
+  title?: string;
+  accent?: string;
+}
+
+/**
+ * SovereignExecutiveDeck — default UI agent component template.
+ * Dev-side starter: duplicate it in the Workspace Canvas and make it yours.
+ * State, effects, and Tailwind are wired and ready.
+ */
+export const SovereignExecutiveDeck: React.FC<SovereignExecutiveDeckProps> = ({
+  title = 'Executive Deck',
+  accent = '#8B5FBF',
+}) => {
+  const [pulseEnabled, setPulseEnabled] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  return (
+    <section
+      className="rounded-2xl border border-white/10 bg-zinc-950 p-6 text-white transition-opacity duration-500"
+      style={{ opacity: mounted ? 1 : 0, borderTopColor: accent }}
+    >
+      <header className="flex items-center justify-between">
+        <h2 className="font-display text-lg font-bold">{title}</h2>
+        <button
+          type="button"
+          onClick={() => setPulseEnabled((v) => !v)}
+          className="rounded-full border border-white/15 px-3 py-1 text-[11px] text-white/70 hover:text-white"
+        >
+          {pulseEnabled ? 'Pulse on' : 'Pulse off'}
+        </button>
+      </header>
+      <p className="mt-2 text-xs text-white/50">
+        Replace this body with your agent's live view. This is a local dev
+        template — nothing here is connected until you wire it.
+      </p>
+      <div className={pulseEnabled ? 'mt-4 animate-pulse rounded-xl bg-white/5 p-4' : 'mt-4 rounded-xl bg-white/5 p-4'}>
+        <p className="text-[11px] text-white/40">Canvas preview region</p>
+      </div>
+    </section>
+  );
+};
+
+export default SovereignExecutiveDeck;
+`;
 
 export const DEFAULT_SYSTEMS_ENDPOINT = `/**
  * Sovereign Systems Agent: API Endpoint & Schema Router
