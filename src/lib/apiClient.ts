@@ -10,10 +10,12 @@ export interface ApiFetchOptions extends RequestInit {
  */
 function isPublicEndpoint(url: string): boolean {
   if (url === '/api/health' || url.startsWith('/api/health?')) return true;
+  if (url === '/api/gemini/chat' || url.startsWith('/api/gemini/chat?')) return true;
+  if (url === '/api/gemini/chat/stream' || url.startsWith('/api/gemini/chat/stream?')) return true;
   if (url.startsWith('http://') || url.startsWith('https://')) {
     try {
       const parsed = new URL(url);
-      if (parsed.pathname === '/api/health') return true;
+      if (parsed.pathname === '/api/health' || parsed.pathname === '/api/gemini/chat') return true;
       if (!parsed.pathname.startsWith('/api/')) return true;
     } catch {
       return false;

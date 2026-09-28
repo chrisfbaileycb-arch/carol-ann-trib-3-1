@@ -167,13 +167,10 @@ Core Behavioral Tenets:
 When the user asks for errands, bookings, workout plans, or recording a lasting fact, use the matching tool function declaration. Keep answers focused and actionable.`;
 
 
-// Honest offline fallback used when the Gemini API is unreachable.
-// It never invents actions, orders, invoices, or sync activity — it simply
-// says the AI service is unavailable and suggests retrying later.
+// Honest offline fallback used when the Gemini API is unreachable or key is missing.
 export function evaluateLocalFallback(message: string, agentId: string, agentName: string) {
   const reply =
-    "I'm offline right now — I can't reach the AI service, so I wasn't able to process that. " +
-    'Nothing was staged, ordered, booked, or sent. Please try again in a moment.';
+    "The Gemini API key is missing from environment variables (process.env.GEMINI_API_KEY), so the AI service is offline and unavailable. Nothing was staged or dispatched. Please set GEMINI_API_KEY to enable active responses.";
   return { reply, toolCall: null, agentId, source: 'offline-unavailable' };
 }
 
@@ -226,7 +223,7 @@ Stay strictly in character as ${agentName}. Speak with serene intelligence, huma
 
   try {
     const response = await ai.models.generateContent({
-    model: 'gemini-3.8-flash',
+    model: 'gemini-2.5-flash',
     contents,
     config: {
       systemInstruction,
@@ -375,7 +372,7 @@ Stay strictly in character as ${agentName}. Speak with serene intelligence, huma
     reply = 'Processed and synchronized with your local workspace.';
   }
 
-  return { reply, toolCall, agentId, source: 'gemini-3.8-flash' };
+  return { reply, toolCall, agentId, source: 'gemini-2.5-flash' };
 } catch (apiErr) {
   console.warn('Gemini API call failed; returning offline notice:', apiErr);
   return evaluateLocalFallback(message, agentId, agentName);

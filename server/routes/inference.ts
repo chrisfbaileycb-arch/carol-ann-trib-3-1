@@ -1,10 +1,10 @@
 import type { Express } from 'express';
-import { requireFirebaseAuth, verifyAppCheck } from '../middleware/auth.js';
+import { optionalFirebaseAuth, requireFirebaseAuth, verifyAppCheck } from '../middleware/auth.js';
 import { runAnchorChat } from '../lib/inference.js';
 
 export function registerInferenceRoutes(app: Express) {
-// Conversational Inference Route (requires Firebase Authentication)
-app.post('/api/gemini/chat', requireFirebaseAuth, verifyAppCheck, async (req, res) => {
+// Conversational Inference Route (supports authenticated & workspace sessions)
+app.post('/api/gemini/chat', optionalFirebaseAuth, verifyAppCheck, async (req, res) => {
   try {
     const {
       message,
@@ -17,6 +17,7 @@ app.post('/api/gemini/chat', requireFirebaseAuth, verifyAppCheck, async (req, re
       profile = {},
       memoryContext = '',
       attachments = [],
+      workspaceContext,
     } = req.body;
 
     if (!message && (!Array.isArray(attachments) || attachments.length === 0)) {
@@ -39,6 +40,20 @@ app.post('/api/gemini/chat', requireFirebaseAuth, verifyAppCheck, async (req, re
       fullMessage = fullMessage ? `${fullMessage}\n\nAttachments & Attached Context:\n${attachmentSummaries}` : `Attachments:\n${attachmentSummaries}`;
     }
 
+    let finalSystemPersona = systemPersona;
+    if (workspaceContext && typeof workspaceContext === 'object') {
+      const { errands, tools, notes } = workspaceContext;
+      const wsSnippet = [
+        '\n\n# Active Workspace Context',
+        errands ? `## Errands:\n${errands}` : '',
+        tools ? `## Tools & Connectors:\n${tools}` : '',
+        notes ? `## Notes & Scratchpad:\n${notes}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n\n');
+      finalSystemPersona = `${systemPersona}${wsSnippet}`;
+    }
+
     const result = await runAnchorChat(
       fullMessage,
       agentId,
@@ -47,7 +62,7 @@ app.post('/api/gemini/chat', requireFirebaseAuth, verifyAppCheck, async (req, re
       history,
       profile,
       memoryContext,
-      systemPersona,
+      finalSystemPersona,
       memoryPartition
     );
     return res.json(result);

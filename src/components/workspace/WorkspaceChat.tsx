@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { GoogleGenAI } from '@google/genai';
 import {
   PanelLeftClose, PanelLeft, PanelRightClose, PanelRight,
   Sparkles, X, Plus, MessageSquare, Cpu, Trophy, Shield, Users, Palette,
@@ -324,7 +325,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
     );
   };
 
-  // Conversational response generation with native Gemini API execution & Plugin execution
+  // Active Gemini API execution with streaming, sub-agent persona, and workspace context injection
   const handleSendMessage = async (
     content: string,
     targetAgentId?: string,
@@ -346,127 +347,202 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
     setMessages((prev) => [...prev, userMsg]);
     setIsProcessing(true);
 
-    // 1. First test if user prompt triggers an installed MCP plugin intent
-    let currentInstalledIds = loadInstalledPluginIds();
-    const attachedConnector = attachments?.find((a) => a.type === 'connector');
-    if (attachedConnector?.connectorId && !currentInstalledIds.includes(attachedConnector.connectorId)) {
-      currentInstalledIds = [...currentInstalledIds, attachedConnector.connectorId];
-    }
+    // 1. Verify Gemini API Key configuration
+    const apiKey =
+      (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) ||
+      (import.meta.env ? (import.meta.env.VITE_GEMINI_API_KEY as string | undefined) : undefined) ||
+      '';
 
-    const intentQuery = attachedConnector
-      ? `${content} [Connector: ${attachedConnector.name}]`
-      : content;
-
-    const pluginResult = tryExecutePluginIntent(intentQuery, currentInstalledIds);
-
-    if (pluginResult) {
-      setTimeout(() => {
-        const assistantMsg: ConversationMessage = {
-          id: uid('msg_a'),
-          domain: 'core',
-          role: 'assistant',
-          content: pluginResult.replyText,
-          timestamp: new Date().toISOString(),
-          agentId,
-          pluginExecution: pluginResult.chip,
-          toolCall: pluginResult.actionCard,
-          isMock: true,
-          badge: 'DEMO',
-        };
-
-        setMessages((prev) => [...prev, assistantMsg]);
-        if (pluginResult.actionCard) {
-          setActions((prev) => [pluginResult.actionCard!, ...prev]);
-        }
-        setIsProcessing(false);
-      }, 400);
+    if (!apiKey) {
+      const assistantMsg: ConversationMessage = {
+        id: uid('msg_a'),
+        domain: 'core',
+        role: 'assistant',
+        content:
+          'Gemini API key is missing from environment variables (process.env.GEMINI_API_KEY). Please set GEMINI_API_KEY in your environment to enable active AI chat.',
+        timestamp: new Date().toISOString(),
+        agentId,
+      };
+      setMessages((prev) => [...prev, assistantMsg]);
+      setIsProcessing(false);
       return;
     }
 
-    // 2. Otherwise dispatch to Gemini conversational engine
-    try {
-      const agentExec = getAgentExecutionProfile(agentId);
-      const partitionInfo = partitionMemoriesForAgent(agentId, memories);
-      const systemPersona = buildAgentSystemPersona(agentId, profile, memories);
-      const memoryContext = partitionInfo.activeMemories
-        .slice(0, 10)
-        .map((m) => `- [${m.category}] ${m.content}`)
-        .join('\n');
+    // 2. Build system instruction for selected sub-agent & inject active workspace context
+    const agentExec = getAgentExecutionProfile(agentId);
+    const partitionInfo = partitionMemoriesForAgent(agentId, memories);
+    const basePersona = buildAgentSystemPersona(agentId, profile, memories);
 
-      const res = await apiFetch('/api/gemini/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: content,
-          agentId,
-          agentName: agentExec.name,
-          agentRole: agentExec.role,
-          systemPersona,
-          memoryPartition: partitionInfo.partitionName,
-          history: messages.slice(-10).map((m) => ({ role: m.role, content: m.content })),
-          profile: {
-            name: profile.name,
-            identity: profile.identity,
-            wellnessGoal: profile.wellnessGoal,
-            professionalFocus: profile.professionalFocus,
+    // Format current workspace context: Errands, Tools, Notes
+    const errandsContext =
+      errands.length > 0
+        ? errands
+            .map(
+              (e, idx) =>
+                `${idx + 1}. [${(e.status || 'draft').toUpperCase()}] ${e.title} (Target: ${e.target || 'general'}, Scheduled: ${e.scheduled_time || 'flexible'}${
+                  e.items?.length ? `, Items: ${e.items.join(', ')}` : ''
+                })`
+            )
+            .join('\n')
+        : 'No active errands in workspace.';
+
+    const toolsContext = [
+      '- Grocery & Delivery Dispatch (Whole Foods, Amazon)',
+      '- Executive Calendar & Appointment Booking',
+      '- Accounts Receivable Invoicing (QuickBooks Online)',
+      '- Social Marketing & Instagram Reel Publishing (Meta Graph API)',
+      '- Guest Hospitality Review Public Responses (TripAdvisor / Google Business)',
+      '- Sovereign Memory Ledger Record Management',
+      '- Wellness Routine & Training Scratchpad Updates',
+      installedPluginIds.length > 0
+        ? `- Installed MCP Plugins: ${installedPluginIds.join(', ')}`
+        : '- Core Executive MCP Connectors Hub',
+    ].join('\n');
+
+    const notesContext = scratchpad.trim() ? scratchpad.trim() : 'Workspace notes scratchpad is currently empty.';
+
+    const systemInstruction = `${basePersona}
+
+# Active Workspace Context (Live Environment)
+## Active Errands:
+${errandsContext}
+
+## Active Tools & Connectors:
+${toolsContext}
+
+## Workspace Notes & Scratchpad:
+${notesContext}
+
+Operating Directives:
+- You are strictly operating as ${agent.name} (${agent.role}).
+- Embody ${agent.name}'s dedicated tone, domain expertise, and executive warmth.
+- Reference and interact with the active errands, tools, and scratchpad notes above when responding.
+- Provide intelligent, direct, and actionable responses without conversational filler.`;
+
+    const assistantMsgId = uid('msg_a');
+    const initialAssistantMsg: ConversationMessage = {
+      id: assistantMsgId,
+      domain: 'core',
+      role: 'assistant',
+      content: '',
+      timestamp: new Date().toISOString(),
+      agentId,
+    };
+    setMessages((prev) => [...prev, initialAssistantMsg]);
+
+    try {
+      let accumulated = '';
+
+      // Build conversation contents for Gemini
+      const contents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
+      for (const h of messages.slice(-10)) {
+        if (h.role === 'user' || h.role === 'assistant') {
+          contents.push({
+            role: h.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: h.content }],
+          });
+        }
+      }
+      contents.push({ role: 'user', parts: [{ text: content }] });
+
+      // Call GoogleGenAI (@google/genai) using model gemini-2.5-flash
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
           },
-          memoryContext,
-          installedPlugins: currentInstalledIds,
-          attachments: attachments?.map((a) => ({
-            id: a.id,
-            type: a.type,
-            name: a.name,
-            size: a.size,
-            contextSnippet: a.contextSnippet,
-            connectorId: a.connectorId,
-            connectorName: a.connectorName,
-          })),
-        }),
+        },
       });
 
-      let replyContent = '';
-      let toolCall: HydrateFormAction | undefined = undefined;
+      try {
+        const responseStream = await ai.models.generateContentStream({
+          model: 'gemini-2.5-flash',
+          contents,
+          config: {
+            systemInstruction,
+          },
+        });
 
-      if (res.ok) {
-        const data = await res.json();
-        replyContent = data.reply || '';
-        if (data.toolCall) {
-          toolCall = data.toolCall as HydrateFormAction;
+        for await (const chunk of responseStream) {
+          const chunkText = chunk.text || '';
+          accumulated += chunkText;
+          setMessages((prev) =>
+            prev.map((m) => (m.id === assistantMsgId ? { ...m, content: accumulated } : m))
+          );
         }
-      } else {
-        throw new Error(`Inference request failed with code ${res.status}`);
+      } catch (streamErr) {
+        console.warn('Direct stream encounter, falling back to server inference route:', streamErr);
+        const currentInstalledIds = loadInstalledPluginIds();
+        const res = await apiFetch('/api/gemini/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: content,
+            agentId,
+            agentName: agentExec.name,
+            agentRole: agentExec.role,
+            systemPersona,
+            memoryPartition: partitionInfo.partitionName,
+            history: messages.slice(-10).map((m) => ({ role: m.role, content: m.content })),
+            profile: {
+              name: profile.name,
+              identity: profile.identity,
+              wellnessGoal: profile.wellnessGoal,
+              professionalFocus: profile.professionalFocus,
+            },
+            memoryContext: partitionInfo.activeMemories
+              .slice(0, 10)
+              .map((m) => `- [${m.category}] ${m.content}`)
+              .join('\n'),
+            installedPlugins: currentInstalledIds,
+            workspaceContext: {
+              errands: errandsContext,
+              tools: toolsContext,
+              notes: notesContext,
+            },
+          }),
+        });
+
+        if (!res.ok) {
+          throw new Error(`Inference request failed with code ${res.status}`);
+        }
+
+        const data = await res.json();
+        accumulated = data.reply || '';
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsgId ? { ...m, content: accumulated, toolCall: data.toolCall } : m
+          )
+        );
+        if (data.toolCall) {
+          setActions((prev) => [data.toolCall!, ...prev]);
+          if (!data.toolCall.requires_user_confirmation) {
+            handleExecuteToolAction(data.toolCall);
+          }
+        }
       }
 
-      const assistantMsg: ConversationMessage = {
-        id: uid('msg_a'),
-        domain: 'core',
-        role: 'assistant',
-        content: replyContent || 'Action staged in your sovereign executive dashboard.',
-        timestamp: new Date().toISOString(),
-        agentId,
-        toolCall,
-      };
-
-      setMessages((prev) => [...prev, assistantMsg]);
-
-      if (toolCall) {
-        setActions((prev) => [toolCall!, ...prev]);
-        if (!toolCall.requires_user_confirmation) {
-          handleExecuteToolAction(toolCall);
-        }
+      if (!accumulated) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsgId ? { ...m, content: 'Understood. Response processed.' } : m
+          )
+        );
       }
     } catch (err) {
       console.error('Gemini chat error:', err);
-      // Resilient sovereign fallback
-      const assistantMsg: ConversationMessage = {
-        id: uid('msg_a'),
-        domain: 'core',
-        role: 'assistant',
-        content: `Understood. Carol Ann has routed your request through ${agent.name}. Your cloud agent memory is active and synchronized across your web workspace.`,
-        timestamp: new Date().toISOString(),
-        agentId,
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
+      const errMsg = err instanceof Error ? err.message : String(err);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantMsgId
+            ? {
+                ...m,
+                content: `Unable to complete request with Gemini: ${errMsg}. Please verify your connection and GEMINI_API_KEY configuration.`,
+              }
+            : m
+        )
+      );
     } finally {
       setIsProcessing(false);
     }
