@@ -10,6 +10,7 @@ import {
   loadArtifacts, saveArtifacts, addArtifact,
 } from '@/lib/connections';
 import { SaaSConnectorsDirectory } from '@/components/connectors/SaaSConnectorsDirectory';
+import { ConnectorsDashboard } from '@/components/connectors/ConnectorsDashboard';
 import { useCarol } from '@/contexts/CarolContext';
 import { isLightTheme } from '@/data/intake';
 
@@ -70,7 +71,7 @@ const ConnectionsHub: React.FC = () => {
         {/* Connectors */}
         {tab === 'connectors' && (
           <div className="mt-4">
-            <SaaSConnectorsDirectory isLight={isLight} />
+            <ConnectorsDashboard isLight={isLight} />
           </div>
         )}
 

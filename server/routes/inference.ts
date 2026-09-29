@@ -1,6 +1,7 @@
 import type { Express } from 'express';
 import { optionalFirebaseAuth, requireFirebaseAuth, verifyAppCheck } from '../middleware/auth.js';
 import { runAnchorChat } from '../lib/inference.js';
+import { applyPlatformSafetyBaseline } from '../lib/safetyBaseline.js';
 
 export function registerInferenceRoutes(app: Express) {
 // Conversational Inference Route (supports authenticated & workspace sessions)
@@ -40,7 +41,7 @@ app.post('/api/gemini/chat', optionalFirebaseAuth, verifyAppCheck, async (req, r
       fullMessage = fullMessage ? `${fullMessage}\n\nAttachments & Attached Context:\n${attachmentSummaries}` : `Attachments:\n${attachmentSummaries}`;
     }
 
-    let finalSystemPersona = systemPersona;
+    let finalSystemPersona = applyPlatformSafetyBaseline(systemPersona);
     if (workspaceContext && typeof workspaceContext === 'object') {
       const { errands, tools, notes } = workspaceContext;
       const wsSnippet = [
@@ -51,7 +52,7 @@ app.post('/api/gemini/chat', optionalFirebaseAuth, verifyAppCheck, async (req, r
       ]
         .filter(Boolean)
         .join('\n\n');
-      finalSystemPersona = `${systemPersona}${wsSnippet}`;
+      finalSystemPersona = `${finalSystemPersona}${wsSnippet}`;
     }
 
     const result = await runAnchorChat(

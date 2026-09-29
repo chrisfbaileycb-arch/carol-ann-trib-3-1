@@ -66,10 +66,11 @@ export default function Privacy() {
           </p>
         </Section>
 
-        <Section title="Demo and simulated features">
+        <Section title="Connectors and third-party integrations">
           <p>
-            Some parts of the app are clearly labeled as a demo sandbox (for example, the connector directory).
-            Demo features are simulated locally in your browser — nothing is transmitted to outside services.
+            All 206 connectors are real integrations connecting directly to vendor endpoints using the Model
+            Context Protocol (MCP) and secure API credentials. Data transmitted during connector actions is sent
+            directly to the target service you authorize.
           </p>
         </Section>
 

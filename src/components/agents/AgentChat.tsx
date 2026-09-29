@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Send, Loader2, Brain, Trash2, Volume2, ShieldAlert, Plus, X } from 'lucide-react';
 import AgentAvatar from '@/components/agents/AgentAvatar';
 import { useCarol } from '@/contexts/CarolContext';
-import { AGENT_DISCLAIMER, toneByKey, voiceByKey } from '@/data/agents';
+import { AGENT_DISCLAIMER, toneByKey, voiceByKey, applyPlatformSafetyBaseline } from '@/data/agents';
 import { apiFetch } from '@/lib/apiClient';
 import {
   type AgentConfig, type AgentMessage, type AgentMemoryEntry,
@@ -57,6 +57,9 @@ const AgentChat: React.FC<{
           agentName: agent.name,
           agentRole: agent.role,
           agentSubject: agent.subject,
+          systemPersona: applyPlatformSafetyBaseline(
+            `You are ${agent.name}, ${agent.role}. Specialty: ${agent.subject}. Personality nuance: ${tonePromptFor(agent)}.`
+          ),
           tonePrompt: tonePromptFor(agent),
           voiceLabel: voiceByKey(agent.voiceKey).label,
           timezone: settings.timeZone,

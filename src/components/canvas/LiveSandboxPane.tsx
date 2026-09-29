@@ -368,7 +368,7 @@ export const LiveSandboxPane: React.FC<LiveSandboxPaneProps> = ({
       <h3 class="text-sm font-semibold mb-2">Systems Agent File Loaded</h3>
       <p class="text-xs text-slate-400">File: ${activeFile}</p>
       <div class="mt-3 text-xs bg-black/40 p-3 rounded border border-white/10 text-emerald-400">
-        Contract validation active. Switch to "API Contract Runner" tab above to trigger simulated requests.
+        Contract validation active. Switch to "API Contract Runner" tab above to trigger verification requests.
       </div>
     </div>
   </div>

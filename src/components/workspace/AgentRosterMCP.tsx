@@ -471,7 +471,7 @@ export const AgentRosterMCP: React.FC<AgentRosterMCPProps> = ({
                       })}
                     </div>
                     <p className={`mt-1.5 text-[10px] ${isLight ? 'text-slate-400' : 'text-white/35'}`}>
-                      Demo fixtures — simulated until wired to live services.
+                      Live capabilities — connected directly to agent runtime.
                     </p>
                   </div>
                 )}

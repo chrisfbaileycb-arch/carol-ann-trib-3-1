@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { AGENT_PRESETS, CORE_AGENT_PRESETS, type AgentPreset, type AgentSkin } from '@/data/agents';
 import { loadAgents, type AgentConfig } from '@/lib/agentStore';
+import { applyPlatformSafetyBaseline } from '@/data/safetyBaseline';
 
 export type CanvasViewMode = 'split' | 'preview' | 'editor';
 export type CanvasFileKey = 'Component.tsx' | 'endpoint.ts' | 'schema.sql';
@@ -226,7 +227,7 @@ const INITIAL_AGENT_CONTEXT: ActiveAgentContext = {
   name: 'Carol Ann',
   personaName: 'Carol Ann (Warm Anchor)',
   role: 'Frontend Architect & Sovereign Executive',
-  systemPrompt: 'You are the Frontend Architect & Agent Orchestrator. Direct clean Tailwind/React JSX and systems logic.',
+  systemPrompt: applyPlatformSafetyBaseline('You are the Frontend Architect & Agent Orchestrator. Direct clean Tailwind/React JSX and systems logic.'),
   avatar: {
     skin: { body: ['#8B5FBF', '#E8A0BF'], hat: '#FAF8F5', prop: 'halo' },
     size: 36,
@@ -406,7 +407,7 @@ export const AgentRoutingProvider: React.FC<{ children: React.ReactNode }> = ({ 
             name: found.name,
             personaName: found.name,
             role: found.role,
-            systemPrompt: found.systemPrompt,
+            systemPrompt: applyPlatformSafetyBaseline(found.systemPrompt),
             avatar: { skin: found.skin, size: 36 },
             category: found.category,
             roleType,
@@ -426,7 +427,7 @@ export const AgentRoutingProvider: React.FC<{ children: React.ReactNode }> = ({ 
               name: foundCustom.name,
               personaName: foundCustom.name,
               role: foundCustom.role,
-              systemPrompt: foundCustom.prompt,
+              systemPrompt: applyPlatformSafetyBaseline(foundCustom.prompt),
               avatar: { skin: foundCustom.skin, size: 36 },
               category: foundCustom.category,
               roleType,
@@ -438,7 +439,7 @@ export const AgentRoutingProvider: React.FC<{ children: React.ReactNode }> = ({ 
               name: 'Specialist Agent',
               personaName: 'Specialist Agent',
               role: 'Agent Specialist',
-              systemPrompt: 'Assist operator in active canvas workspace.',
+              systemPrompt: applyPlatformSafetyBaseline('Assist operator in active canvas workspace.'),
               avatar: {
                 skin: { body: ['#38BDF8', '#818CF8'], hat: '#F8FAFC', prop: 'visor' },
                 size: 36,
@@ -455,7 +456,7 @@ export const AgentRoutingProvider: React.FC<{ children: React.ReactNode }> = ({ 
           name: agentIdOrData.name,
           personaName: agentIdOrData.name,
           role: agentIdOrData.role,
-          systemPrompt: 'systemPrompt' in agentIdOrData ? agentIdOrData.systemPrompt : (agentIdOrData as AgentConfig).prompt,
+          systemPrompt: applyPlatformSafetyBaseline('systemPrompt' in agentIdOrData ? agentIdOrData.systemPrompt : (agentIdOrData as AgentConfig).prompt),
           avatar: { skin: agentIdOrData.skin, size: 36 },
           category: agentIdOrData.category,
           roleType,
