@@ -6,7 +6,6 @@
  */
 
 import type { AgentRun, ActionLogEntry, RunStatus, MemoryEntry, UserProfile } from '@/data/schemas';
-import { applyPlatformSafetyBaseline } from '@/data/safetyBaseline';
 import { DISPATCH_CHAINS } from './browserAgent';
 import { uid } from './memoryStore';
 
@@ -241,7 +240,7 @@ export function buildAgentSystemPersona(
     .map((m) => `- [${m.category}] ${m.content}`)
     .join('\n');
 
-  const rawPersona = `${agent.systemPersona}
+  return `${agent.systemPersona}
 
 # Operating Persona
 - Name: ${agent.name}
@@ -259,8 +258,6 @@ ${memoriesList || 'No memories recorded yet in this partition.'}
 - Identity: ${profile.identity || 'Executive Lifestyle'}
 - Professional Focus: ${profile.professionalFocus || 'Personal projects and strategic operations'}
 - Wellness Focus: ${profile.wellnessGoal || 'Sustainable vitality, energy, and recovery'}`;
-
-  return applyPlatformSafetyBaseline(rawPersona);
 }
 
 // ============================================================================

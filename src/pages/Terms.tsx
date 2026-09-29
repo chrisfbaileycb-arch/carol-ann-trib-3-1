@@ -47,10 +47,10 @@ export default function Terms() {
           </p>
         </Section>
 
-        <Section title="Integrations & Connectors">
+        <Section title="Demo features">
           <p>
-            All 206 connectors are real integrations with verified endpoints, Model Context Protocol (MCP) schemas,
-            and live execution pipelines. Connected tools communicate with third-party APIs upon authorized user dispatch.
+            Features labeled as a demo or sandbox (such as the connector directory) are simulations. They do not
+            connect to outside services, move money, post content, or take real-world actions.
           </p>
         </Section>
 

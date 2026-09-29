@@ -1,5 +1,4 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import { applyPlatformSafetyBaseline } from './safetyBaseline.js';
 
 // Lazy Google GenAI Client
 let genAIClient: GoogleGenAI | null = null;
@@ -194,11 +193,9 @@ export async function runAnchorChat(
     return evaluateLocalFallback(message, agentId, agentName);
   }
 
-  const basePrompt = systemPersona
+  const personaPrompt = systemPersona
     ? `${systemPersona}\n\nOperating Persona: You are ${agentName} (${agentRole}).`
     : `${ANCHOR_SYSTEM_INSTRUCTION}\nYou are ${agentName}, ${agentRole}.`;
-
-  const personaPrompt = applyPlatformSafetyBaseline(basePrompt);
 
   const systemInstruction = `${personaPrompt}
 

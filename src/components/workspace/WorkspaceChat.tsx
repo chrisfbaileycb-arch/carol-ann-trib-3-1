@@ -284,18 +284,16 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
           ? 'whole-foods'
           : action.action_name.toLowerCase().includes('amazon')
           ? 'amazon'
-          : action.action_name.toLowerCase().includes('lunch') || action.action_name.toLowerCase().includes('food') || action.action_name.toLowerCase().includes('doordash') || action.action_name.toLowerCase().includes('sweetgreen') || action.action_name.toLowerCase().includes('ubereats')
-          ? 'lunch-order'
           : 'custom',
       });
     } else if (action.category === 'social_marketing') {
-      const addition = `\n\n### Dispatched via ${action.target_app || 'Social Hub'} (Live MCP)\n- **Action:** ${action.action_name}\n- **Title:** ${action.form_payload.title}\n- **Scheduled Time:** ${action.form_payload.target_time ?? 'Immediate'}\n- **Status:** Executed & Dispatched (Receipt: LIVE-${Date.now().toString().slice(-6)})`;
+      const addition = `\n\n### Dispatched via ${action.target_app || 'Social Hub'} (Simulated)\n- **Action:** ${action.action_name}\n- **Title:** ${action.form_payload.title}\n- **Scheduled Time:** ${action.form_payload.target_time ?? 'Immediate'}\n- **Status:** Simulated — nothing was dispatched (Demo fixture only)`;
       setScratchpad((prev) => prev + addition);
     } else if (action.category === 'finance_accounting') {
-      const addition = `\n\n### Dispatched via ${action.target_app || 'Accounting Hub'} (Live MCP)\n- **Action:** ${action.action_name}\n- **Title:** ${action.form_payload.title}\n- **Payload:** ${JSON.stringify(action.form_payload.fields ?? {})}\n- **Receipt:** Executed & Dispatched (Receipt: LIVE-${Date.now().toString().slice(-6)})`;
+      const addition = `\n\n### Dispatched via ${action.target_app || 'Accounting Hub'} (Simulated)\n- **Action:** ${action.action_name}\n- **Title:** ${action.form_payload.title}\n- **Payload:** ${JSON.stringify(action.form_payload.fields ?? {})}\n- **Receipt:** Simulated — nothing was dispatched (Demo fixture only)`;
       setScratchpad((prev) => prev + addition);
     } else if (action.category === 'hospitality_review') {
-      const addition = `\n\n### Dispatched via ${action.target_app || 'Review Hub'} (Live MCP)\n- **Action:** ${action.action_name}\n- **Response:** "${action.form_payload.notes ?? action.form_payload.title}"\n- **Status:** Executed & Dispatched (Receipt: LIVE-${Date.now().toString().slice(-6)})`;
+      const addition = `\n\n### Dispatched via ${action.target_app || 'Review Hub'} (Simulated)\n- **Action:** ${action.action_name}\n- **Response:** "${action.form_payload.notes ?? action.form_payload.title}"\n- **Status:** Simulated — nothing was dispatched (Demo fixture only)`;
       setScratchpad((prev) => prev + addition);
     } else if (action.category === 'scratchpad_update') {
       const addition = `\n\n### Updated via ${action.action_name}\n- **Title:** ${action.form_payload.title}\n- **Items:** ${(action.form_payload.items ?? []).join(', ')}\n- **Target Time:** ${action.form_payload.target_time ?? 'N/A'}`;

@@ -77,231 +77,11 @@ export const SAAS_CONNECTOR_CATEGORIES: SaaSConnectorCategory[] = [
   { key: 'legal_field', label: 'Legal & Field Service', iconName: 'Scale', description: 'Matter management, dispatch scheduling, work orders, and client trust accounting.' },
   { key: 'property_events', label: 'Property & Events', iconName: 'Building', description: 'Vacation rental channels, real estate lead routing, and ticket reservations.' },
   { key: 'courses_nocode', label: 'Courses, No-Code & Automation', iconName: 'Cpu', description: 'Visual app builders, workflow webhooks, LMS courses, and client portals.' },
-  { key: 'enterprise_work', label: 'Enterprise Work', iconName: 'ShieldCheck', description: 'Enterprise data connectors for ERP, BI, corporate data warehouses, and system integrations.' },
+  { key: 'enterprise_work', label: 'Enterprise (Demo)', iconName: 'ShieldCheck', description: 'Demo listings for enterprise data connectors (ERP, BI, corporate data warehouses). No live connections.' },
 ];
 
-// ==========================================
-// Official Real Vendor API Endpoint Map
-// ==========================================
-
-export const CONNECTOR_ENDPOINT_MAP: Record<string, string> = {
-  salesforce: 'https://api.salesforce.com',
-  hubspot: 'https://api.hubapi.com',
-  pipedrive: 'https://api.pipedrive.com/v1',
-  close: 'https://api.close.com/v1',
-  attio: 'https://api.attio.com/v1',
-  folk: 'https://api.folk.app/v1',
-  'capsule-crm': 'https://api.capsulecrm.com/api/v2',
-  'nethunt-crm': 'https://nethunt.com/api/v1',
-  nutshell: 'https://api.nutshell.com/v1',
-  salesflare: 'https://api.salesflare.com',
-  salesmate: 'https://apis.salesmate.io/v3',
-  keap: 'https://api.infusionsoft.com/crm/rest/v1',
-  gohighlevel: 'https://services.leadconnectorhq.com',
-  agiled: 'https://my.agiled.app/api/v1',
-  apollo: 'https://api.apollo.io/v1',
-  streak: 'https://api.streak.com/v1',
-  wealthbox: 'https://api.wealthbox.com/v1',
-  dealcloud: 'https://api.dealcloud.com/v1',
-  'dynamics-365': 'https://api.dynamics.com/v9.2',
-  'zoho-crm': 'https://www.zohoapis.com/crm/v2',
-  gong: 'https://api.gong.io/v2',
-  hunter: 'https://api.hunter.io/v2',
-  gmail: 'https://gmail.googleapis.com',
-  outlook: 'https://graph.microsoft.com/v1.0',
-  front: 'https://api2.frontapp.com',
-  missive: 'https://public-api.missiveapp.com/v1',
-  mixmax: 'https://api.mixmax.com/v1',
-  postmark: 'https://api.postmarkapp.com',
-  resend: 'https://api.resend.com',
-  sendgrid: 'https://api.sendgrid.com/v3',
-  mailersend: 'https://api.mailersend.com/v1',
-  mailchimp: 'https://api.mailchimp.com/3.0',
-  klaviyo: 'https://a.klaviyo.com/api',
-  activecampaign: 'https://api.activecampaign.com/api/3',
-  customerio: 'https://api.customer.io/v1',
-  brevo: 'https://api.brevo.com/v3',
-  kit: 'https://api.kit.com/v4',
-  mailerlite: 'https://connect.mailerlite.com/api',
-  emailoctopus: 'https://emailoctopus.com/api/1.6',
-  moosend: 'https://api.moosend.com/v3',
-  omnisend: 'https://api.omnisend.com/v3',
-  loops: 'https://app.loops.so/api/v1',
-  instantly: 'https://api.instantly.ai/api/v1',
-  lemlist: 'https://api.lemlist.com/api',
-  beehiiv: 'https://api.beehiiv.com/v2',
-  'google-ads': 'https://googleads.googleapis.com',
-  'meta-ads': 'https://graph.facebook.com/v19.0',
-  semrush: 'https://api.semrush.com',
-  ahrefs: 'https://api.ahrefs.com/v3',
-  notion: 'https://api.notion.com/v1',
-  airtable: 'https://api.airtable.com/v0',
-  coda: 'https://coda.io/apis/v1',
-  'google-sheets': 'https://sheets.googleapis.com/v4',
-  'google-docs': 'https://docs.googleapis.com/v1',
-  'google-slides': 'https://slides.googleapis.com/v1',
-  excel: 'https://graph.microsoft.com/v1.0/me/drive/items',
-  word: 'https://graph.microsoft.com/v1.0/me/drive/items',
-  powerpoint: 'https://graph.microsoft.com/v1.0/me/drive/items',
-  smartsheet: 'https://api.smartsheet.com/2.0',
-  confluence: 'https://api.atlassian.com/ex/confluence',
-  outline: 'https://app.getoutline.com/api',
-  slite: 'https://api.slite.com/v1',
-  mem: 'https://api.mem.ai/v0',
-  'google-drive': 'https://www.googleapis.com/drive/v3',
-  onedrive: 'https://graph.microsoft.com/v1.0/me/drive',
-  sharepoint: 'https://graph.microsoft.com/v1.0/sites',
-  dropbox: 'https://api.dropboxapi.com/2',
-  box: 'https://api.box.com/2.0',
-  'google-photos': 'https://photoslibrary.googleapis.com/v1',
-  asana: 'https://app.asana.com/api/1.0',
-  monday: 'https://api.monday.com/v2',
-  clickup: 'https://api.clickup.com/api/v2',
-  trello: 'https://api.trello.com/1',
-  jira: 'https://api.atlassian.com/ex/jira',
-  linear: 'https://api.linear.app/graphql',
-  basecamp: 'https://launchpad.37signals.com',
-  wrike: 'https://www.wrike.com/api/v4',
-  shortcut: 'https://api.app.shortcut.com/api/v3',
-  productboard: 'https://api.productboard.com',
-  canny: 'https://canny.io/api/v1',
-  todoist: 'https://api.todoist.com/rest/v2',
-  ticktick: 'https://api.ticktick.com/open/v1',
-  'google-tasks': 'https://tasks.googleapis.com/tasks/v1',
-  slack: 'https://slack.com/api',
-  'microsoft-teams': 'https://graph.microsoft.com/v1.0/teams',
-  discord: 'https://discord.com/api/v10',
-  telegram: 'https://api.telegram.org',
-  whatsapp: 'https://graph.facebook.com/v19.0',
-  dialpad: 'https://dialpad.com/api/v2',
-  zoom: 'https://api.zoom.us/v2',
-  'google-meet': 'https://meet.googleapis.com/v2',
-  webex: 'https://webexapis.com/v1',
-  'google-calendar': 'https://www.googleapis.com/calendar/v3',
-  fathom: 'https://api.fathom.video/v1',
-  fireflies: 'https://api.fireflies.ai/graphql',
-  tldv: 'https://api.tldv.io/v1',
-  'recall-ai': 'https://api.recall.ai/api/v1',
-  zendesk: 'https://api.zendesk.com/v2',
-  freshdesk: 'https://api.freshdesk.com/v2',
-  freshservice: 'https://api.freshservice.com/v2',
-  intercom: 'https://api.intercom.io',
-  gorgias: 'https://api.gorgias.com/api',
-  'help-scout': 'https://api.helpscout.net/v2',
-  'zoho-desk': 'https://desk.zoho.com/api/v1',
-  pagerduty: 'https://api.pagerduty.com',
-  quickbooks: 'https://quickbooks.api.intuit.com/v3',
-  xero: 'https://api.xero.com/api.xro/2.0',
-  freshbooks: 'https://api.freshbooks.com',
-  freeagent: 'https://api.freeagent.com/v2',
-  'zoho-books': 'https://books.zoho.com/api/v3',
-  ynab: 'https://api.ynab.com/v1',
-  expensify: 'https://integrations.expensify.com/Integration-Server/ExpensifyIntegrations',
-  ramp: 'https://api.ramp.com/developer/v1',
-  brex: 'https://platform.brexapis.com/v1',
-  mercury: 'https://api.mercury.com/api/v1',
-  'bill-com': 'https://api.bill.com/v3',
-  stripe: 'https://api.stripe.com/v1',
-  square: 'https://connect.squareup.com/v2',
-  shopify: 'https://admin.shopify.com/api',
-  amazon: 'https://sellingpartnerapi-na.amazon.com',
-  etsy: 'https://openapi.etsy.com/v3',
-  ebay: 'https://api.ebay.com',
-  gumroad: 'https://api.gumroad.com/v2',
-  'lemon-squeezy': 'https://api.lemonsqueezy.com/v1',
-  wix: 'https://www.wixapis.com',
-  webflow: 'https://api.webflow.com/v2',
-  github: 'https://api.github.com',
-  gitlab: 'https://gitlab.com/api/v4',
-  bitbucket: 'https://api.bitbucket.org/2.0',
-  circleci: 'https://circleci.com/api/v2',
-  docker: 'https://hub.docker.com/v2',
-  sentry: 'https://sentry.io/api/0',
-  vercel: 'https://api.vercel.com',
-  cloudflare: 'https://api.cloudflare.com/client/v4',
-  supabase: 'https://api.supabase.com/v1',
-  neon: 'https://console.neon.tech/api/v2',
-  'google-maps': 'https://maps.googleapis.com/maps/api',
-  'google-analytics': 'https://analyticsdata.googleapis.com/v1beta',
-  amplitude: 'https://api2.amplitude.com/2',
-  mixpanel: 'https://mixpanel.com/api/app',
-  segment: 'https://api.segment.io/v1',
-  datadog: 'https://api.datadoghq.com/api/v1',
-  databricks: 'https://api.databricks.com/api/2.0',
-  apify: 'https://api.apify.com/v2',
-  huggingface: 'https://api-inference.huggingface.co',
-  elevenlabs: 'https://api.elevenlabs.io/v1',
-  bamboohr: 'https://api.bamboohr.com/api/gateway.php',
-  gusto: 'https://api.gusto.com/v1',
-  rippling: 'https://api.rippling.com/platform/api',
-  deel: 'https://api.letsdeel.com/rest/v2',
-  ashby: 'https://api.ashbyhq.com',
-  lever: 'https://api.lever.co/v1',
-  greenhouse: 'https://harvest.greenhouse.io/v1',
-  workable: 'https://api.workable.com/spi/v3',
-  recruitee: 'https://api.recruitee.com/c',
-  bullhorn: 'https://rest.bullhornstaffing.com/rest-services',
-  canva: 'https://api.canva.com/rest/v1',
-  figma: 'https://api.figma.com/v1',
-  adobe: 'https://ims-na1.adobelogin.com',
-  miro: 'https://api.miro.com/v2',
-  mural: 'https://app.mural.co/api/public/v1',
-  linkedin: 'https://api.linkedin.com/v2',
-  facebook: 'https://graph.facebook.com/v19.0',
-  instagram: 'https://graph.instagram.com',
-  reddit: 'https://oauth.reddit.com',
-  pinterest: 'https://api.pinterest.com/v5',
-  tiktok: 'https://open.tiktokapis.com/v2',
-  youtube: 'https://www.googleapis.com/youtube/v3',
-  twitch: 'https://api.twitch.tv/helix',
-  typefully: 'https://api.typefully.com/v1',
-  typeform: 'https://api.typeform.com',
-  jotform: 'https://api.jotform.com',
-  tally: 'https://api.tally.so',
-  surveymonkey: 'https://api.surveymonkey.com/v3',
-  pandadoc: 'https://api.pandadoc.com/public/v1',
-  boldsign: 'https://api.boldsign.com/v1',
-  docuseal: 'https://api.docuseal.co',
-  'dropbox-sign': 'https://api.hellosign.com/v3',
-  clockify: 'https://api.clockify.me/api/v1',
-  toggl: 'https://api.track.toggl.com/api/v9',
-  harvest: 'https://api.harvestapp.com/v2',
-  everhour: 'https://api.everhour.com',
-  clio: 'https://app.clio.com/api/v4',
-  mycase: 'https://api.mycase.com/v1',
-  servicetitan: 'https://api.servicetitan.io',
-  jobnimbus: 'https://app.jobnimbus.com/api1',
-  guesty: 'https://open-api.guesty.com/v1',
-  'follow-up-boss': 'https://api.followupboss.com/v1',
-  eventbrite: 'https://www.eventbriteapi.com/v3',
-  kajabi: 'https://api.kajabi.com/v1',
-  'google-classroom': 'https://classroom.googleapis.com/v1',
-  bubble: 'https://api.bubble.io',
-  softr: 'https://studio-api.softr.io/v1',
-  make: 'https://eu1.make.com/api/v2',
-  'zapier-gateway': 'https://actions.zapier.com/settings/mcp/',
-  'google-business': 'https://mybusinessbusinessinformation.googleapis.com/v1',
-  'google-workspace-enterprise': 'https://admin.googleapis.com/admin/directory/v1',
-  'sharepoint-enterprise': 'https://graph.microsoft.com/v1.0/sites',
-  'box-enterprise': 'https://api.box.com/2.0/enterprise',
-  'salesforce-enterprise': 'https://api.salesforce.com',
-  servicenow: 'https://service-now.com/api',
-  workday: 'https://services1.workday.com',
-  sap: 'https://api.sap.com',
-  snowflake: 'https://snowflakecomputing.com',
-  tableau: 'https://api.tableau.com/api/3.20',
-  'power-bi': 'https://api.powerbi.com/v1.0',
-};
-
-export function getConnectorEndpoint(connector: { id: string; endpointUrl?: string; vendor?: string }): string {
-  if (connector.endpointUrl) return connector.endpointUrl;
-  if (CONNECTOR_ENDPOINT_MAP[connector.id]) return CONNECTOR_ENDPOINT_MAP[connector.id];
-  const cleanId = connector.id.replace(/_/g, '-');
-  return `https://api.${cleanId}.com`;
-}
-
-const RAW_CONNECTORS: SaaSConnector[] = [
-// ==========================================
+export const SAAS_CONNECTORS_DIRECTORY: SaaSConnector[] = [
+  // ==========================================
   // 1. CRM & Sales (22 platforms)
   // ==========================================
   {
@@ -2624,7 +2404,7 @@ const RAW_CONNECTORS: SaaSConnector[] = [
     id: 'google-workspace-enterprise',
     name: 'Google Workspace Enterprise',
     category: 'enterprise_work',
-    categoryLabel: 'Enterprise Work',
+    categoryLabel: 'Enterprise (Demo)',
     description: 'Enterprise connector indexing Docs, Sheets, Drive, and Gmail across corporate Google Workspace domains.',
     vendor: 'Google LLC',
     accentColor: '#4285F4',
@@ -2637,7 +2417,7 @@ const RAW_CONNECTORS: SaaSConnector[] = [
     id: 'sharepoint-enterprise',
     name: 'SharePoint Enterprise',
     category: 'enterprise_work',
-    categoryLabel: 'Enterprise Work',
+    categoryLabel: 'Enterprise (Demo)',
     description: 'Direct enterprise graph synchronization across thousands of corporate sites, teams, and OneDrive vaults.',
     vendor: 'Microsoft Corp.',
     accentColor: '#038387',
@@ -2650,7 +2430,7 @@ const RAW_CONNECTORS: SaaSConnector[] = [
     id: 'box-enterprise',
     name: 'Box Enterprise',
     category: 'enterprise_work',
-    categoryLabel: 'Enterprise Work',
+    categoryLabel: 'Enterprise (Demo)',
     description: 'Enterprise content cloud connector with strict data residency, governance shields, and watermarking.',
     vendor: 'Box Inc.',
     accentColor: '#0075C9',
@@ -2663,7 +2443,7 @@ const RAW_CONNECTORS: SaaSConnector[] = [
     id: 'salesforce-enterprise',
     name: 'Salesforce Enterprise',
     category: 'enterprise_work',
-    categoryLabel: 'Enterprise Work',
+    categoryLabel: 'Enterprise (Demo)',
     description: 'Enterprise Data Cloud & Customer 360 connector uniting ERP records, service tickets, and enterprise opportunities.',
     vendor: 'Salesforce Inc.',
     accentColor: '#00A1E0',
@@ -2676,7 +2456,7 @@ const RAW_CONNECTORS: SaaSConnector[] = [
     id: 'servicenow',
     name: 'ServiceNow',
     category: 'enterprise_work',
-    categoryLabel: 'Enterprise Work',
+    categoryLabel: 'Enterprise (Demo)',
     description: 'Enterprise digital workflows for IT service management (ITSM), HR service delivery, and CMDB assets.',
     vendor: 'ServiceNow Inc.',
     accentColor: '#81B441',
@@ -2689,7 +2469,7 @@ const RAW_CONNECTORS: SaaSConnector[] = [
     id: 'workday',
     name: 'Workday',
     category: 'enterprise_work',
-    categoryLabel: 'Enterprise Work',
+    categoryLabel: 'Enterprise (Demo)',
     description: 'Enterprise Human Capital Management (HCM), financial management, and workforce planning systems.',
     vendor: 'Workday Inc.',
     accentColor: '#F58220',
@@ -2702,7 +2482,7 @@ const RAW_CONNECTORS: SaaSConnector[] = [
     id: 'sap',
     name: 'SAP',
     category: 'enterprise_work',
-    categoryLabel: 'Enterprise Work',
+    categoryLabel: 'Enterprise (Demo)',
     description: 'SAP S/4HANA ERP connector for supply chain procurement, inventory orders, and enterprise master data.',
     vendor: 'SAP SE',
     accentColor: '#008FD3',
@@ -2715,7 +2495,7 @@ const RAW_CONNECTORS: SaaSConnector[] = [
     id: 'snowflake',
     name: 'Snowflake',
     category: 'enterprise_work',
-    categoryLabel: 'Enterprise Work',
+    categoryLabel: 'Enterprise (Demo)',
     description: 'Cloud data warehouse query execution, semantic views, Cortex AI functions, and secure data sharing.',
     vendor: 'Snowflake Inc.',
     accentColor: '#29B5E8',
@@ -2728,7 +2508,7 @@ const RAW_CONNECTORS: SaaSConnector[] = [
     id: 'tableau',
     name: 'Tableau',
     category: 'enterprise_work',
-    categoryLabel: 'Enterprise Work',
+    categoryLabel: 'Enterprise (Demo)',
     description: 'Interactive business intelligence dashboards, workbook datasource queries, and pulse metrics.',
     vendor: 'Salesforce (Tableau)',
     accentColor: '#E97627',
@@ -2741,7 +2521,7 @@ const RAW_CONNECTORS: SaaSConnector[] = [
     id: 'power-bi',
     name: 'Power BI',
     category: 'enterprise_work',
-    categoryLabel: 'Enterprise Work',
+    categoryLabel: 'Enterprise (Demo)',
     description: 'Microsoft Fabric and Power BI semantic models, DAX query execution, and report visual exports.',
     vendor: 'Microsoft Corp.',
     accentColor: '#F2C811',
@@ -2752,40 +2532,17 @@ const RAW_CONNECTORS: SaaSConnector[] = [
   },
 ];
 
-// Assign concrete, real endpoint URLs to every connector in the directory
-RAW_CONNECTORS.forEach((c) => {
-  if (!c.endpointUrl) {
-    c.endpointUrl = getConnectorEndpoint(c);
-  }
-});
-
-export const SAAS_CONNECTORS_DIRECTORY: SaaSConnector[] = RAW_CONNECTORS;
-
 // ==========================================
-// Local Storage & Configuration Persistence Helpers
+// Local Storage Persistence Helpers
 // ==========================================
-
-export interface ConnectorConfig {
-  connectorId: string;
-  apiKey?: string;
-  endpointUrl?: string;
-  webhookUrl?: string;
-  isConnected: boolean;
-  connectedAt: string;
-  lastHandshakeAt?: string;
-  lastLatencyMs?: number;
-  account?: string;
-  status?: 'connected' | 'error' | 'disconnected';
-}
 
 const SAAS_CONNECTED_KEY = 'carol-ann.connected-saas.v1';
-const SAAS_CONFIGS_KEY = 'carol-ann.connector-configs.v1';
 
 export const loadConnectedSaasIds = (): string[] => {
   try {
     const raw = localStorage.getItem(SAAS_CONNECTED_KEY);
     if (!raw) {
-      // Default pre-connected standard tools for quick start
+      // Default pre-connected standard tools for quick demonstration
       return ['gmail', 'google-calendar', 'github', 'slack', 'notion', 'stripe'];
     }
     return JSON.parse(raw);
@@ -2802,47 +2559,11 @@ export const saveConnectedSaasIds = (ids: string[]) => {
   }
 };
 
-export const loadConnectorConfigs = (): Record<string, ConnectorConfig> => {
-  try {
-    const raw = localStorage.getItem(SAAS_CONFIGS_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-};
-
-export const saveConnectorConfig = (config: ConnectorConfig): void => {
-  try {
-    const configs = loadConnectorConfigs();
-    configs[config.connectorId] = config;
-    localStorage.setItem(SAAS_CONFIGS_KEY, JSON.stringify(configs));
-  } catch {
-    // ignore
-  }
-};
-
-export const toggleConnectedSaas = (connectorId: string, customConfig?: Partial<ConnectorConfig>): string[] => {
+export const toggleConnectedSaas = (connectorId: string): string[] => {
   const current = loadConnectedSaasIds();
-  const willConnect = !current.includes(connectorId);
-  const next = willConnect
-    ? [...current, connectorId]
-    : current.filter((id) => id !== connectorId);
+  const next = current.includes(connectorId)
+    ? current.filter((id) => id !== connectorId)
+    : [...current, connectorId];
   saveConnectedSaasIds(next);
-
-  const configs = loadConnectorConfigs();
-  const now = new Date().toISOString();
-  configs[connectorId] = {
-    connectorId,
-    isConnected: willConnect,
-    connectedAt: willConnect ? (configs[connectorId]?.connectedAt || now) : '',
-    lastHandshakeAt: willConnect ? now : configs[connectorId]?.lastHandshakeAt,
-    endpointUrl: customConfig?.endpointUrl || configs[connectorId]?.endpointUrl || CONNECTOR_ENDPOINT_MAP[connectorId],
-    apiKey: customConfig?.apiKey || configs[connectorId]?.apiKey,
-    status: willConnect ? 'connected' : 'disconnected',
-    account: customConfig?.account || `${connectorId}-live`,
-  };
-  localStorage.setItem(SAAS_CONFIGS_KEY, JSON.stringify(configs));
-
   return next;
 };
-  
