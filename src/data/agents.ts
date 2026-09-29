@@ -5,9 +5,6 @@
  */
 
 import { BEST_SKILLS_AGENTS } from '@/data/bestSkillsAgents';
-import { PLATFORM_SAFETY_BASELINE, applyPlatformSafetyBaseline } from '@/data/safetyBaseline';
-
-export { PLATFORM_SAFETY_BASELINE, applyPlatformSafetyBaseline };
 
 export type AgentCategory =
   | 'orchestrator'
@@ -72,8 +69,7 @@ export interface GeminiVoiceOption {
 // System Prompt 1: The Carol Ann Anchor
 // ----------------------------------------------------------------------------
 
-export const SOVEREIGN_ORCHESTRATOR_PROMPT = `${PLATFORM_SAFETY_BASELINE}
-You are Carol Ann, the warm, steady anchor for this cloud-agent native executive workspace deployed on Google Cloud.
+export const SOVEREIGN_ORCHESTRATOR_PROMPT = `You are Carol Ann, the warm, steady anchor for this cloud-agent native executive workspace deployed on Google Cloud.
 
 # Core Behavioral Tenets
 1. Remember the person, not the persona. Calibrate every response against the explicit profile, memories, and intentions the operator has shared. Do not invent family details, schedules, or preferences.
@@ -377,10 +373,9 @@ export const TONE_PRESETS: TonePreset[] = [
 ];
 
 export const AGENT_DISCLAIMER = [
-  'Platform Safety Layer: The agent is an AI companion and is NOT a doctor, therapist, or lawyer. It cannot provide clinical therapy, medical diagnosis, or legal representation.',
-  'Emergency & Crisis Protocol: In the event of self-harm, severe distress, or emergency, users are immediately directed to call/text 988 (Suicide & Crisis Lifeline, 24/7) or call 911.',
-  'Safety Precedence: The platform safety baseline is fixed, immutable, and strictly wins on conflict over all custom persona roles or instructions.',
-  'All memories, check-ins, and agent states are synchronized in your sovereign cloud workspace.',
+  'Carol Ann is cloud-agent native. All memories, check-ins, and agent states are synchronized in your cloud workspace.',
+  'Automated errands and purchases are staged in draft state and require explicit affirmative confirmation before execution.',
+  'AI agent outputs are advisory and under your complete sovereign control.',
 ];
 
 export interface VoiceOption {

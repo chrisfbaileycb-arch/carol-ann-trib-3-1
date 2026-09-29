@@ -104,6 +104,8 @@ app.post('/api/workflow/execute', async (req, res) => {
     let errandRecord: Record<string, unknown> | null = null;
     const executionStatus = 'executed';
 
+    let isSimulated = false;
+
     // 1. Domain-specific workflow dispatch & follow-through
     if (category === 'errand' || category === 'calendar_booking') {
       const items = Array.isArray(formPayload.items) ? (formPayload.items as string[]) : [];
@@ -112,17 +114,9 @@ app.post('/api/workflow/execute', async (req, res) => {
       const notes = String(formPayload.notes || '');
 
       let target = 'custom';
-      const textToCheck = `${actionName} ${title} ${notes}`.toLowerCase();
-      if (textToCheck.includes('lunch') || textToCheck.includes('food') || textToCheck.includes('dinner') || textToCheck.includes('meal')) {
-        if (textToCheck.includes('doordash')) target = 'doordash';
-        else if (textToCheck.includes('ubereats') || textToCheck.includes('uber eats')) target = 'ubereats';
-        else if (textToCheck.includes('sweetgreen')) target = 'sweetgreen';
-        else if (textToCheck.includes('caviar')) target = 'caviar';
-        else if (textToCheck.includes('grubhub')) target = 'grubhub';
-        else target = 'lunch-order';
-      } else if (textToCheck.includes('whole foods') || textToCheck.includes('grocery')) {
+      if (actionName.toLowerCase().includes('whole foods') || title.toLowerCase().includes('whole foods')) {
         target = 'whole-foods';
-      } else if (textToCheck.includes('amazon')) {
+      } else if (actionName.toLowerCase().includes('amazon') || title.toLowerCase().includes('amazon')) {
         target = 'amazon';
       }
 
@@ -132,30 +126,28 @@ app.post('/api/workflow/execute', async (req, res) => {
         title,
         items,
         target,
-        status: 'dispatched',
+        status: 'executed',
         scheduled_time: targetTime,
         notes,
         createdAt: startedAt,
         executedAt: new Date().toISOString(),
       };
 
-      const isFoodOrder = target === 'lunch-order' || target === 'doordash' || target === 'ubereats' || target === 'sweetgreen' || target === 'caviar' || target === 'grubhub';
-      receiptId = isFoodOrder
-        ? `ORDER-${target.toUpperCase()}-${Date.now().toString().slice(-6)}`
-        : `DISPATCH-${target.toUpperCase()}-${Date.now().toString().slice(-6)}`;
-      details = isFoodOrder
-        ? `Lunch order "${title}" with ${items.length} item(s) dispatched to ${target}. Delivery window: ${targetTime}.`
-        : `Errand "${title}" with ${items.length} item(s) dispatched through Firebase execution pipeline. Target: ${target}. Window: ${targetTime}.`;
+      receiptId = `DISPATCH-${target.toUpperCase()}-${Date.now().toString().slice(-6)}`;
+      details = `Errand "${title}" with ${items.length} item(s) dispatched through Firebase execution pipeline. Target: ${target}. Window: ${targetTime}.`;
     } else if (category === 'social_marketing') {
-      receiptId = `DISPATCH-META-${Date.now().toString().slice(-6)}`;
-      details = `Instagram Reel post for "${String(formPayload.title || actionName)}" dispatched to Meta Graph API. Scheduled: ${String(formPayload.target_time || 'Immediate')}.`;
+      isSimulated = true;
+      receiptId = `SIM-META-${Date.now().toString().slice(-6)}`;
+      details = `Simulated — nothing was dispatched. Demo fixture only: Instagram Reel staging for "${String(formPayload.title || actionName)}". Scheduled: ${String(formPayload.target_time || 'Immediate')}.`;
     } else if (category === 'finance_accounting') {
+      isSimulated = true;
       const total = formPayload.fields && typeof formPayload.fields === 'object' ? (formPayload.fields as Record<string, unknown>).total_amount || '$0' : '$0';
-      receiptId = `INV-QB-${Date.now().toString().slice(-6)}`;
-      details = `QuickBooks Online invoice for ${total} dispatched to client billing pipeline.`;
+      receiptId = `SIM-QB-${Date.now().toString().slice(-6)}`;
+      details = `Simulated — nothing was dispatched. Demo fixture only: QuickBooks Online invoice draft for ${total} staged.`;
     } else if (category === 'hospitality_review') {
-      receiptId = `PUB-TA-${Date.now().toString().slice(-6)}`;
-      details = `Management review response published via TripAdvisor & Google Business Partner API for "${String(formPayload.notes || formPayload.title || '')}".`;
+      isSimulated = true;
+      receiptId = `SIM-TA-${Date.now().toString().slice(-6)}`;
+      details = `Simulated — nothing was dispatched. Demo fixture only: Management review response draft staged for "${String(formPayload.notes || formPayload.title || '')}".`;
     } else if (category === 'profile_intake') {
       receiptId = `MEM-LEDGER-${Date.now().toString().slice(-6)}`;
       details = `Memory entry committed to sovereign ledger: ${Array.isArray(formPayload.items) ? (formPayload.items as string[]).join(' ') : String(formPayload.title || '')}.`;
@@ -163,9 +155,13 @@ app.post('/api/workflow/execute', async (req, res) => {
       receiptId = `SCRATCH-${Date.now().toString().slice(-6)}`;
       details = `Wellness routine "${String(formPayload.title || actionName)}" updated in workspace scratchpad.`;
     } else {
-      const safeTarget = targetApp ? targetApp.toUpperCase().replace(/[^A-Z0-9]/g, '') : 'CONNECTOR';
-      receiptId = `EXEC-${safeTarget}-${Date.now().toString().slice(-6)}`;
-      details = `Action "${actionName}" dispatched via ${targetApp || 'Live Cloud MCP Bridge'}.`;
+      isSimulated = true;
+      receiptId = `SIM-EXEC-${Date.now().toString().slice(-6)}`;
+      details = `Simulated — nothing was dispatched. Demo fixture only: action "${actionName}" on ${targetApp || 'Cloud Bridge'}.`;
+    }
+
+    if (formPayload.isMock) {
+      isSimulated = true;
     }
 
     const executionRecord: Record<string, unknown> = {
@@ -174,15 +170,15 @@ app.post('/api/workflow/execute', async (req, res) => {
       workflowType: category,
       title: actionName,
       status: executionStatus,
-      isMock: false,
-      badge: 'LIVE',
+      isMock: isSimulated,
+      badge: isSimulated ? 'DEMO' : undefined,
       actionPayload: formPayload,
       executionResult: {
         receiptId,
         details,
         status: 'executed',
-        isMock: false,
-        badge: 'LIVE',
+        isMock: isSimulated,
+        badge: isSimulated ? 'DEMO' : undefined,
         sourceNode: 'google-cloud-run-us-east5',
         databaseId: firebaseConfig.firestoreDatabaseId,
         timestamp: new Date().toISOString(),
@@ -234,8 +230,8 @@ app.post('/api/workflow/execute', async (req, res) => {
             title: actionName,
             receiptId,
             details,
-            isMock: false,
-            badge: 'LIVE',
+            isMock: isSimulated,
+            badge: isSimulated ? 'DEMO' : undefined,
             errand: errandRecord,
             timestamp: new Date().toISOString(),
           },
@@ -274,8 +270,8 @@ app.post('/api/workflow/execute', async (req, res) => {
     return res.json({
       ok: true,
       status: 'executed',
-      isMock: false,
-      badge: 'LIVE',
+      isMock: isSimulated,
+      badge: isSimulated ? 'DEMO' : undefined,
       executionId,
       receiptId,
       details,
@@ -303,7 +299,8 @@ app.post('/api/workflow/copilot/step', async (req, res) => {
     const { taskId, stepIndex = 0, actionName = 'Browser step', url, provider = 'Browser Agent' } = body;
     const stepId = `step_${Date.now()}_${stepIndex}`;
 
-    let browserOutput = `Browser agent (${provider}) step for "${actionName}" executed.`;
+    let isStepSimulated = true;
+    let browserOutput = `Simulated — nothing was dispatched. Demo fixture only: remote browser (${provider}) step for ${actionName}.`;
 
     // If a valid URL is present and Playwright is requested, attempt headless navigation
     if (url && typeof url === 'string' && url.startsWith('http')) {
@@ -316,13 +313,14 @@ app.post('/api/workflow/copilot/step', async (req, res) => {
         if (httpStatus >= 200 && httpStatus < 300) {
           const title = await page.title().catch(() => '');
           browserOutput = `Live browser verified (HTTP ${httpStatus}): loaded "${title || url}" — step "${actionName}" completed.`;
+          isStepSimulated = false;
         } else {
-          browserOutput = `Remote navigation verified (HTTP ${httpStatus}) for "${actionName}".`;
+          browserOutput = `Simulated — nothing was dispatched. Remote navigation returned HTTP ${httpStatus}.`;
         }
         await browser.close();
       } catch {
         if (browser) await browser.close().catch(() => undefined);
-        browserOutput = `Remote browser step for "${actionName}" completed.`;
+        browserOutput = `Simulated — nothing was dispatched. Demo fixture only: navigation not verified for ${actionName}.`;
       }
     }
 
@@ -332,8 +330,8 @@ app.post('/api/workflow/copilot/step', async (req, res) => {
       stepIndex: Number(stepIndex),
       actionName,
       status: 'done',
-      isMock: false,
-      badge: 'LIVE',
+      isMock: isStepSimulated,
+      badge: isStepSimulated ? 'DEMO' : undefined,
       output: browserOutput,
       timestamp: new Date().toISOString(),
     };
@@ -351,8 +349,8 @@ app.post('/api/workflow/copilot/step', async (req, res) => {
             stepIndex,
             actionName,
             status: 'done',
-            isMock: false,
-            badge: 'LIVE',
+            isMock: isStepSimulated,
+            badge: isStepSimulated ? 'DEMO' : undefined,
             output: browserOutput,
             timestamp: new Date().toISOString(),
           },
@@ -367,8 +365,8 @@ app.post('/api/workflow/copilot/step', async (req, res) => {
     return res.json({
       ok: true,
       status: 'done',
-      isMock: false,
-      badge: 'LIVE',
+      isMock: isStepSimulated,
+      badge: isStepSimulated ? 'DEMO' : undefined,
       step: stepResult,
       output: browserOutput,
     });

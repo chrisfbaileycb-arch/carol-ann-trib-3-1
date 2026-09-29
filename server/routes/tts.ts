@@ -51,4 +51,9 @@ app.post('/api/gemini/tts', requireFirebaseAuth, verifyAppCheck, async (req, res
     });
   }
 });
+
+// SaaS connector diagnostic ping — SIMULATED (demo sandbox).
+// This endpoint never contacts a live service. It exists so the UI can
+// preview connector payload shapes during development. A simulated
+// connector must never present as connected.
 }

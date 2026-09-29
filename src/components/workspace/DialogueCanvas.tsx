@@ -496,8 +496,8 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
                         </div>
 
                         {msg.toolCall.status === 'executed' ? (
-                          <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
-                            <CheckCircle2 className="h-3.5 w-3.5" /> Dispatched &amp; Executed (Live)
+                          <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-semibold">
+                            <CheckCircle2 className="h-3.5 w-3.5" /> Simulated — nothing was dispatched
                           </span>
                         ) : msg.toolCall.status === 'cancelled' ? (
                           <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-white/50 font-semibold">
@@ -562,7 +562,7 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
                         <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
                           <p className={`text-[11px] flex items-center gap-1 ${isLight ? 'text-amber-800' : 'text-amber-200/80'}`}>
                             <Shield className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-                            <span>Safety Guard: Action will not stage until approved.</span>
+                            <span>Safety Guard: Simulated action will not stage until approved.</span>
                           </p>
                           <div className="flex items-center justify-end gap-2 shrink-0">
                             {onCancelToolAction && (
@@ -583,7 +583,7 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
                               className="flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 px-4 py-1.5 text-xs font-bold text-white shadow-md transition hover:brightness-105"
                             >
                               <ShieldCheck className="h-3.5 w-3.5" />
-                              Approve &amp; Dispatch
+                              Approve & Simulate
                             </button>
                           </div>
                         </div>
@@ -591,8 +591,8 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
 
                       {/* Executed Receipt Details */}
                       {msg.toolCall.status === 'executed' && (
-                        <div className="mt-2.5 flex items-center justify-between text-[11px] text-emerald-700 dark:text-emerald-300 font-mono">
-                          <span>Dispatched to live service via MCP bridge</span>
+                        <div className="mt-2.5 flex items-center justify-between text-[11px] text-amber-700 dark:text-amber-300 font-mono">
+                          <span>Simulated — nothing was dispatched (Demo fixture only)</span>
                           <span>{msg.toolCall.executed_at ? new Date(msg.toolCall.executed_at).toLocaleTimeString() : 'Now'}</span>
                         </div>
                       )}

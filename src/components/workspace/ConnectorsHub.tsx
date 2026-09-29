@@ -19,11 +19,8 @@ import {
 } from '@/data/mcpPlugins';
 import { PluginAppIcon } from '@/components/workspace/PluginAppIcon';
 import { SaaSConnectorsDirectory } from '@/components/connectors/SaaSConnectorsDirectory';
-import { ConnectorsDashboard } from '@/components/connectors/ConnectorsDashboard';
 import { isLightTheme } from '@/data/intake';
 import type { UserProfile } from '@/data/schemas';
-import { apiFetch } from '@/lib/apiClient';
-import { connectorRegistry } from '@/lib/connector';
 
 interface ConnectorsHubProps {
   profile?: UserProfile;
@@ -33,8 +30,8 @@ interface ConnectorsHubProps {
 export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPluginsUpdated }) => {
   const isLight = isLightTheme(profile);
 
-  // Active view: 'dashboard' | 'saas_directory' | 'marketplace' | 'ecosystems' | 'zapier' | 'diagnostics'
-  const [activeView, setActiveView] = useState<'dashboard' | 'saas_directory' | 'marketplace' | 'ecosystems' | 'zapier' | 'diagnostics'>('dashboard');
+  // Active view: 'saas_directory' | 'marketplace' | 'ecosystems' | 'zapier' | 'diagnostics'
+  const [activeView, setActiveView] = useState<'saas_directory' | 'marketplace' | 'ecosystems' | 'zapier' | 'diagnostics'>('saas_directory');
 
   // Plugin Marketplace State
   const [installedPluginIds, setInstalledPluginIds] = useState<string[]>(() => loadInstalledPluginIds());
@@ -92,160 +89,56 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
     });
   }, [selectedCategory, searchQuery, installedPluginIds]);
 
-  // Handle saving the Zapier MCP configuration.
-  // Connects to the Zapier MCP gateway, performs a protocol verification ping,
-  // and enables actions for live agent execution.
-  const handleTestAndFetchZapier = async () => {
+  // Handle saving the Zapier demo configuration.
+  // NOTE: this is a demo sandbox — no live Zapier connection is established.
+  // The "test" simulates a handshake locally so action payload shapes can be
+  // previewed; it never contacts Zapier or any live service.
+  const handleTestAndFetchZapier = () => {
     setIsTestingZapier(true);
     setZapierStatusMsg(null);
 
-    const endpoint = zapierUrlInput.trim() || 'https://actions.zapier.com/settings/mcp/';
-    const apiKey = zapierKeyInput.trim();
+    setTimeout(() => {
+      const updatedConfig: ZapierConfig = {
+        endpointUrl: zapierUrlInput.trim() || 'https://actions.zapier.com/settings/mcp/',
+        apiKey: zapierKeyInput.trim(),
+        isConnected: false,
+        lastSyncedAt: null,
+        actions: zapierConfig.actions,
+      };
 
-    const zapierConn = connectorRegistry.getConnector('zapier');
-    let pingLatency = 35;
-    let pingVerified = true;
+      setZapierConfig(updatedConfig);
+      saveZapierConfig(updatedConfig);
+      setIsTestingZapier(false);
+      setZapierStatusMsg(
+        `Demo configuration saved — simulated sandbox. No live Zapier connection was established; actions below are previews only.`
+      );
 
-    if (zapierConn) {
-      zapierConn.setCredentials({ endpointUrl: endpoint, apiKey: apiKey || undefined });
-      const health = await zapierConn.ping();
-      pingLatency = health.latencyMs;
-      pingVerified = health.healthy;
-    } else {
-      try {
-        await apiFetch('/api/connectors/ping', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            connectorId: 'zapier',
-            endpointUrl: endpoint,
-            apiKey: apiKey || undefined,
-            capabilities: zapierConfig.actions.map((a) => a.id),
-          }),
-        });
-      } catch {
-        // Outbound proxy handles verification
+      // Ensure Zapier Gateway is marked installed
+      if (!installedPluginIds.includes('zapier-gateway')) {
+        const withZapier = [...installedPluginIds, 'zapier-gateway'];
+        setInstalledPluginIds(withZapier);
+        saveInstalledPluginIds(withZapier);
+        onPluginsUpdated?.(withZapier);
       }
-    }
-
-    const now = new Date().toISOString();
-    const updatedConfig: ZapierConfig = {
-      endpointUrl: endpoint,
-      apiKey,
-      isConnected: true,
-      lastSyncedAt: now,
-      actions: zapierConfig.actions,
-    };
-
-    setZapierConfig(updatedConfig);
-    saveZapierConfig(updatedConfig);
-    setIsTestingZapier(false);
-    setZapierStatusMsg(
-      pingVerified
-        ? `Zapier Universal MCP Gateway connected successfully (${pingLatency}ms). Protocol handshake verified — all actions live and active.`
-        : `Zapier Universal MCP Gateway configured. Verification pending remote credentials authorization.`
-    );
-
-    // Ensure Zapier Gateway is marked installed
-    if (!installedPluginIds.includes('zapier-gateway')) {
-      const withZapier = [...installedPluginIds, 'zapier-gateway'];
-      setInstalledPluginIds(withZapier);
-      saveInstalledPluginIds(withZapier);
-      onPluginsUpdated?.(withZapier);
-    }
+    }, 850);
   };
 
-  // Run a LIVE protocol verification & action execution dispatch.
-  // Dispatches an authenticated call to the cloud MCP broker using the modular Connector interface.
-  const handleRunDiagnosticTest = async (toolLabel: string, appName: string) => {
+  // Run a SIMULATED diagnostic preview. The output below is a locally
+  // generated payload preview — no live service is contacted.
+  const handleRunDiagnosticTest = (toolLabel: string, appName: string) => {
     setIsExecutingTest(true);
-    setTestOutput(`[LIVE MCP DISPATCH] Initializing connection to "${appName}" (${toolLabel})...`);
-    const cleanId = appName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-    const connector = connectorRegistry.getConnector(cleanId) || connectorRegistry.getConnector('generic-saas');
-
-    try {
-      if (connector) {
-        const result = await connector.execute({
-          action: toolLabel,
-          params: { query: 'diagnostic_ping', liveExecution: true },
-        });
-
-        if (result.success) {
-          setTestOutput(
-            `[LIVE MCP PROTOCOL DISPATCH CONFIRMED]\n` +
-            `Timestamp: ${result.timestamp}\n` +
-            `Target Service: ${appName} (${connector.name})\n` +
-            `Vendor: ${connector.vendor} · Auth: ${connector.authType}\n` +
-            `Tool / Capability: ${toolLabel}\n` +
-            `Receipt ID: ${result.receiptId}\n` +
-            `Status: EXECUTED (Live Connection Verified)\n` +
-            `Protocol: Model Context Protocol (MCP 2024-11-05)\n` +
-            `Round-Trip Latency: ${result.latencyMs}ms\n` +
-            `Execution Bridge: Cloud Run MCP Broker (us-east5)\n` +
-            `State: Action dispatched and logged to sovereign audit ledger.\n`
-          );
-        } else {
-          setTestOutput(
-            `[LIVE MCP PROTOCOL DISPATCH FAILED]\n` +
-            `Timestamp: ${result.timestamp}\n` +
-            `Target Service: ${appName} (${connector.name})\n` +
-            `Vendor: ${connector.vendor}\n` +
-            `Tool / Capability: ${toolLabel}\n` +
-            `Receipt ID: ${result.receiptId}\n` +
-            `Status: FAILED (External Service Error)\n` +
-            `Error Code: ${result.error?.code || 'EXECUTION_FAILED'}\n` +
-            `HTTP Status: ${result.httpStatus || 502}\n` +
-            `Error Message: ${result.error?.message || 'External call failed'}\n` +
-            `Retryable: ${result.error?.retryable ? 'Yes' : 'No'}\n`
-          );
-        }
-      } else {
-        const resp = await apiFetch('/api/connectors/execute', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            connectorId: cleanId,
-            action: toolLabel,
-            params: { query: 'diagnostic_ping', liveExecution: true },
-          }),
-        });
-
-        if (resp.ok) {
-          const data = await resp.json();
-          setTestOutput(
-            `[LIVE MCP PROTOCOL DISPATCH CONFIRMED]\n` +
-            `Timestamp: ${new Date().toISOString()}\n` +
-            `Target Service: ${appName}\n` +
-            `Tool / Capability: ${toolLabel}\n` +
-            `Receipt ID: ${data.receiptId || `EXEC-${cleanId.toUpperCase().slice(0, 10)}-${Date.now().toString().slice(-6)}`}\n` +
-            `Status: EXECUTED (Live Connection Verified)\n` +
-            `Round-Trip Latency: ${data.latencyMs || 40}ms\n` +
-            `Execution Bridge: Cloud Run MCP Broker (us-east5)\n`
-          );
-        } else {
-          const errData = await resp.json().catch(() => ({}));
-          setTestOutput(
-            `[LIVE MCP PROTOCOL DISPATCH FAILED]\n` +
-            `Timestamp: ${new Date().toISOString()}\n` +
-            `Target Service: ${appName}\n` +
-            `Tool / Capability: ${toolLabel}\n` +
-            `Status: FAILED (HTTP ${resp.status})\n` +
-            `Error: ${errData.error?.message || errData.error || 'Endpoint rejected execution'}\n`
-          );
-        }
-      }
-    } catch (err: unknown) {
+    setTestOutput(`[SIMULATED] Preparing preview of "${toolLabel}" on ${appName}...`);
+    setTimeout(() => {
       setTestOutput(
-        `[LIVE MCP PROTOCOL DISPATCH ERROR]\n` +
+        `[SIMULATED PAYLOAD PREVIEW — no live service contacted]\n` +
         `Timestamp: ${new Date().toISOString()}\n` +
-        `Target Service: ${appName}\n` +
-        `Tool / Capability: ${toolLabel}\n` +
-        `Status: NETWORK_DISPATCH_ERROR\n` +
-        `Error: ${err instanceof Error ? err.message : String(err)}\n`
+        `Target: ${appName}\n` +
+        `Tool: ${toolLabel}\n` +
+        `Status: simulated locally. Nothing was transmitted or executed.\n` +
+        `Safety Envelope: Action requires confirmation? ${toolLabel.includes('create') || toolLabel.includes('post') || toolLabel.includes('schedule') ? 'YES (Confirmation Card Enforced)' : 'NO (Read-Only Direct Return)'}\n`
       );
-    } finally {
       setIsExecutingTest(false);
-    }
+    }, 600);
   };
 
   return (
@@ -271,7 +164,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
               </span>
             </div>
             <p className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-white/45'}`}>
-              Universal connector directory — all 206 connectors are real integrations with verified endpoints, Model Context Protocol (MCP) schemas, and live execution pipelines
+              Universal connector directory & demo sandbox — integrations shown here are simulated previews until you connect a real service
             </p>
           </div>
         </div>
@@ -281,17 +174,6 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
           isLight ? 'border-rose-200/80 bg-white/90 shadow-xs' : 'border-white/10 bg-black/40'
         }`}>
           <button
-            onClick={() => setActiveView('dashboard')}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-              activeView === 'dashboard'
-                ? isLight ? 'bg-indigo-600 text-white shadow-xs' : 'bg-indigo-500 text-white shadow'
-                : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-white/50 hover:text-white'
-            }`}
-          >
-            <Activity className="h-3.5 w-3.5 text-indigo-300" />
-            <span>Dashboard (Status Grid)</span>
-          </button>
-          <button
             onClick={() => setActiveView('saas_directory')}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
               activeView === 'saas_directory'
@@ -300,7 +182,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
             }`}
           >
             <ShieldCheck className="h-3.5 w-3.5 text-indigo-300" />
-            <span>SaaS Directory (206)</span>
+            <span>SaaS Directory (170+)</span>
           </button>
           <button
             onClick={() => setActiveView('marketplace')}
@@ -351,14 +233,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
 
       {/* Main Viewport */}
       <div className="flex-1 overflow-y-auto m-scroll p-6">
-        {/* VIEW 0: Connectors Dashboard (Status Grid with Connected, Error, Idle) */}
-        {activeView === 'dashboard' && (
-          <div className="mx-auto max-w-7xl">
-            <ConnectorsDashboard isLight={isLight} />
-          </div>
-        )}
-
-        {/* VIEW 1: SaaS & Enterprise Directory (170+ integrations across 25 categories) */}
+        {/* VIEW 0: SaaS & Enterprise Directory (170+ integrations across 25 categories) */}
         {activeView === 'saas_directory' && (
           <div className="mx-auto max-w-7xl">
             <SaaSConnectorsDirectory isLight={isLight} />
@@ -560,17 +435,14 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
           </div>
         )}
 
-        {/* VIEW 2: Ecosystems & Channels Directory */}
+        {/* VIEW 2: Ecosystems & Channels Directory (demo sandbox) */}
         {activeView === 'ecosystems' && (
           <div className="mx-auto max-w-6xl space-y-8">
-            <div className={`rounded-2xl border px-5 py-3 text-xs flex items-center justify-between ${
-              isLight ? 'border-indigo-200 bg-indigo-50/70 text-indigo-900' : 'border-indigo-500/30 bg-indigo-950/20 text-indigo-200'
+            <div className={`rounded-2xl border px-5 py-3 text-xs ${
+              isLight ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-amber-500/30 bg-amber-500/10 text-amber-200'
             }`}>
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                <span><strong>Multi-Channel Integrations:</strong> Connectors link directly to verified third-party endpoints, OAuth credentials, and agent dispatch pipelines.</span>
-              </div>
-              <span className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">206 Connectors Protocol-Ready</span>
+              <strong>Demo sandbox:</strong> the integrations below are directory listings, not live connections.
+              Nothing here is connected to Instagram, Facebook, TikTok, YouTube, or any other service.
             </div>
             {/* Banner */}
             <div className={`rounded-2xl border p-6 ${
@@ -579,10 +451,10 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className={`font-display text-lg font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                    Ecosystems & Channels Connectors
+                    Ecosystems & Channels (Demo)
                   </h3>
                   <p className={`text-xs mt-1 leading-relaxed max-w-2xl ${isLight ? 'text-slate-600' : 'text-white/60'}`}>
-                    Direct API connections to social, hospitality, and commerce channels with verified endpoints and OAuth/API key gateways. Connect and dispatch tasks directly to your accounts.
+                    A directory of popular business, social, hospitality, and commerce integrations. Listings are informational only — no live connections exist yet. Connect a service to enable it.
                   </p>
                 </div>
                 <button
@@ -616,36 +488,36 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                     name: 'Instagram Reels',
                     category: 'Meta Platforms',
                     icon: 'instagram' as const,
-                    status: 'Live API Connected',
+                    status: 'Demo — not connected',
                     actions: 'Post Reels, Audio Sync, Analytics',
-                    latency: '18ms'
+                    latency: '—'
                   },
                   {
                     id: 'facebook-pages',
                     name: 'Facebook Pages & Groups',
                     category: 'Meta Platforms',
                     icon: 'facebook' as const,
-                    status: 'Live API Connected',
+                    status: 'Demo — not connected',
                     actions: 'Community Posts, Group Feeds',
-                    latency: '22ms'
+                    latency: '—'
                   },
                   {
                     id: 'tiktok-creator',
                     name: 'TikTok Creator Studio',
                     category: 'ByteDance Ltd.',
                     icon: 'tiktok' as const,
-                    status: 'Live API Connected',
+                    status: 'Demo — not connected',
                     actions: 'Trending Sounds, Video Drafts',
-                    latency: '26ms'
+                    latency: '—'
                   },
                   {
                     id: 'youtube-studio',
                     name: 'YouTube Studio & Shorts',
                     category: 'Google LLC',
                     icon: 'youtube' as const,
-                    status: 'Live API Connected',
+                    status: 'Demo — not connected',
                     actions: 'Shorts Staging, SEO Tags',
-                    latency: '14ms'
+                    latency: '—'
                   },
                 ].map((eco) => {
                   const isInstalled = installedPluginIds.includes(eco.id);
@@ -673,7 +545,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
 
                       <div className="mt-4 pt-2.5 border-t border-black/5 dark:border-white/5 flex items-center justify-between">
                         <span className={`text-[10px] ${isLight ? 'text-slate-400' : 'text-white/40'}`}>
-                          {isInstalled ? 'Active in Chat' : 'Live Gateway'}
+                          {isInstalled ? 'Active in Chat' : 'Standby'}
                         </span>
                         <button
                           onClick={() => handleRunDiagnosticTest('test_post_handshake', eco.name)}
@@ -712,7 +584,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                     icon: 'tripadvisor' as const,
                     desc: 'Live guest review monitoring, ranking tracker, and automated empathetic host response drafting.',
                     tools: ['tripadvisor_fetch_reviews', 'tripadvisor_post_reply'],
-                    status: 'Live API Connected'
+                    status: 'Demo — not connected'
                   },
                   {
                     id: 'yelp-business',
@@ -720,7 +592,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                     icon: 'yelp' as const,
                     desc: 'Local customer ratings, review notifications, and operating hours synchronization.',
                     tools: ['yelp_get_reviews', 'yelp_update_hours'],
-                    status: 'Live API Connected'
+                    status: 'Demo — not connected'
                   },
                   {
                     id: 'google-business',
@@ -728,7 +600,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                     icon: 'google' as const,
                     desc: 'Google Maps verified customer reviews, local ranking tracking, and public announcements.',
                     tools: ['gbp_fetch_reviews', 'gbp_post_update'],
-                    status: 'Live API Connected'
+                    status: 'Demo — not connected'
                   },
                 ].map((hosp) => (
                   <div
@@ -961,7 +833,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                     </button>
                   </div>
                   <p className={`mt-1 text-[11px] ${isLight ? 'text-slate-400' : 'text-white/40'}`}>
-                    Stored securely for authenticated dispatches. Authorizes live actions across connected Zapier apps.
+                    Stored in this browser's local storage only. Demo sandbox — nothing is transmitted to Zapier.
                   </p>
                 </div>
               </div>
@@ -976,12 +848,12 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                   {isTestingZapier ? (
                     <>
                       <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                      <span>Connecting MCP gateway...</span>
+                      <span>Saving demo configuration...</span>
                     </>
                   ) : (
                     <>
                       <Zap className="h-3.5 w-3.5 fill-white" />
-                      <span>Connect Zapier MCP Gateway</span>
+                      <span>Save Demo Configuration</span>
                     </>
                   )}
                 </button>
@@ -1014,11 +886,11 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                     Discovered Zapier AI Actions ({zapierConfig.actions.length})
                   </h4>
                   <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-white/50'}`}>
-                    Live action triggers — dispatched through active MCP bridge
+                    Demo action previews — simulated locally, nothing is transmitted
                   </p>
                 </div>
-                <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
-                  Live MCP Gateway
+                <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+                  Demo Sandbox
                 </span>
               </div>
 
@@ -1059,7 +931,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                         onClick={() => handleRunDiagnosticTest(act.name, act.app)}
                         className={`text-xs font-semibold hover:underline ${isLight ? 'text-amber-600' : 'text-amber-400'}`}
                       >
-                        Execute Action
+                        Simulate Action
                       </button>
                     </div>
                   </div>
@@ -1085,7 +957,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                 {isExecutingTest && (
                   <span className="flex items-center gap-1 text-xs text-amber-500 font-mono">
                     <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                    <span>Dispatching live action...</span>
+                    <span>Generating simulated preview...</span>
                   </span>
                 )}
               </div>
@@ -1094,7 +966,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                 isLight ? 'border-slate-200 bg-slate-900 text-emerald-400' : 'border-white/8 bg-black text-emerald-300'
               }`}>
                 {testOutput ||
-                  `// Model Context Protocol (MCP) Live Bridge\n// All 206 connectors are live and protocol-verified.\n// Outbound dispatches connect directly to vendor endpoints.\n// Ready for sub-agent execution and workflow orchestration.`}
+                  `// Demo sandbox — simulated connector. No live service is connected.\n// Actions below are payload previews only; nothing is transmitted.\n// Configure a real endpoint above to move beyond the sandbox.`}
               </pre>
 
               <div className="mt-4 flex items-center justify-end gap-2">
@@ -1110,7 +982,7 @@ export const ConnectorsHub: React.FC<ConnectorsHubProps> = ({ profile, onPlugins
                   onClick={() => handleRunDiagnosticTest('system_ping', 'Carol Ann Central Engine')}
                   className="rounded-lg m-gradient-bg px-4 py-1.5 text-xs font-semibold text-white shadow hover:brightness-110 transition"
                 >
-                  Run Live Diagnostic
+                  Run Simulated Preview
                 </button>
               </div>
             </div>

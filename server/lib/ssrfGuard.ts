@@ -194,8 +194,6 @@ export async function assertUrlSafe(rawUrl: string): Promise<UrlCheck> {
   return { normalizedUrl: url.toString(), hostname, addresses: addresses.map((a) => a.address) };
 }
 
-export const assertSafeUrl = assertUrlSafe;
-
 /**
  * Build an async per-hostname allow-check for Playwright request
  * interception, so redirect chains and subresource loads are screened too.
