@@ -18,6 +18,7 @@ app.post('/api/gemini/chat', optionalFirebaseAuth, verifyAppCheck, async (req, r
       memoryContext = '',
       attachments = [],
       workspaceContext,
+      connectedSkills = [],
     } = req.body;
 
     if (!message && (!Array.isArray(attachments) || attachments.length === 0)) {
@@ -27,12 +28,25 @@ app.post('/api/gemini/chat', optionalFirebaseAuth, verifyAppCheck, async (req, r
     let fullMessage = message || '';
     if (Array.isArray(attachments) && attachments.length > 0) {
       const attachmentSummaries = attachments
-        .map((att: { type?: string; name?: string; size?: string; contextSnippet?: string; connectorName?: string }) => {
+        .map((att: {
+          type?: string;
+          name?: string;
+          size?: string;
+          contextSnippet?: string;
+          connectorName?: string;
+          skillName?: string;
+          skillCategory?: string;
+          skillSummary?: string;
+          directives?: string[];
+        }) => {
           if (att.type === 'image') return `[Attached Photo: ${att.name || 'Image'} (${att.size || 'image'})]`;
           if (att.type === 'video') return `[Attached Video: ${att.name || 'Video'} (${att.size || 'video'})]`;
           if (att.type === 'file') return `[Attached Document/File: ${att.name || 'File'} (${att.size || 'document'})]`;
           if (att.type === 'connector') return `[Attached MCP Connector: ${att.connectorName || att.name || 'Connector'}]`;
           if (att.type === 'context') return `[Attached Workspace Context: ${att.name || 'Context'}\n${att.contextSnippet || ''}]`;
+          if (att.type === 'skill') {
+            return `[Connected Skill: ${att.skillName || att.name || 'Skill'}\nCategory: ${att.skillCategory || 'General'}\nSummary: ${att.skillSummary || ''}\n${Array.isArray(att.directives) && att.directives.length > 0 ? `Directives:\n${att.directives.map((d: string) => `* ${d}`).join('\n')}` : ''}]`;
+          }
           return `[Attached: ${att.name || 'Item'}]`;
         })
         .join('\n');
@@ -52,6 +66,11 @@ app.post('/api/gemini/chat', optionalFirebaseAuth, verifyAppCheck, async (req, r
         .filter(Boolean)
         .join('\n\n');
       finalSystemPersona = `${systemPersona}${wsSnippet}`;
+    }
+
+    if (Array.isArray(connectedSkills) && connectedSkills.length > 0) {
+      const skillsSnippet = `\n\n# Active Connected Skills (${connectedSkills.length} Enabled)\nYou must operate with adherence to these connected skills and engineering disciplines:\n- ${connectedSkills.join('\n- ')}`;
+      finalSystemPersona = `${finalSystemPersona}${skillsSnippet}`;
     }
 
     const result = await runAnchorChat(

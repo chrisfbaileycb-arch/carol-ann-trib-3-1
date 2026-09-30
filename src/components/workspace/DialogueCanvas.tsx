@@ -22,11 +22,14 @@ import { liveAudioEngine, type LiveAudioState } from '@/lib/geminiLiveAudio';
 import {
   AttachmentPlusMenu,
   StagedAttachmentsBar,
+  ConnectedSkillsPillBar,
   ContextSelectorModal,
   ConnectorSelectorModal,
   MessageAttachmentGallery,
   ImageLightbox
 } from '@/components/workspace/ChatAttachmentPickers';
+import { SkillsConnectionModal } from '@/components/skills/SkillsConnectionModal';
+import type { AgentSkill } from '@/data/skills';
 
 interface DialogueCanvasProps {
   messages: ConversationMessage[];
@@ -60,7 +63,23 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
   const [stagedAttachments, setStagedAttachments] = useState<ChatAttachment[]>([]);
   const [isContextModalOpen, setIsContextModalOpen] = useState(false);
   const [isConnectorModalOpen, setIsConnectorModalOpen] = useState(false);
+  const [isSkillsModalOpen, setIsSkillsModalOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<{ url: string; name: string } | null>(null);
+
+  const handleAttachSkillToPrompt = (skill: AgentSkill) => {
+    const newAttachment: ChatAttachment = {
+      id: `skill_${skill.id}_${Date.now()}`,
+      type: 'skill',
+      name: skill.name,
+      category: skill.category,
+      skillId: skill.id,
+      skillName: skill.name,
+      skillCategory: skill.category,
+      skillSummary: skill.summary,
+      directives: skill.directives,
+    };
+    setStagedAttachments((prev) => [...prev, newAttachment]);
+  };
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
   const [liveAudioState, setLiveAudioState] = useState<LiveAudioState>(liveAudioEngine.getState());
@@ -666,6 +685,12 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
             isLight={isLight}
           />
 
+          {/* Connected Skills Pill Bar (Live status & instant connection controls) */}
+          <ConnectedSkillsPillBar
+            onOpenSkillsModal={() => setIsSkillsModalOpen(true)}
+            isLight={isLight}
+          />
+
           {/* Active Gemini Live Voice Orchestrator Waveform Banner */}
           {(liveAudioState === 'listening' || liveAudioState === 'speaking' || liveAudioState === 'connecting' || liveAudioState === 'requesting_mic') && (
             <div className="mb-2.5 animate-fadeIn">
@@ -684,13 +709,14 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
               ? 'border-rose-200/80 bg-white/90 shadow-md focus-within:border-rose-400 focus-within:bg-white'
               : 'border-white/15 bg-white/[0.04] focus-within:border-[var(--m-accent)]/60 focus-within:bg-white/[0.06]'
           }`}>
-            {/* Plus (+) Menu to add files, photos, video, context, connector */}
+            {/* Plus (+) Menu to add files, photos, video, context, connector, or skills */}
             <AttachmentPlusMenu
               onSelectPhoto={() => imageInputRef.current?.click()}
               onSelectVideo={() => videoInputRef.current?.click()}
               onSelectFile={() => fileInputRef.current?.click()}
               onOpenContextModal={() => setIsContextModalOpen(true)}
               onOpenConnectorModal={() => setIsConnectorModalOpen(true)}
+              onOpenSkillsModal={() => setIsSkillsModalOpen(true)}
               isLight={isLight}
               disabled={isProcessing}
             />
@@ -777,6 +803,14 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
         imageUrl={lightboxImage?.url || null}
         imageName={lightboxImage?.name || ''}
         onClose={() => setLightboxImage(null)}
+      />
+
+      {/* Skills Connection & Registry Modal */}
+      <SkillsConnectionModal
+        isOpen={isSkillsModalOpen}
+        onClose={() => setIsSkillsModalOpen(false)}
+        onAttachSkillToPrompt={handleAttachSkillToPrompt}
+        isLight={isLight}
       />
     </div>
   );

@@ -86,7 +86,7 @@ export interface PluginExecutionChip {
 
 export interface ChatAttachment {
   id: string;
-  type: 'image' | 'video' | 'file' | 'context' | 'connector';
+  type: 'image' | 'video' | 'file' | 'context' | 'connector' | 'skill';
   name: string;
   url?: string;
   dataUrl?: string; // base64 or blob URL for images/videos
@@ -96,6 +96,11 @@ export interface ChatAttachment {
   connectorId?: string;
   connectorName?: string;
   category?: string;
+  skillId?: string;
+  skillName?: string;
+  skillCategory?: string;
+  skillSummary?: string;
+  directives?: string[];
 }
 
 export interface ConversationMessage {

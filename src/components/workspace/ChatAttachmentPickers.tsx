@@ -1,12 +1,20 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Plus, Image as ImageIcon, Film, FileText, Sparkles, Cpu, X,
   ExternalLink, Download, Check, Search, Maximize2, Zap,
-  FileCode, Layers, Eye, ChevronDown, ChevronUp, Clock
+  FileCode, Layers, Eye, ChevronDown, ChevronUp, Clock, Wrench
 } from 'lucide-react';
 import type { ChatAttachment, MemoryEntry, UserProfile } from '@/data/schemas';
 import { MCP_PLUGINS_DIRECTORY, loadInstalledPluginIds, type MCPPlugin } from '@/data/mcpPlugins';
 import { SAAS_CONNECTORS_DIRECTORY, loadConnectedSaasIds, type SaaSConnector } from '@/data/saasConnectors';
+import {
+  loadRegistry,
+  disconnectSkill,
+  subscribeToSkills,
+  getConnectedSkills,
+  type SkillInstallState
+} from '@/lib/skillRegistry';
+import { AGENT_SKILLS } from '@/data/skills';
 
 interface AttachmentPlusMenuProps {
   onSelectPhoto: () => void;
@@ -14,6 +22,7 @@ interface AttachmentPlusMenuProps {
   onSelectFile: () => void;
   onOpenContextModal: () => void;
   onOpenConnectorModal: () => void;
+  onOpenSkillsModal?: () => void;
   isLight: boolean;
   disabled?: boolean;
 }
@@ -24,10 +33,20 @@ export const AttachmentPlusMenu: React.FC<AttachmentPlusMenuProps> = ({
   onSelectFile,
   onOpenContextModal,
   onOpenConnectorModal,
+  onOpenSkillsModal,
   isLight,
   disabled = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [registryState, setRegistryState] = useState<SkillInstallState>(loadRegistry);
+
+  useEffect(() => {
+    return subscribeToSkills((nextState) => {
+      setRegistryState(nextState);
+    });
+  }, []);
+
+  const connectedSkillsCount = registryState.installed.length;
 
   return (
     <div className="relative shrink-0">
@@ -200,6 +219,40 @@ export const AttachmentPlusMenu: React.FC<AttachmentPlusMenuProps> = ({
                   </p>
                 </div>
               </button>
+
+              {/* Option 6: Connected Skills Registry */}
+              {onOpenSkillsModal && (
+                <button
+                  id="btn-attach-skill"
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    onOpenSkillsModal();
+                  }}
+                  className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs transition ${
+                    isLight
+                      ? 'hover:bg-purple-50 text-slate-700 hover:text-slate-900'
+                      : 'hover:bg-purple-500/10 text-white/85 hover:text-white'
+                  }`}
+                >
+                  <div className="grid h-7 w-7 place-items-center rounded-lg bg-purple-500/15 text-purple-400">
+                    <Wrench className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-xs leading-none">Connected Skills</p>
+                      {connectedSkillsCount > 0 && (
+                        <span className="rounded-full bg-emerald-500/20 px-1.5 py-0.2 text-[9px] font-mono font-bold text-emerald-400 border border-emerald-500/30">
+                          {connectedSkillsCount} active
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-slate-400 dark:text-white/45 truncate mt-0.5">
+                      Connect TDD, Security, Architecture &amp; Tools
+                    </p>
+                  </div>
+                </button>
+              )}
             </div>
           </div>
         </>
@@ -257,6 +310,10 @@ export const StagedAttachmentsBar: React.FC<StagedAttachmentsBarProps> = ({
                 ? isLight
                   ? 'border-emerald-200 bg-white text-emerald-800 font-medium'
                   : 'border-emerald-500/30 bg-emerald-950/20 text-emerald-300 font-medium'
+                : att.type === 'skill'
+                ? isLight
+                  ? 'border-purple-300 bg-white text-purple-900 font-semibold'
+                  : 'border-purple-500/40 bg-purple-950/30 text-purple-200 font-semibold'
                 : isLight
                 ? 'border-slate-200 bg-white text-slate-800'
                 : 'border-white/12 bg-white/[0.06] text-white'
@@ -278,6 +335,7 @@ export const StagedAttachmentsBar: React.FC<StagedAttachmentsBarProps> = ({
             {att.type === 'file' && <FileText className="h-3.5 w-3.5 text-amber-500" />}
             {att.type === 'connector' && <Zap className="h-3.5 w-3.5 text-pink-500" />}
             {att.type === 'context' && <Sparkles className="h-3.5 w-3.5 text-emerald-500" />}
+            {att.type === 'skill' && <Wrench className="h-3.5 w-3.5 text-purple-400" />}
 
             <span className="max-w-[130px] truncate text-[11px] font-medium" title={att.name}>
               {att.name}
@@ -310,6 +368,134 @@ export const StagedAttachmentsBar: React.FC<StagedAttachmentsBarProps> = ({
           Clear All
         </button>
       )}
+    </div>
+  );
+};
+
+/* --- Connected Skills Pill Bar --- */
+
+interface ConnectedSkillsPillBarProps {
+  onOpenSkillsModal: () => void;
+  isLight: boolean;
+}
+
+export const ConnectedSkillsPillBar: React.FC<ConnectedSkillsPillBarProps> = ({
+  onOpenSkillsModal,
+  isLight,
+}) => {
+  const [registryState, setRegistryState] = useState<SkillInstallState>(loadRegistry);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    return subscribeToSkills((nextState) => {
+      setRegistryState(nextState);
+    });
+  }, []);
+
+  const connectedSkills = useMemo(() => {
+    return AGENT_SKILLS.filter((s) => registryState.installed.includes(s.id));
+  }, [registryState.installed]);
+
+  if (connectedSkills.length === 0) {
+    return (
+      <div className="mb-2 flex items-center justify-between px-1 text-[11px]">
+        <button
+          type="button"
+          onClick={onOpenSkillsModal}
+          className={`flex items-center gap-1.5 rounded-lg px-2 py-0.5 transition cursor-pointer ${
+            isLight
+              ? 'text-slate-500 hover:text-purple-700 hover:bg-purple-50'
+              : 'text-white/45 hover:text-purple-300 hover:bg-purple-500/10'
+          }`}
+          title="Connect skills for coding, chat, and browser agents"
+        >
+          <Wrench className="h-3 w-3 text-purple-400" />
+          <span>No skills connected · <strong className="font-semibold underline">Connect Skills (+)</strong></span>
+        </button>
+      </div>
+    );
+  }
+
+  const displayedSkills = isExpanded ? connectedSkills : connectedSkills.slice(0, 4);
+  const remainingCount = connectedSkills.length - 4;
+
+  return (
+    <div
+      id="connected-skills-pill-bar"
+      className={`mb-2 flex flex-wrap items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs transition ${
+        isLight
+          ? 'border-purple-200/80 bg-purple-50/50 text-slate-800'
+          : 'border-purple-500/20 bg-purple-500/[0.04] text-white'
+      }`}
+    >
+      <div className="flex items-center gap-1 text-[10px] font-mono font-semibold uppercase tracking-wider text-purple-500 dark:text-purple-400 shrink-0">
+        <Wrench className="h-3 w-3" />
+        <span>Connected ({connectedSkills.length}):</span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1 flex-1 min-w-0">
+        {displayedSkills.map((skill) => (
+          <div
+            key={skill.id}
+            className={`group flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10.5px] font-medium border transition ${
+              isLight
+                ? 'border-purple-200 bg-white text-purple-900 shadow-2xs'
+                : 'border-purple-500/30 bg-purple-950/40 text-purple-200'
+            }`}
+          >
+            <span className="truncate max-w-[120px]" title={skill.name}>{skill.name}</span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                disconnectSkill(skill.id);
+              }}
+              title={`Disconnect ${skill.name}`}
+              className="rounded p-0.5 hover:bg-rose-500/20 hover:text-rose-400 transition cursor-pointer"
+            >
+              <X className="h-2.5 w-2.5" />
+            </button>
+          </div>
+        ))}
+
+        {!isExpanded && remainingCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setIsExpanded(true)}
+            className={`rounded-md px-1.5 py-0.5 text-[10px] font-mono font-semibold transition cursor-pointer ${
+              isLight
+                ? 'bg-purple-100 text-purple-800 hover:bg-purple-200'
+                : 'bg-purple-500/20 text-purple-300 hover:bg-purple-500/30'
+            }`}
+          >
+            +{remainingCount} more
+          </button>
+        )}
+
+        {isExpanded && connectedSkills.length > 4 && (
+          <button
+            type="button"
+            onClick={() => setIsExpanded(false)}
+            className="text-[10px] text-purple-400 hover:underline px-1 cursor-pointer"
+          >
+            Show less
+          </button>
+        )}
+      </div>
+
+      <button
+        type="button"
+        onClick={onOpenSkillsModal}
+        className={`ml-auto flex items-center gap-1 rounded-md px-2 py-0.5 text-[10.5px] font-semibold transition shrink-0 cursor-pointer ${
+          isLight
+            ? 'bg-purple-600 text-white hover:bg-purple-700 shadow-2xs'
+            : 'bg-purple-500/30 text-purple-200 hover:bg-purple-500/40 border border-purple-400/30'
+        }`}
+        title="Open Skills Connection Registry"
+      >
+        <Plus className="h-3 w-3" />
+        <span>Manage</span>
+      </button>
     </div>
   );
 };

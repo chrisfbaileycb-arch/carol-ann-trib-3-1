@@ -3,7 +3,7 @@ import { GoogleGenAI } from '@google/genai';
 import {
   PanelLeftClose, PanelLeft, PanelRightClose, PanelRight,
   Sparkles, X, Plus, MessageSquare, Cpu, Trophy, Shield, Users, Palette,
-  ChevronDown
+  ChevronDown, Wrench
 } from 'lucide-react';
 import type {
   ConversationMessage, ErrandTask, HydrateFormAction,
@@ -17,6 +17,8 @@ import { ConnectorsHub } from '@/components/workspace/ConnectorsHub';
 import { SpaceCustomizer } from '@/components/workspace/SpaceCustomizer';
 import { MemoryLedgerTab } from '@/components/workspace/MemoryLedgerTab';
 import AgentStudio from '@/components/agents/AgentStudio';
+import { SkillsEngine } from '@/components/skills/SkillsEngine';
+import { getSkillsDirectivesPrompt, loadRegistry } from '@/lib/skillRegistry';
 import {
   loadMessages, saveMessages, loadErrands, saveErrands,
   loadMemories, saveMemories, loadProfile, saveProfile,
@@ -40,7 +42,7 @@ import { performanceTracker } from '@/lib/performanceTracker';
 export interface WorkspaceTab {
   id: string;
   title: string;
-  type: 'chat' | 'connectors' | 'customizer' | 'ledger' | 'agent' | 'theme';
+  type: 'chat' | 'connectors' | 'customizer' | 'ledger' | 'agent' | 'theme' | 'skills';
   icon: string;
   closable: boolean;
   agentId?: string;
@@ -139,7 +141,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
 
   // Tab Open helper
   const handleOpenTab = (
-    tabType: 'chat' | 'agent' | 'connectors' | 'ledger' | 'customizer' | 'theme',
+    tabType: 'chat' | 'agent' | 'connectors' | 'ledger' | 'customizer' | 'theme' | 'skills',
     meta?: { agentId?: string }
   ) => {
     const existingTab = tabs.find((t) => {
@@ -155,6 +157,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
     const tabConfig: Record<string, { title: string; icon: string }> = {
       chat: { title: 'Carol Dialogue (Primary)', icon: '💬' },
       connectors: { title: 'MCP Connectors & Bridges', icon: '🔌' },
+      skills: { title: 'Skills Registry & Engine', icon: '🔧' },
       customizer: { title: 'Space Customizer (MySpace)', icon: '🎨' },
       ledger: { title: 'Sovereign Memory Ledger', icon: '🛡️' },
       agent: {
@@ -401,6 +404,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
     ].join('\n');
 
     const notesContext = scratchpad.trim() ? scratchpad.trim() : 'Workspace notes scratchpad is currently empty.';
+    const skillsPrompt = getSkillsDirectivesPrompt();
 
     const systemInstruction = `${basePersona}
 
@@ -413,11 +417,12 @@ ${toolsContext}
 
 ## Workspace Notes & Scratchpad:
 ${notesContext}
+${skillsPrompt}
 
 Operating Directives:
 - You are strictly operating as ${agent.name} (${agent.role}).
 - Embody ${agent.name}'s dedicated tone, domain expertise, and executive warmth.
-- Reference and interact with the active errands, tools, and scratchpad notes above when responding.
+- Reference and interact with the active errands, tools, scratchpad notes, and active connected skills above when responding.
 - Provide intelligent, direct, and actionable responses without conversational filler.`;
 
     const assistantMsgId = uid('msg_a');
@@ -506,6 +511,7 @@ Operating Directives:
               .map((m) => `- [${m.category}] ${m.content}`)
               .join('\n'),
             installedPlugins: currentInstalledIds,
+            connectedSkills: loadRegistry().installed,
             workspaceContext: {
               errands: errandsContext,
               tools: toolsContext,
@@ -716,6 +722,20 @@ Operating Directives:
                     </button>
                     <button
                       onClick={() => {
+                        handleOpenTab('skills');
+                        setShowAddMenu(false);
+                      }}
+                      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition ${
+                        isLight
+                          ? 'text-slate-700 hover:bg-purple-50 hover:text-purple-900'
+                          : 'text-white/70 hover:bg-purple-500/10 hover:text-white'
+                      }`}
+                    >
+                      <Wrench className="h-3.5 w-3.5 text-purple-400" />
+                      <span>Connected Skills Registry</span>
+                    </button>
+                    <button
+                      onClick={() => {
                         handleOpenTab('customizer');
                         setShowAddMenu(false);
                       }}
@@ -795,6 +815,12 @@ Operating Directives:
             )}
 
             {activeTab.type === 'connectors' && <ConnectorsHub />}
+
+            {activeTab.type === 'skills' && (
+              <div className="h-full overflow-y-auto">
+                <SkillsEngine />
+              </div>
+            )}
 
             {activeTab.type === 'customizer' && (
               <SpaceCustomizer

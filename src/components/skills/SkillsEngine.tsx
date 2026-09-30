@@ -36,17 +36,19 @@ export const SkillsEngine: React.FC<{ onRunAgent?: () => void }> = ({ onRunAgent
     <div className="m-scroll h-full overflow-y-auto p-4 sm:p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="font-display text-2xl font-semibold text-white">Family &amp; Life Skills Engine</h2>
+          <h2 className="font-display text-2xl font-semibold text-white">Skills Engine &amp; Engineering Registry</h2>
           <p className="text-xs text-white/40">
-            {installedCount} of {AGENT_SKILLS.length} skills active · each exposes an MCP endpoint the cloud runner can call.
+            {installedCount} of {AGENT_SKILLS.length} skills active · Injected into Chat, Coding &amp; Browser Agents.
           </p>
         </div>
-        <button
-          onClick={() => exportStackBundle(registry.installed, 'carol-ann-active-stack.mcp.json')}
-          className="flex items-center gap-1.5 rounded-lg border border-white/12 px-3 py-2 text-xs font-medium text-white/70 transition hover:border-white/30 hover:text-white"
-        >
-          <Download className="h-3.5 w-3.5" /> Export active stack
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => exportStackBundle(registry.installed, 'carol-ann-active-stack.mcp.json')}
+            className="flex items-center gap-1.5 rounded-lg border border-white/12 px-3 py-2 text-xs font-medium text-white/70 transition hover:border-white/30 hover:text-white"
+          >
+            <Download className="h-3.5 w-3.5" /> Export stack
+          </button>
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">

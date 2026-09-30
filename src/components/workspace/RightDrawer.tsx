@@ -5,13 +5,23 @@ import {
   Sparkles, CheckSquare, Calendar, AlertTriangle,
   Cpu, ArrowRight, Eye, ShieldCheck, Lock, ShoppingCart,
   Play, RefreshCw, PanelRightClose, Globe, Layers, CheckCircle,
-  Smartphone, Activity, Gauge, Zap
+  Smartphone, Activity, Gauge, Zap, Wrench, Search, Plus
 } from 'lucide-react';
 import type { ErrandTask, HydrateFormAction, UserProfile } from '@/data/schemas';
 import { isLightTheme } from '@/data/intake';
 import { sovereignBridge, type SovereignBridgeEvent, type ExecutionHost } from '@/lib/sovereignBridge';
 import { usePerformanceTracker } from '@/hooks/usePerformanceTracker';
 import { performanceTracker } from '@/lib/performanceTracker';
+import { AGENT_SKILLS, SKILL_CATEGORIES } from '@/data/skills';
+import {
+  loadRegistry,
+  toggleSkill,
+  connectAllEngineeringSkills,
+  disconnectAllSkills,
+  subscribeToSkills,
+  type SkillInstallState
+} from '@/lib/skillRegistry';
+import Icon from '@/components/common/Icon';
 
 interface RightDrawerProps {
   errands: ErrandTask[];
@@ -48,8 +58,18 @@ export const RightDrawer: React.FC<RightDrawerProps> = ({
 }) => {
   const isLight = profile ? isLightTheme(profile) : false;
   // Default to Live DOM per canonical design
-  const [activeTab, setActiveTab] = useState<'dom' | 'errands' | 'functions' | 'scratchpad' | 'confirmations' | 'performance'>('dom');
+  const [activeTab, setActiveTab] = useState<'dom' | 'errands' | 'functions' | 'scratchpad' | 'confirmations' | 'performance' | 'skills'>('dom');
   const perfSnapshot = usePerformanceTracker();
+  const [skillsRegistry, setSkillsRegistry] = useState<SkillInstallState>(loadRegistry);
+  const [skillSearchQuery, setSkillSearchQuery] = useState('');
+  const [skillCategoryFilter, setSkillCategoryFilter] = useState<string>('all');
+  const [expandedSkillId, setExpandedSkillId] = useState<string | null>(null);
+
+  useEffect(() => {
+    return subscribeToSkills((nextState) => {
+      setSkillsRegistry(nextState);
+    });
+  }, []);
   const [engine, setEngine] = useState<BrowserEngine>('gemini-flash');
   const [copied, setCopied] = useState(false);
 
@@ -364,6 +384,26 @@ export const RightDrawer: React.FC<RightDrawerProps> = ({
           <span>Metrics</span>
           {perfSnapshot.activeBackgroundTasksCount > 0 && (
             <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('skills')}
+          className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition whitespace-nowrap cursor-pointer ${
+            activeTab === 'skills'
+              ? isLight
+                ? 'bg-purple-100 text-purple-900 font-semibold border border-purple-300 shadow-xs'
+                : 'bg-purple-500/20 text-purple-300 font-semibold border border-purple-400/40 shadow-sm'
+              : isLight
+              ? 'text-slate-600 hover:text-slate-900'
+              : 'text-white/65 hover:text-white'
+          }`}
+          title="Skills Registry: Connect and manage specialized engineering and domain skills"
+        >
+          <Wrench className="h-3.5 w-3.5 text-purple-400" />
+          <span>Skills ({skillsRegistry.installed.length})</span>
+          {skillsRegistry.installed.length > 0 && (
+            <span className="flex h-1.5 w-1.5 rounded-full bg-purple-400 animate-pulse" />
           )}
         </button>
 
@@ -1132,6 +1172,306 @@ export const RightDrawer: React.FC<RightDrawerProps> = ({
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* ===================== TAB: SKILLS REGISTRY & CONNECTION ===================== */}
+        {activeTab === 'skills' && (
+          <div className="space-y-4">
+            {/* Header info */}
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <h3 className={`text-xs font-bold uppercase tracking-wider ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                  Skills Registry &amp; Engine
+                </h3>
+                <p className={`text-[11px] mt-0.5 ${isLight ? 'text-slate-500' : 'text-white/50'}`}>
+                  {skillsRegistry.installed.length} of {AGENT_SKILLS.length} skills connected
+                </p>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => connectAllEngineeringSkills()}
+                  className={`flex items-center gap-1 rounded-md px-2 py-1 text-[10.5px] font-semibold transition cursor-pointer ${
+                    isLight
+                      ? 'bg-purple-100 text-purple-900 hover:bg-purple-200'
+                      : 'bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 border border-purple-500/30'
+                  }`}
+                  title="Connect all 20 specialized engineering skills"
+                >
+                  <Zap className="h-3 w-3 text-amber-400" />
+                  <span>Connect Eng</span>
+                </button>
+
+                <button
+                  onClick={() => disconnectAllSkills()}
+                  className={`rounded-md px-2 py-1 text-[10.5px] transition cursor-pointer ${
+                    isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-white/60 hover:text-white hover:bg-white/5'
+                  }`}
+                  title="Disconnect all skills"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+
+            {/* Search Input */}
+            <div
+              className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs ${
+                isLight
+                  ? 'border-slate-200 bg-slate-50 focus-within:border-purple-400 focus-within:bg-white'
+                  : 'border-white/10 bg-white/[0.04] focus-within:border-purple-400 focus-within:bg-white/[0.07]'
+              }`}
+            >
+              <Search className="h-3.5 w-3.5 opacity-40 shrink-0" />
+              <input
+                type="text"
+                value={skillSearchQuery}
+                onChange={(e) => setSkillSearchQuery(e.target.value)}
+                placeholder="Filter skills (TDD, Security, Architecture, Docker)..."
+                className="w-full bg-transparent outline-none placeholder:text-slate-400 dark:placeholder:text-white/30 text-xs"
+              />
+              {skillSearchQuery && (
+                <button onClick={() => setSkillSearchQuery('')} className="opacity-40 hover:opacity-100">
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+
+            {/* Category Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 m-scroll text-[10.5px]">
+              <button
+                onClick={() => setSkillCategoryFilter('all')}
+                className={`shrink-0 rounded-lg px-2 py-0.5 font-medium transition cursor-pointer ${
+                  skillCategoryFilter === 'all'
+                    ? isLight
+                      ? 'bg-purple-600 text-white font-semibold shadow-xs'
+                      : 'bg-purple-600 text-white font-semibold'
+                    : isLight
+                    ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    : 'bg-white/5 text-white/60 hover:bg-white/10'
+                }`}
+              >
+                All ({AGENT_SKILLS.length})
+              </button>
+
+              <button
+                onClick={() => setSkillCategoryFilter('engineering')}
+                className={`shrink-0 rounded-lg px-2 py-0.5 font-medium transition cursor-pointer flex items-center gap-1 ${
+                  skillCategoryFilter === 'engineering'
+                    ? isLight
+                      ? 'bg-purple-600 text-white font-semibold shadow-xs'
+                      : 'bg-purple-600 text-white font-semibold'
+                    : isLight
+                    ? 'bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200'
+                    : 'bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 border border-purple-500/30'
+                }`}
+              >
+                <Sparkles className="h-2.5 w-2.5" />
+                <span>All Engineering (20)</span>
+              </button>
+
+              {SKILL_CATEGORIES.map((cat) => {
+                const isSelected = skillCategoryFilter === cat.id;
+                const count = AGENT_SKILLS.filter((s) => s.category === cat.id).length;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSkillCategoryFilter(cat.id)}
+                    className={`shrink-0 rounded-lg px-2 py-0.5 font-medium transition cursor-pointer ${
+                      isSelected
+                        ? isLight
+                          ? 'bg-purple-600 text-white font-semibold shadow-xs'
+                          : 'bg-purple-600 text-white font-semibold'
+                        : isLight
+                        ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        : 'bg-white/5 text-white/60 hover:bg-white/10'
+                    }`}
+                  >
+                    <span>{cat.label}</span>
+                    <span className="ml-1 opacity-60 font-mono">({count})</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Skills List */}
+            <div className="space-y-2 max-h-[calc(100vh-340px)] overflow-y-auto m-scroll pr-0.5">
+              {AGENT_SKILLS.filter((skill) => {
+                const matchesCategory =
+                  skillCategoryFilter === 'all'
+                    ? true
+                    : skillCategoryFilter === 'engineering'
+                    ? skill.category.startsWith('engineering-')
+                    : skill.category === skillCategoryFilter;
+
+                const q = skillSearchQuery.toLowerCase().trim();
+                const matchesQuery =
+                  !q ||
+                  skill.name.toLowerCase().includes(q) ||
+                  skill.summary.toLowerCase().includes(q) ||
+                  skill.capabilities.some((c) => c.toLowerCase().includes(q)) ||
+                  (skill.directives && skill.directives.some((d) => d.toLowerCase().includes(q)));
+
+                return matchesCategory && matchesQuery;
+              }).map((skill) => {
+                const isConnected = skillsRegistry.installed.includes(skill.id);
+                const isExpanded = expandedSkillId === skill.id;
+                const catObj = SKILL_CATEGORIES.find((c) => c.id === skill.category);
+                const isEng = skill.category.startsWith('engineering-');
+
+                return (
+                  <div
+                    key={skill.id}
+                    className={`rounded-xl border p-3 transition-all ${
+                      isConnected
+                        ? isLight
+                          ? 'border-purple-300 bg-purple-50/50 shadow-xs'
+                          : 'border-purple-500/30 bg-purple-500/[0.05] shadow-xs'
+                        : isLight
+                        ? 'border-slate-200 bg-white hover:border-slate-300'
+                        : 'border-white/8 bg-white/[0.02] hover:border-white/12'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-2 min-w-0">
+                        <div
+                          className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg border ${
+                            isConnected
+                              ? isLight
+                                ? 'border-purple-300 bg-purple-100 text-purple-700'
+                                : 'border-purple-400/40 bg-purple-500/20 text-purple-300'
+                              : isLight
+                              ? 'border-slate-200 bg-slate-50 text-slate-500'
+                              : 'border-white/10 bg-white/5 text-white/50'
+                          }`}
+                        >
+                          <Icon name={skill.icon} className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`text-xs font-bold leading-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                              {skill.name}
+                            </span>
+                            {isEng && (
+                              <span className="rounded bg-sky-500/10 px-1 py-0.2 text-[8.5px] font-mono font-bold text-sky-400 border border-sky-500/20">
+                                ENG
+                              </span>
+                            )}
+                          </div>
+                          <span
+                            className="inline-block text-[9.5px] font-medium mt-0.5"
+                            style={{ color: catObj?.color || '#8B5FBF' }}
+                          >
+                            {catObj?.label || skill.category}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => toggleSkill(skill.id)}
+                        className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold transition shrink-0 cursor-pointer ${
+                          isConnected
+                            ? 'bg-emerald-600 text-white shadow-2xs hover:bg-emerald-500'
+                            : isLight
+                            ? 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
+                            : 'border border-white/15 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white'
+                        }`}
+                        title={isConnected ? 'Disconnect skill' : 'Connect skill'}
+                      >
+                        {isConnected ? (
+                          <>
+                            <Check className="h-3 w-3" />
+                            <span>Connected</span>
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="h-3 w-3" />
+                            <span>Connect</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <p className={`mt-1.5 text-[11px] leading-relaxed line-clamp-2 ${isLight ? 'text-slate-600' : 'text-white/60'}`}>
+                      {skill.summary}
+                    </p>
+
+                    {/* Agent Tags */}
+                    <div className="mt-2 flex items-center gap-1 flex-wrap text-[9.5px]">
+                      <span className={isLight ? 'text-slate-400 font-mono' : 'text-white/40 font-mono'}>Agents:</span>
+                      {(!skill.applicableAgents || skill.applicableAgents.includes('coding')) && (
+                        <span className="rounded bg-amber-500/10 px-1.5 py-0.2 font-semibold text-amber-500 border border-amber-500/20">
+                          Coding
+                        </span>
+                      )}
+                      {(!skill.applicableAgents || skill.applicableAgents.includes('chat')) && (
+                        <span className="rounded bg-purple-500/10 px-1.5 py-0.2 font-semibold text-purple-400 border border-purple-500/20">
+                          Chat
+                        </span>
+                      )}
+                      {(!skill.applicableAgents || skill.applicableAgents.includes('browser')) && (
+                        <span className="rounded bg-emerald-500/10 px-1.5 py-0.2 font-semibold text-emerald-400 border border-emerald-500/20">
+                          Browser
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Expanded Directives & Capabilities */}
+                    {isExpanded && (
+                      <div className={`mt-2.5 pt-2.5 border-t space-y-2 text-[11px] ${isLight ? 'border-slate-200' : 'border-white/8'}`}>
+                        {skill.directives && skill.directives.length > 0 && (
+                          <div>
+                            <span className="font-semibold text-purple-400 uppercase tracking-wider font-mono text-[10px]">
+                              Operational Directives:
+                            </span>
+                            <ul className="mt-0.5 space-y-0.5 list-disc list-inside opacity-80 text-[10.5px]">
+                              {skill.directives.map((dir, i) => (
+                                <li key={i}>{dir}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        <div>
+                          <span className="font-semibold text-sky-400 uppercase tracking-wider font-mono text-[10px]">
+                            Capabilities:
+                          </span>
+                          <ul className="mt-0.5 space-y-0.5 list-disc list-inside opacity-80 text-[10.5px]">
+                            {skill.capabilities.map((cap, i) => (
+                              <li key={i}>{cap}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="mt-2 pt-1.5 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-[10px]">
+                      <button
+                        onClick={() => setExpandedSkillId(isExpanded ? null : skill.id)}
+                        className={`font-medium transition cursor-pointer ${
+                          isLight ? 'text-purple-700 hover:text-purple-900' : 'text-purple-300 hover:text-white'
+                        }`}
+                      >
+                        {isExpanded ? 'Hide details' : 'Directives & Capabilities'}
+                      </button>
+                      <span className="text-slate-400 font-mono text-[9px]">{skill.mcpEndpoint}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Bottom Info Card */}
+            <div className={`rounded-xl border p-3 text-[11px] leading-relaxed ${
+              isLight ? 'border-purple-200 bg-purple-50/60 text-purple-900' : 'border-purple-500/20 bg-purple-500/[0.04] text-purple-200'
+            }`}>
+              <div className="flex items-center gap-1.5 font-semibold mb-1">
+                <Sparkles className="h-3.5 w-3.5 text-purple-400" />
+                <span>Agent Integration Live</span>
+              </div>
+              Connected skills are dynamically injected into active agent reasoning and execution loops across Web, Cloud, and DOM runners.
             </div>
           </div>
         )}
