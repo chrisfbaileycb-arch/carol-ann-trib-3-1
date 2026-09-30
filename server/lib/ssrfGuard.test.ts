@@ -7,7 +7,7 @@ vi.mock('node:dns/promises', () => ({
 }));
 
 import dns from 'node:dns/promises';
-import { assertUrlSafe, createHostAllowCheck, isBlockedIp, SsrfError } from './ssrfGuard.js';
+import { assertUrlSafe, createHostAllowCheck, isBlockedIp, SsrfError } from './ssrfGuard.ts';
 
 const mockedLookup = dns.lookup as unknown as ReturnType<typeof vi.fn>;
 

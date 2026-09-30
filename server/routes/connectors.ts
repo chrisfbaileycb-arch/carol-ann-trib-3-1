@@ -1,5 +1,5 @@
 import type { Express } from 'express';
-import { requireFirebaseAuth } from '../middleware/auth.js';
+import { requireFirebaseAuth } from '../middleware/auth.ts';
 
 export function registerConnectorRoutes(app: Express) {
 app.post('/api/connectors/ping', requireFirebaseAuth, (req, res) => {

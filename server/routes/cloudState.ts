@@ -1,7 +1,7 @@
 import type { Express } from 'express';
-import { getAdminBackend } from '../lib/firebaseAdmin.js';
-import { requireFirebaseAuth, verifyAppCheck, type AuthenticatedRequest } from '../middleware/auth.js';
-import firebaseConfig from '../../firebase-applet-config.json';
+import { getAdminBackend } from '../lib/firebaseAdmin.ts';
+import { requireFirebaseAuth, verifyAppCheck, type AuthenticatedRequest } from '../middleware/auth.ts';
+import firebaseConfig from '../lib/config.ts';
 
 // In-memory workspace cache fallback used when Firestore is unreachable
 const localWorkspaceCache = new Map<string, Record<string, unknown>>();

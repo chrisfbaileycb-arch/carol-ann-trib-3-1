@@ -1,6 +1,6 @@
 import type { Express } from 'express';
-import { optionalFirebaseAuth, requireFirebaseAuth, verifyAppCheck } from '../middleware/auth.js';
-import { runAnchorChat } from '../lib/inference.js';
+import { optionalFirebaseAuth, requireFirebaseAuth, verifyAppCheck } from '../middleware/auth.ts';
+import { runAnchorChat } from '../lib/inference.ts';
 
 export function registerInferenceRoutes(app: Express) {
 // Conversational Inference Route (supports authenticated & workspace sessions)

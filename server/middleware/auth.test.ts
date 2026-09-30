@@ -13,7 +13,7 @@ vi.mock('firebase-admin/app-check', () => ({
   getAppCheck: () => ({ verifyToken: verifyAppCheckToken }),
 }));
 
-import { requireFirebaseAuth, verifyAppCheck } from './auth.js';
+import { requireFirebaseAuth, verifyAppCheck } from './auth.ts';
 
 function mockRes() {
   const res = {

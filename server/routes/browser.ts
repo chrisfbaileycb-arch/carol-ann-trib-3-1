@@ -1,8 +1,8 @@
 import type { Express } from 'express';
 import net from 'node:net';
 import { chromium } from 'playwright';
-import { requireFirebaseAuth, verifyAppCheck } from '../middleware/auth.js';
-import { assertUrlSafe, createHostAllowCheck, SsrfError } from '../lib/ssrfGuard.js';
+import { requireFirebaseAuth, verifyAppCheck } from '../middleware/auth.ts';
+import { assertUrlSafe, createHostAllowCheck, SsrfError } from '../lib/ssrfGuard.ts';
 
 /**
  * Pin Chromium's DNS resolution for the guarded top-level hostname to the IP

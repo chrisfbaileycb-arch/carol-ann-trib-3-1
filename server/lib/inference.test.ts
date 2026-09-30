@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { evaluateLocalFallback, runAnchorChat } from './inference.js';
+import { evaluateLocalFallback, runAnchorChat } from './inference.ts';
 
 beforeEach(() => {
   delete process.env.GEMINI_API_KEY;

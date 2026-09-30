@@ -9,11 +9,11 @@ vi.mock('playwright', () => ({ chromium: { launch: launchMock } }));
 vi.mock('node:dns/promises', () => ({ default: { lookup: lookupMock } }));
 
 const verifyIdToken = vi.fn();
-vi.mock('../lib/firebaseAdmin.js', () => ({
+vi.mock('../lib/firebaseAdmin.ts', () => ({
   getAdminBackend: () => ({ auth: { verifyIdToken }, app: {} }),
 }));
 
-import { registerBrowserRoutes } from './browser.js';
+import { registerBrowserRoutes } from './browser.ts';
 
 function buildApp() {
   const app = express();

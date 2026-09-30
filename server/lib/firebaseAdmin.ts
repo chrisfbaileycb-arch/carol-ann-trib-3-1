@@ -1,7 +1,7 @@
 import { initializeApp, getApps, type App } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { getAuth, type Auth } from 'firebase-admin/auth';
-import firebaseConfig from '../../firebase-applet-config.json';
+import firebaseConfig from './config.ts';
 
 export interface AdminBackend {
   app: App;

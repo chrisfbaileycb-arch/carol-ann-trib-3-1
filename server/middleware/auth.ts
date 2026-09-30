@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { DecodedIdToken } from 'firebase-admin/auth';
 import { getAppCheck } from 'firebase-admin/app-check';
-import { getAdminBackend } from '../lib/firebaseAdmin.js';
+import { getAdminBackend } from '../lib/firebaseAdmin.ts';
 
 export interface AuthenticatedRequest extends Request {
   firebaseUser?: DecodedIdToken | null;

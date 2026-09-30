@@ -4,11 +4,11 @@ import request from 'supertest';
 
 const verifyIdToken = vi.fn();
 
-vi.mock('../lib/firebaseAdmin.js', () => ({
+vi.mock('../lib/firebaseAdmin.ts', () => ({
   getAdminBackend: () => ({ auth: { verifyIdToken }, app: {} }),
 }));
 
-import { registerConnectorRoutes } from './connectors.js';
+import { registerConnectorRoutes } from './connectors.ts';
 
 function buildApp() {
   const app = express();

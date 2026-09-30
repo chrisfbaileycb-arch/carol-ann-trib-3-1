@@ -1,7 +1,7 @@
 import type { Server as HttpServer, IncomingMessage } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
-import { getAdminBackend } from '../lib/firebaseAdmin.js';
-import { getGenAI, ANCHOR_SYSTEM_INSTRUCTION } from '../lib/inference.js';
+import { getAdminBackend } from '../lib/firebaseAdmin.ts';
+import { getGenAI, ANCHOR_SYSTEM_INSTRUCTION } from '../lib/inference.ts';
 import { GoogleGenAI, Modality, type LiveServerMessage } from '@google/genai';
 
 export function attachLiveVoice(server: HttpServer, customBackend?: ReturnType<typeof getAdminBackend>) {

@@ -1,7 +1,7 @@
 import type { Express } from 'express';
 import { Modality } from '@google/genai';
-import { requireFirebaseAuth, verifyAppCheck } from '../middleware/auth.js';
-import { getGenAI } from '../lib/inference.js';
+import { requireFirebaseAuth, verifyAppCheck } from '../middleware/auth.ts';
+import { getGenAI } from '../lib/inference.ts';
 
 export function registerTtsRoutes(app: Express) {
 // Text-to-Speech Route using Gemini TTS (requires Firebase Authentication)
