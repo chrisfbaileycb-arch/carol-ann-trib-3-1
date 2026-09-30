@@ -35,6 +35,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCarol } from '@/contexts/CarolContext';
 import { executeWorkflowOnBackend } from '@/lib/workflowExecution';
 import { apiFetch } from '@/lib/apiClient';
+import { performanceTracker } from '@/lib/performanceTracker';
 
 export interface WorkspaceTab {
   id: string;
@@ -455,6 +456,9 @@ Operating Directives:
         },
       });
 
+      const perfCallId = `call_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      performanceTracker.startAgentCall(perfCallId, agentId, agentExec.name, 'Agent Response Generation');
+
       try {
         const responseStream = await ai.models.generateContentStream({
           model: 'gemini-2.5-flash',
@@ -464,13 +468,19 @@ Operating Directives:
           },
         });
 
+        let isFirst = true;
         for await (const chunk of responseStream) {
+          if (isFirst) {
+            performanceTracker.recordTtft(perfCallId);
+            isFirst = false;
+          }
           const chunkText = chunk.text || '';
           accumulated += chunkText;
           setMessages((prev) =>
             prev.map((m) => (m.id === assistantMsgId ? { ...m, content: accumulated } : m))
           );
         }
+        performanceTracker.endAgentCall(perfCallId, { success: true });
       } catch (streamErr) {
         console.warn('Direct stream encounter, falling back to server inference route:', streamErr);
         const currentInstalledIds = loadInstalledPluginIds();
@@ -505,10 +515,13 @@ Operating Directives:
         });
 
         if (!res.ok) {
+          performanceTracker.endAgentCall(perfCallId, { success: false, error: `Inference failed (${res.status})` });
           throw new Error(`Inference request failed with code ${res.status}`);
         }
 
         const data = await res.json();
+        performanceTracker.recordTtft(perfCallId);
+        performanceTracker.endAgentCall(perfCallId, { success: true });
         accumulated = data.reply || '';
         setMessages((prev) =>
           prev.map((m) =>

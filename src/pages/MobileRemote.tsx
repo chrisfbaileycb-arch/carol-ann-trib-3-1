@@ -120,6 +120,10 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
   const [agentSelectorOpen, setAgentSelectorOpen] = useState(false);
   const [executionHost, setExecutionHost] = useState<ExecutionHost>(() => sovereignBridge.executionHost);
 
+  const activeAgent = useMemo(() => {
+    return agents.find((a) => a.id === activeAgentId) || agents[0] || null;
+  }, [agents, activeAgentId]);
+
   // Connect to Sovereign Bridge on Mount & sync execution host changes
   useEffect(() => {
     sovereignBridge.connectRemote(activeAgentId, activeAgent?.name || 'Carol Ann');
@@ -129,7 +133,7 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [activeAgentId, activeAgent?.name]);
 
   const handleSetHost = (host: ExecutionHost) => {
     setExecutionHost(host);
@@ -141,10 +145,6 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
   useEffect(() => {
     setAgentThread(loadThread(activeAgentId).slice(-6));
   }, [activeAgentId]);
-
-  const activeAgent = useMemo(() => {
-    return agents.find((a) => a.id === activeAgentId) || agents[0] || null;
-  }, [agents, activeAgentId]);
 
   // Carried crew for quick switcher carousel
   const carriedCrewAgents = useMemo(() => {

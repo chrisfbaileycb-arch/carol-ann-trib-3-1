@@ -54,6 +54,20 @@ async function verifyFirebaseToken(req: express.Request, _res: express.Response,
 
 app.use(verifyFirebaseToken);
 
+// Real-time Performance & Server-Timing Instrumentation
+app.use((req, res, next) => {
+  const start = performance.now();
+  res.on('finish', () => {
+    const duration = Math.round(performance.now() - start);
+    try {
+      res.setHeader('Server-Timing', `total;dur=${duration}`);
+    } catch {
+      // headers already sent
+    }
+  });
+  next();
+});
+
 // Health Check
 app.get('/api/health', (_req, res) => {
   const backend = getAdminBackend();
@@ -66,6 +80,18 @@ app.get('/api/health', (_req, res) => {
     firebaseAdminConfigured: Boolean(backend),
     firestoreDatabaseId: firebaseConfig.firestoreDatabaseId,
     backend: backend ? 'firebase_admin_firestore' : 'local_resilient_cache',
+  });
+});
+
+// Server Telemetry & Performance Route
+app.get('/api/telemetry/performance', (_req, res) => {
+  const mem = process.memoryUsage();
+  res.json({
+    uptime: Math.round(process.uptime()),
+    heapUsedMb: Math.round(mem.heapUsed / (1024 * 1024)),
+    heapTotalMb: Math.round(mem.heapTotal / (1024 * 1024)),
+    rssMb: Math.round(mem.rss / (1024 * 1024)),
+    timestamp: new Date().toISOString(),
   });
 });
 

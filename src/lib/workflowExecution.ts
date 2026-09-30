@@ -1,5 +1,6 @@
 import { auth } from './firebase';
 import { apiFetch } from './apiClient';
+import { performanceTracker } from './performanceTracker';
 import type { HydrateFormAction, ErrandTask } from '@/data/schemas';
 
 export interface WorkflowExecutionResult {
@@ -38,28 +39,38 @@ export async function executeWorkflowOnBackend(
   userId?: string | null,
 ): Promise<WorkflowExecutionResult> {
   const effectiveUserId = userId || auth.currentUser?.uid || 'default';
+  const taskId = `exec_${action.id}_${Date.now()}`;
+  performanceTracker.startBackgroundTask(taskId, `Workflow: ${action.action_name}`);
 
-  const res = await apiFetch('/api/workflow/execute', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      userId: effectiveUserId,
-      actionId: action.id,
-      category: action.category,
-      actionName: action.action_name,
-      targetApp: action.target_app,
-      formPayload: action.form_payload,
-    }),
-  });
+  try {
+    const res = await apiFetch('/api/workflow/execute', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: effectiveUserId,
+        actionId: action.id,
+        category: action.category,
+        actionName: action.action_name,
+        targetApp: action.target_app,
+        formPayload: action.form_payload,
+      }),
+    });
 
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => ({}));
-    throw new Error(errBody.error || `Workflow execution failed: ${res.statusText}`);
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      performanceTracker.endBackgroundTask(taskId, 'failed');
+      throw new Error(errBody.error || `Workflow execution failed: ${res.statusText}`);
+    }
+
+    const data = await res.json();
+    performanceTracker.endBackgroundTask(taskId, 'completed');
+    return data;
+  } catch (err) {
+    performanceTracker.endBackgroundTask(taskId, 'failed');
+    throw err;
   }
-
-  return res.json();
 }
 
 export async function executeCopilotStepOnBackend(
@@ -99,21 +110,31 @@ export async function triggerBackendScheduleSweep(
   userId?: string | null,
 ): Promise<{ ok: boolean; sweptCount: number; commands: Array<Record<string, unknown>> }> {
   const effectiveUserId = userId || auth.currentUser?.uid || 'default';
+  const taskId = `sweep_${Date.now()}`;
+  performanceTracker.startBackgroundTask(taskId, 'Scheduled Command Cron Sweep');
 
-  const res = await apiFetch('/api/workflow/sweep', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ userId: effectiveUserId }),
-  });
+  try {
+    const res = await apiFetch('/api/workflow/sweep', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId: effectiveUserId }),
+    });
 
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => ({}));
-    throw new Error(errBody.error || `Schedule sweep failed: ${res.statusText}`);
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      performanceTracker.endBackgroundTask(taskId, 'failed');
+      throw new Error(errBody.error || `Schedule sweep failed: ${res.statusText}`);
+    }
+
+    const data = await res.json();
+    performanceTracker.endBackgroundTask(taskId, 'completed');
+    return data;
+  } catch (err) {
+    performanceTracker.endBackgroundTask(taskId, 'failed');
+    throw err;
   }
-
-  return res.json();
 }
 
 export async function fetchWorkflowExecutionHistory(

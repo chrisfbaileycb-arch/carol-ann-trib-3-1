@@ -5,11 +5,13 @@ import {
   Sparkles, CheckSquare, Calendar, AlertTriangle,
   Cpu, ArrowRight, Eye, ShieldCheck, Lock, ShoppingCart,
   Play, RefreshCw, PanelRightClose, Globe, Layers, CheckCircle,
-  Smartphone
+  Smartphone, Activity, Gauge, Zap
 } from 'lucide-react';
 import type { ErrandTask, HydrateFormAction, UserProfile } from '@/data/schemas';
 import { isLightTheme } from '@/data/intake';
 import { sovereignBridge, type SovereignBridgeEvent, type ExecutionHost } from '@/lib/sovereignBridge';
+import { usePerformanceTracker } from '@/hooks/usePerformanceTracker';
+import { performanceTracker } from '@/lib/performanceTracker';
 
 interface RightDrawerProps {
   errands: ErrandTask[];
@@ -46,7 +48,8 @@ export const RightDrawer: React.FC<RightDrawerProps> = ({
 }) => {
   const isLight = profile ? isLightTheme(profile) : false;
   // Default to Live DOM per canonical design
-  const [activeTab, setActiveTab] = useState<'dom' | 'errands' | 'functions' | 'scratchpad' | 'confirmations'>('dom');
+  const [activeTab, setActiveTab] = useState<'dom' | 'errands' | 'functions' | 'scratchpad' | 'confirmations' | 'performance'>('dom');
+  const perfSnapshot = usePerformanceTracker();
   const [engine, setEngine] = useState<BrowserEngine>('gemini-flash');
   const [copied, setCopied] = useState(false);
 
@@ -342,6 +345,26 @@ export const RightDrawer: React.FC<RightDrawerProps> = ({
         >
           <FileText className="h-3.5 w-3.5 text-pink-500" />
           <span>Notes</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('performance')}
+          className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition whitespace-nowrap cursor-pointer ${
+            activeTab === 'performance'
+              ? isLight
+                ? 'bg-emerald-100 text-emerald-900 font-semibold border border-emerald-300 shadow-xs'
+                : 'bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-400/40 shadow-sm'
+              : isLight
+              ? 'text-slate-600 hover:text-slate-900'
+              : 'text-white/65 hover:text-white'
+          }`}
+          title="Performance Tracking: Monitor agent latency, TTFT, and UI responsiveness during background processing"
+        >
+          <Activity className="h-3.5 w-3.5 text-emerald-500" />
+          <span>Metrics</span>
+          {perfSnapshot.activeBackgroundTasksCount > 0 && (
+            <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
+          )}
         </button>
 
         {pendingActions.length > 0 && (
@@ -875,6 +898,241 @@ export const RightDrawer: React.FC<RightDrawerProps> = ({
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* ===================== TAB: PERFORMANCE & RESPONSIVENESS ===================== */}
+        {activeTab === 'performance' && (
+          <div className="space-y-4">
+            {/* Header info */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className={`text-xs font-bold uppercase tracking-wider ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                  Performance & Responsiveness Monitor
+                </h3>
+                <p className={`text-[11px] mt-0.5 ${isLight ? 'text-slate-500' : 'text-white/50'}`}>
+                  Agent call latency & UI main-thread hitch telemetry
+                </p>
+              </div>
+              <button
+                onClick={() => performanceTracker.clearMetrics()}
+                className={`flex items-center gap-1 rounded-md px-2 py-1 text-[10.5px] transition cursor-pointer ${
+                  isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-white/60 hover:text-white hover:bg-white/5'
+                }`}
+                title="Clear collected latency records"
+              >
+                <Trash2 className="h-3 w-3" />
+                <span>Reset</span>
+              </button>
+            </div>
+
+            {/* Metrics Grid */}
+            <div className="grid grid-cols-2 gap-2">
+              {/* Avg Agent Latency */}
+              <div className={`rounded-xl border p-3 ${
+                isLight ? 'border-rose-200/80 bg-white/90 shadow-xs' : 'border-white/8 bg-white/[0.03]'
+              }`}>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className={isLight ? 'text-slate-500' : 'text-white/50'}>Avg Agent Latency</span>
+                  <Clock className="h-3.5 w-3.5 text-sky-400" />
+                </div>
+                <div className="mt-1 flex items-baseline gap-1">
+                  <span className={`text-xl font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                    {perfSnapshot.averageLatencyMs}
+                  </span>
+                  <span className={`text-xs ${isLight ? 'text-slate-500' : 'text-white/50'}`}>ms</span>
+                </div>
+                <div className={`text-[10px] mt-1 ${isLight ? 'text-slate-500' : 'text-white/45'}`}>
+                  TTFT Avg: {perfSnapshot.averageTtftMs}ms
+                </div>
+              </div>
+
+              {/* P95 Latency */}
+              <div className={`rounded-xl border p-3 ${
+                isLight ? 'border-rose-200/80 bg-white/90 shadow-xs' : 'border-white/8 bg-white/[0.03]'
+              }`}>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className={isLight ? 'text-slate-500' : 'text-white/50'}>P95 Tail Latency</span>
+                  <Gauge className="h-3.5 w-3.5 text-purple-400" />
+                </div>
+                <div className="mt-1 flex items-baseline gap-1">
+                  <span className={`text-xl font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                    {perfSnapshot.p95LatencyMs}
+                  </span>
+                  <span className={`text-xs ${isLight ? 'text-slate-500' : 'text-white/50'}`}>ms</span>
+                </div>
+                <div className={`text-[10px] mt-1 ${isLight ? 'text-slate-500' : 'text-white/45'}`}>
+                  Total Calls: {perfSnapshot.totalAgentCalls}
+                </div>
+              </div>
+
+              {/* UI Responsiveness */}
+              <div className={`rounded-xl border p-3 ${
+                isLight ? 'border-rose-200/80 bg-white/90 shadow-xs' : 'border-white/8 bg-white/[0.03]'
+              }`}>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className={isLight ? 'text-slate-500' : 'text-white/50'}>UI Responsiveness</span>
+                  <Activity className="h-3.5 w-3.5 text-emerald-400" />
+                </div>
+                <div className="mt-1 flex items-baseline gap-1">
+                  <span className={`text-xl font-black ${
+                    perfSnapshot.responsivenessScore >= 90
+                      ? 'text-emerald-500'
+                      : perfSnapshot.responsivenessScore >= 70
+                      ? 'text-amber-500'
+                      : 'text-rose-500'
+                  }`}>
+                    {perfSnapshot.responsivenessScore}%
+                  </span>
+                </div>
+                <div className={`text-[10px] mt-1 ${isLight ? 'text-slate-500' : 'text-white/45'}`}>
+                  Frame Rate: {perfSnapshot.currentFps} FPS
+                </div>
+              </div>
+
+              {/* Background Tasks */}
+              <div className={`rounded-xl border p-3 ${
+                isLight ? 'border-rose-200/80 bg-white/90 shadow-xs' : 'border-white/8 bg-white/[0.03]'
+              }`}>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className={isLight ? 'text-slate-500' : 'text-white/50'}>Active Workloads</span>
+                  <Cpu className="h-3.5 w-3.5 text-amber-400" />
+                </div>
+                <div className="mt-1 flex items-baseline gap-1">
+                  <span className={`text-xl font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                    {perfSnapshot.activeBackgroundTasksCount}
+                  </span>
+                  <span className={`text-xs ${isLight ? 'text-slate-500' : 'text-white/50'}`}>running</span>
+                </div>
+                <div className={`text-[10px] mt-1 ${isLight ? 'text-slate-500' : 'text-white/45'}`}>
+                  Hitches: {perfSnapshot.recentHitches.length} recorded
+                </div>
+              </div>
+            </div>
+
+            {/* Stress Test Simulation Card */}
+            <div className={`rounded-xl border p-3.5 space-y-2 ${
+              isLight ? 'border-emerald-200 bg-emerald-50/50' : 'border-emerald-500/20 bg-emerald-500/[0.04]'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                  <Zap className="h-4 w-4" />
+                  <span>Heavy Background Workload Simulation</span>
+                </div>
+                <button
+                  onClick={() => performanceTracker.simulateHeavyBackgroundWork(250)}
+                  className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white shadow-xs hover:bg-emerald-500 transition cursor-pointer"
+                  title="Stress-test the hitch detector with a 250ms background compute slice"
+                >
+                  Simulate Heavy Load
+                </button>
+              </div>
+              <p className={`text-[11px] leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/60'}`}>
+                Triggers a simulated background compute burst to measure real-time main-thread responsiveness degradation and verify hitch telemetry capture.
+              </p>
+            </div>
+
+            {/* Active Background Tasks */}
+            {perfSnapshot.activeBackgroundTasks.length > 0 && (
+              <div className="space-y-1.5">
+                <span className={`text-[10px] uppercase font-mono font-bold tracking-wider ${isLight ? 'text-slate-500' : 'text-white/40'}`}>
+                  Active Background Operations
+                </span>
+                <div className="space-y-1.5">
+                  {perfSnapshot.activeBackgroundTasks.map((t) => (
+                    <div
+                      key={t.id}
+                      className={`flex items-center justify-between rounded-lg border p-2 text-xs ${
+                        isLight ? 'border-slate-200 bg-white' : 'border-white/8 bg-zinc-900'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping" />
+                        <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-white'}`}>{t.label}</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-amber-500 font-semibold uppercase">{t.status}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Hitches / UI Thread Drops Log */}
+            {perfSnapshot.recentHitches.length > 0 && (
+              <div className="space-y-1.5">
+                <span className={`text-[10px] uppercase font-mono font-bold tracking-wider ${isLight ? 'text-slate-500' : 'text-white/40'}`}>
+                  UI Frame Drops & Main-Thread Hitches (&gt;50ms)
+                </span>
+                <div className="max-h-36 overflow-y-auto space-y-1 m-scroll">
+                  {perfSnapshot.recentHitches.map((h) => (
+                    <div
+                      key={h.id}
+                      className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[11px] font-mono border ${
+                        h.severity === 'major'
+                          ? isLight ? 'border-rose-300 bg-rose-50 text-rose-800' : 'border-rose-500/30 bg-rose-500/10 text-rose-300'
+                          : isLight ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-amber-500/20 bg-amber-500/10 text-amber-300'
+                      }`}
+                    >
+                      <span>Hitch: {h.durationMs}ms blocked</span>
+                      <span className="text-[10px] opacity-75">{h.timestamp}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recent Agent Invocations Log */}
+            <div className="space-y-1.5">
+              <span className={`text-[10px] uppercase font-mono font-bold tracking-wider ${isLight ? 'text-slate-500' : 'text-white/40'}`}>
+                Recent Agent Call Telemetry ({perfSnapshot.recentAgentCalls.length})
+              </span>
+
+              {perfSnapshot.recentAgentCalls.length === 0 ? (
+                <div className={`rounded-xl border p-4 text-center text-xs ${
+                  isLight ? 'border-dashed border-slate-200 text-slate-500' : 'border-dashed border-white/10 text-white/40'
+                }`}>
+                  No agent calls recorded yet. Send a message to Carol Ann or a specialist to measure latency.
+                </div>
+              ) : (
+                <div className="max-h-60 overflow-y-auto space-y-1.5 m-scroll">
+                  {perfSnapshot.recentAgentCalls.map((call) => (
+                    <div
+                      key={call.id}
+                      className={`rounded-lg border p-2.5 text-xs transition ${
+                        isLight ? 'border-slate-200 bg-white shadow-xs' : 'border-white/8 bg-zinc-900/80'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                            {call.agentName}
+                          </span>
+                          <span className={`text-[10px] rounded px-1.5 py-0.2 border ${
+                            call.status === 'success'
+                              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                              : call.status === 'error'
+                              ? 'border-rose-500/30 bg-rose-500/10 text-rose-400'
+                              : 'border-amber-500/30 bg-amber-500/10 text-amber-400'
+                          }`}>
+                            {call.status}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[11px] font-mono font-bold">
+                          <span className={call.durationMs > 2000 ? 'text-amber-400' : 'text-emerald-400'}>
+                            {call.durationMs ? `${call.durationMs}ms` : 'timing...'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className={`mt-1 flex items-center justify-between text-[10.5px] ${isLight ? 'text-slate-500' : 'text-white/45'}`}>
+                        <span className="truncate max-w-[180px]">{call.taskName}</span>
+                        <span>TTFT: {call.ttftMs ? `${call.ttftMs}ms` : '—'} • {call.timestamp}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

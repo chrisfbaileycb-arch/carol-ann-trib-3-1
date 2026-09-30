@@ -1,4 +1,6 @@
 // Sovereign Execution Bridge for Browser Co-Pilot & Phone Remote Interaction
+import { performanceTracker } from './performanceTracker';
+
 export type ExecutionHost = 'dashboard' | 'phone' | 'dual';
 
 export interface SovereignBridgePayload {
@@ -222,6 +224,8 @@ class SovereignBridgeEngine {
     agentName = 'Carol Ann'
   ) {
     const originLabel = source === 'mobile' ? '📱 Phone Co-Pilot' : '💻 Main Dashboard';
+    const taskId = `dom_pipeline_${Date.now()}`;
+    performanceTracker.startBackgroundTask(taskId, `Live DOM Pipeline: ${title}`);
 
     // 1. Initial Action Dispatch
     this.emit({
@@ -284,6 +288,7 @@ class SovereignBridgeEngine {
 
     // Step 3: Stage & Verify
     setTimeout(() => {
+      performanceTracker.endBackgroundTask(taskId, 'completed');
       this.emit({
         type: 'pipeline_step',
         payload: {
