@@ -319,9 +319,13 @@ class PerformanceTrackerEngine {
     this.startBackgroundTask(taskId, `Heavy Background Compute (${durationMs}ms)`);
 
     const start = performance.now();
+    let dummy = 0;
     // Intentionally block main thread in short micro-bursts to trigger hitch detection
     while (performance.now() - start < durationMs) {
-      Math.sin(Math.random()) * Math.cos(Math.random());
+      dummy += Math.sin(Math.random()) * Math.cos(Math.random());
+    }
+    if (dummy === Number.MAX_SAFE_INTEGER) {
+      console.log(dummy);
     }
 
     this.endBackgroundTask(taskId, 'completed');

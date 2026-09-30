@@ -218,7 +218,7 @@ export function evaluateLocalFallback(message: string, agentId: string, agentNam
 
   if (!process.env.GEMINI_API_KEY) {
     const reply =
-      "The Gemini API key is missing from environment variables (process.env.GEMINI_API_KEY), so the AI service is offline. Please configure GEMINI_API_KEY to enable live cloud inference.";
+      "The Gemini API key is missing from environment variables (process.env.GEMINI_API_KEY), so the AI service is offline. Nothing was staged, ordered, or dispatched. Please configure GEMINI_API_KEY to enable live cloud inference.";
     return { reply, toolCall: null, agentId, source: 'offline-unavailable' };
   }
 
