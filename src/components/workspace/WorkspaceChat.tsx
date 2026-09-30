@@ -861,9 +861,9 @@ Operating Directives:
         <div
           className={`relative shrink-0 transition-all duration-300 ease-in-out border-l z-20 ${
             isLight ? 'border-rose-200/60' : 'border-white/8'
-          } ${rightOpen ? 'w-84 lg:w-96' : 'w-0'}`}
+          } ${rightOpen ? 'w-80 sm:w-96 lg:w-[410px]' : 'w-0'}`}
         >
-          <div className={`h-full w-84 lg:w-96 overflow-hidden ${rightOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+          <div className={`h-full w-80 sm:w-96 lg:w-[410px] overflow-hidden ${rightOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
             <RightDrawer
               errands={errands}
               onUpdateErrand={handleUpdateErrand}

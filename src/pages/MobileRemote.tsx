@@ -3,7 +3,7 @@ import {
   Mic, MicOff, Camera, X, Monitor, Zap, ClipboardCheck, ShoppingBag, Dumbbell,
   ChevronUp, Send, Radio, Check, Trash2, LogIn, ShieldCheck, Bot,
   Volume2, VolumeX, Sparkles, RotateCcw, ChevronDown, MessageSquare,
-  Loader2, Star, UserCheck
+  Loader2, Star, UserCheck, Globe, Smartphone
 } from 'lucide-react';
 import { useCarol } from '@/contexts/CarolContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,6 +18,7 @@ import { subscribeCopilot, pendingStep, getActiveTask } from '@/lib/copilotSessi
 
 import { CHAIN_LIST, parseIntent } from '@/lib/browserAgent';
 import { uid } from '@/lib/memoryStore';
+import { sovereignBridge, resolveSpecialistAndAction, type ExecutionHost } from '@/lib/sovereignBridge';
 import WallpaperBackground from '@/components/workspace/WallpaperBackground';
 import { SaaSConnectorsDirectory } from '@/components/connectors/SaaSConnectorsDirectory';
 import { loadConnectedSaasIds } from '@/data/saasConnectors';
@@ -117,6 +118,24 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
   const [agentBusy, setAgentBusy] = useState(false);
   const [autoSpeakReplies, setAutoSpeakReplies] = useState<boolean>(() => loadAISettings().speakReplies ?? true);
   const [agentSelectorOpen, setAgentSelectorOpen] = useState(false);
+  const [executionHost, setExecutionHost] = useState<ExecutionHost>(() => sovereignBridge.executionHost);
+
+  // Connect to Sovereign Bridge on Mount & sync execution host changes
+  useEffect(() => {
+    sovereignBridge.connectRemote(activeAgentId, activeAgent?.name || 'Carol Ann');
+    const unsubscribe = sovereignBridge.subscribe((ev) => {
+      if (ev.payload.executionHost) {
+        setExecutionHost(ev.payload.executionHost);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleSetHost = (host: ExecutionHost) => {
+    setExecutionHost(host);
+    sovereignBridge.setExecutionHost(host, 'mobile');
+    flash(`Runner Switch: ${host === 'phone' ? 'Phone Co-Pilot' : host === 'dashboard' ? 'Main Dashboard' : 'Dual Link'}`);
+  };
 
   // Sync thread on agent change
   useEffect(() => {
@@ -150,6 +169,7 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
     const switched = agents.find((a) => a.id === id);
     if (switched) {
       flash(`Active Phone Agent: ${switched.name}`);
+      sovereignBridge.connectRemote(id, switched.name);
     }
   };
 
@@ -171,6 +191,42 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
       agentId: activeAgent.id,
       agentName: activeAgent.name,
     }, 'mobile');
+
+    // Bi-directional sovereignBridge dispatch to Browser Co-Pilot targeting specialist
+    const lower = text.toLowerCase();
+    const isErrand =
+      lower.includes('order') ||
+      lower.includes('pizza') ||
+      lower.includes('whole foods') ||
+      lower.includes('grocery') ||
+      lower.includes('amazon') ||
+      lower.includes('cart') ||
+      lower.includes('reorder') ||
+      lower.includes('schedule') ||
+      lower.includes('calendar') ||
+      lower.includes('appointment') ||
+      lower.includes('delivery') ||
+      lower.includes('whey') ||
+      lower.includes('isolate') ||
+      Boolean(parseIntent(text));
+
+    if (isErrand) {
+      const resolution = resolveSpecialistAndAction(text, activeAgent.id);
+      // Auto-target specialist agent if different
+      if (resolution.agentId !== activeAgent.id && agents.some((a) => a.id === resolution.agentId)) {
+        setActiveAgentId(resolution.agentId);
+        saveActiveCrewMember(resolution.agentId);
+      }
+
+      sovereignBridge.dispatchErrand(
+        resolution.targetTitle,
+        resolution.targetUrl,
+        resolution.items,
+        'mobile',
+        resolution.agentId,
+        resolution.agentName
+      );
+    }
 
     addMessage({
       domain: parseIntent(text) ? 'errands' : 'core',
@@ -286,10 +342,11 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
   const currentFont = FONT_OPTIONS.find((f) => f.id === profile.fontFamily) || FONT_OPTIONS[0];
 
   const quickActions = [
+    { label: 'Order Whole Foods', icon: ShoppingBag, run: () => dispatch('Order Whole Foods delivery') },
+    { label: 'Order Pizza', icon: ShoppingBag, run: () => dispatch('Order me a pizza') },
+    { label: 'Stage Amazon Cart', icon: Dumbbell, run: () => dispatch('Stage Amazon cart for 5lb Vanilla Whey') },
+    { label: 'Calendar Buffer', icon: ClipboardCheck, run: () => dispatch('Schedule Google Calendar 15-min buffers') },
     { label: 'Connectors (170+)', icon: ShieldCheck, run: () => setConnectorsOpen(true) },
-    { label: 'Log check-in', icon: ClipboardCheck, run: () => { addCheckIn({ type: 'wellness', label: 'Quick check-in', notes: 'Logged from the phone remote.' }); publishBus('checkin', { type: 'wellness', label: 'Quick check-in' }, 'mobile'); flash('Check-in recorded'); } },
-    { label: 'Start gym coach', icon: Dumbbell, run: () => { publishBus('coach', { action: 'start' }, 'mobile'); flash('Gym coach opening on desktop'); } },
-    { label: 'Run errand', icon: ShoppingBag, run: () => dispatch('Order Whole Foods delivery') },
     { label: 'Voice memo', icon: Mic, run: toggleVoice },
   ];
 
@@ -386,6 +443,72 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
             {connectedSaasCount}
           </span>
         </button>
+      </div>
+
+      {/* Browser Agent Execution Host Switcher */}
+      <div className="mt-3 px-5">
+        <div className={`flex items-center justify-between rounded-2xl border p-2.5 backdrop-blur-md shadow-sm transition ${
+          isLight ? 'border-rose-200/90 bg-white/95 text-slate-800' : 'border-white/10 bg-zinc-900/90 text-white'
+        }`}>
+          <div className="flex items-center gap-2">
+            <span className="grid h-7 w-7 place-items-center rounded-xl bg-sky-500/15 text-sky-500 border border-sky-500/20">
+              <Globe className="h-4 w-4" />
+            </span>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className={`text-xs font-black tracking-tight leading-none ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                  Browser Agent Runner
+                </span>
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
+              </div>
+              <p className={`text-[10px] mt-0.5 ${isLight ? 'text-slate-500' : 'text-white/50'}`}>
+                {executionHost === 'phone'
+                  ? 'Runner Mode: Phone Co-Pilot'
+                  : executionHost === 'dashboard'
+                  ? 'Runner Mode: Main Dashboard'
+                  : 'Runner Mode: Dual Link (Both Synced)'}
+              </p>
+            </div>
+          </div>
+
+          <div className={`flex items-center gap-1 rounded-xl border p-1 ${
+            isLight ? 'border-slate-200 bg-slate-50' : 'border-white/8 bg-black/40'
+          }`}>
+            <button
+              onClick={() => handleSetHost('phone')}
+              className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold transition cursor-pointer ${
+                executionHost === 'phone'
+                  ? 'bg-purple-600 text-white shadow-xs'
+                  : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-white/60 hover:text-white'
+              }`}
+            >
+              <Smartphone className="h-3 w-3" />
+              <span>Phone</span>
+            </button>
+            <button
+              onClick={() => handleSetHost('dashboard')}
+              className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold transition cursor-pointer ${
+                executionHost === 'dashboard'
+                  ? 'bg-sky-600 text-white shadow-xs'
+                  : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-white/60 hover:text-white'
+              }`}
+            >
+              <Monitor className="h-3 w-3" />
+              <span>Dashboard</span>
+            </button>
+            <button
+              onClick={() => handleSetHost('dual')}
+              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold transition cursor-pointer ${
+                executionHost === 'dual'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-white/60 hover:text-white'
+              }`}
+            >
+              <Sparkles className="h-3 w-3" />
+              <span>Dual</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Communicating Agent Quick Switcher Strip */}

@@ -288,6 +288,31 @@ app.post('/api/workflow/execute', async (req, res) => {
   }
 });
 
+// Bi-Directional Sovereign Bridge Action Dispatch
+app.post('/api/bridge/dispatch', (req, res) => {
+  const body = req.body || {};
+  const {
+    title = 'Remote Errand',
+    url = 'https://wholefoods.amazon.com/cart',
+    items = [],
+    agentId = 'carol-anchor',
+    agentName = 'Carol Ann',
+    source = 'mobile',
+  } = body;
+
+  return res.json({
+    ok: true,
+    dispatched: true,
+    title,
+    url,
+    items,
+    agentId,
+    agentName,
+    source,
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Copilot Browser Automation Step Execution
 app.post('/api/workflow/copilot/step', async (req, res) => {
   try {
