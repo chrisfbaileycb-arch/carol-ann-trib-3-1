@@ -166,9 +166,9 @@ class SovereignBridgeEngine {
     }
 
     const hostLabels: Record<ExecutionHost, string> = {
-      dashboard: 'Main Dashboard (Desktop DOM Bridge)',
-      phone: 'Phone Co-Pilot (Mobile Remote Runner)',
-      dual: 'Dual Link (Main Dashboard + Phone Co-Pilot Synced)',
+      dashboard: 'Local Browser (Main Dashboard DOM Bridge)',
+      phone: 'Remote Phone (Phone Co-Pilot Runner)',
+      dual: 'Dual Link (Local Browser + Remote Phone Synced)',
     };
 
     this.emit({

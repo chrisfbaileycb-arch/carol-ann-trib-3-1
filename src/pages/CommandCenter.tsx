@@ -2,8 +2,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   Sparkles, MessagesSquare, Users, Shield, Palette,
   Smartphone, Cloud, Loader2, UserCircle2, Settings,
-  LogOut, LogIn, ShieldCheck, Wifi, CloudCog, Code2
+  LogOut, LogIn, ShieldCheck, Wifi, CloudCog, Code2, Monitor
 } from 'lucide-react';
+import { sovereignBridge, type ExecutionHost } from '@/lib/sovereignBridge';
 import { WorkspaceChat } from '@/components/workspace/WorkspaceChat';
 import { AgentRosterMCP } from '@/components/workspace/AgentRosterMCP';
 import { SovereignMemoryLedger } from '@/components/workspace/SovereignMemoryLedger';
@@ -42,6 +43,31 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [relayLive, setRelayLive] = useState(false);
   const [remoteBeacon, setRemoteBeacon] = useState<string | null>(null);
+  const [executionHost, setExecutionHost] = useState<ExecutionHost>(() => sovereignBridge.executionHost);
+  const [hostToast, setHostToast] = useState<string | null>(null);
+
+  // Sync executionHost across tabs, devices & sovereign bridge
+  useEffect(() => {
+    const unsubscribe = sovereignBridge.subscribe((ev) => {
+      if (ev.payload.executionHost) {
+        setExecutionHost(ev.payload.executionHost);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleToggleExecutionHost = (targetHost: ExecutionHost) => {
+    setExecutionHost(targetHost);
+    sovereignBridge.setExecutionHost(targetHost, 'dashboard');
+    const msg =
+      targetHost === 'dashboard'
+        ? '⚡ Switched to Local Browser Automation (Dashboard DOM Active)'
+        : targetHost === 'phone'
+        ? '📱 Switched to Remote Phone Automation (Phone Co-Pilot Active)'
+        : '✨ Switched to Dual Automation Link (Synced)';
+    setHostToast(msg);
+    window.setTimeout(() => setHostToast(null), 3200);
+  };
 
   // Cross-device relay checking
   useEffect(() => {
@@ -149,6 +175,69 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
 
           {/* Right Actions */}
           <div className="flex items-center gap-2">
+            {/* Automation Mode Toggle: Local Browser vs Remote Phone */}
+            <div
+              className={`flex items-center rounded-xl border p-1 shadow-sm transition ${
+                isLight
+                  ? 'border-rose-200/90 bg-white/95 text-slate-700'
+                  : 'border-white/15 bg-zinc-900/90 text-white/90'
+              }`}
+              role="group"
+              aria-label="Automation Engine Toggle"
+            >
+              <div className="flex items-center gap-1.5 px-2 py-0.5 mr-1 border-r border-slate-200 dark:border-white/10 hidden sm:flex">
+                <span className="relative flex h-2 w-2">
+                  <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping ${
+                    executionHost === 'dashboard' ? 'bg-sky-400' : 'bg-purple-400'
+                  }`} />
+                  <span className={`relative inline-flex h-2 w-2 rounded-full ${
+                    executionHost === 'dashboard' ? 'bg-sky-500' : 'bg-purple-500'
+                  }`} />
+                </span>
+                <span className={`text-[10px] uppercase font-mono font-bold tracking-wider ${
+                  isLight ? 'text-slate-500' : 'text-white/45'
+                }`}>
+                  Automation:
+                </span>
+              </div>
+
+              <div className="flex items-center gap-0.5">
+                <button
+                  type="button"
+                  onClick={() => handleToggleExecutionHost('dashboard')}
+                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition cursor-pointer ${
+                    executionHost === 'dashboard' || executionHost === 'dual'
+                      ? 'bg-sky-500 text-white shadow-xs'
+                      : isLight
+                      ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      : 'text-white/60 hover:text-white hover:bg-white/5'
+                  }`}
+                  title="Local Browser Automation: Execute DOM errands and browser tasks directly on this dashboard"
+                >
+                  <Monitor className="h-3.5 w-3.5" />
+                  <span className="hidden md:inline">Local Browser</span>
+                  <span className="md:hidden">Local</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleExecutionHost('phone')}
+                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition cursor-pointer ${
+                    executionHost === 'phone'
+                      ? 'bg-purple-600 text-white shadow-xs'
+                      : isLight
+                      ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      : 'text-white/60 hover:text-white hover:bg-white/5'
+                  }`}
+                  title="Remote Phone Automation: Delegate and execute DOM errands via Phone Remote companion"
+                >
+                  <Smartphone className="h-3.5 w-3.5" />
+                  <span className="hidden md:inline">Remote Phone</span>
+                  <span className="md:hidden">Remote</span>
+                </button>
+              </div>
+            </div>
+
             {remoteBeacon && (
               <span className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10.5px] font-semibold ${
                 isLight
@@ -276,6 +365,26 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
       <AccountSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+
+      {/* Real-time Automation Host Switch Toast */}
+      {hostToast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`fixed bottom-12 right-6 z-50 flex items-center gap-2.5 rounded-2xl border px-4 py-2.5 text-xs font-semibold shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-3 duration-200 ${
+            executionHost === 'phone'
+              ? 'border-purple-400/40 bg-purple-950/95 text-purple-100 shadow-purple-500/20'
+              : 'border-sky-400/40 bg-slate-900/95 text-sky-100 shadow-sky-500/20'
+          }`}
+        >
+          {executionHost === 'phone' ? (
+            <Smartphone className="h-4 w-4 text-purple-400 shrink-0" />
+          ) : (
+            <Monitor className="h-4 w-4 text-sky-400 shrink-0" />
+          )}
+          <span>{hostToast}</span>
+        </div>
+      )}
     </div>
   );
 };

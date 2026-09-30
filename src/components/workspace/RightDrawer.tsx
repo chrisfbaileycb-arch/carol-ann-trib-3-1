@@ -232,10 +232,10 @@ export const RightDrawer: React.FC<RightDrawerProps> = ({
                 ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 : 'text-white/60 hover:text-white hover:bg-white/5'
             }`}
-            title="Run browser agent from Main Dashboard"
+            title="Local Browser Automation: Run directly on dashboard browser container"
           >
             <Monitor className="h-3 w-3" />
-            <span>Dashboard</span>
+            <span>Local Browser</span>
           </button>
 
           <button
@@ -249,10 +249,10 @@ export const RightDrawer: React.FC<RightDrawerProps> = ({
                 ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 : 'text-white/60 hover:text-white hover:bg-white/5'
             }`}
-            title="Run browser agent from Phone Co-Pilot"
+            title="Remote Phone Automation: Run and supervise via Phone Remote companion"
           >
             <Smartphone className="h-3 w-3" />
-            <span>Phone Co-Pilot</span>
+            <span>Remote Phone</span>
           </button>
 
           <button
