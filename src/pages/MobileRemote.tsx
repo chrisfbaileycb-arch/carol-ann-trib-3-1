@@ -19,6 +19,8 @@ import { subscribeCopilot, pendingStep, getActiveTask } from '@/lib/copilotSessi
 import { CHAIN_LIST, parseIntent } from '@/lib/browserAgent';
 import { uid } from '@/lib/memoryStore';
 import { sovereignBridge, resolveSpecialistAndAction, type ExecutionHost } from '@/lib/sovereignBridge';
+import { PWAInstallButton } from '@/components/common/PWAInstallButton';
+import { CompanionProtocolPanel } from '@/components/copilot/CompanionProtocolWidgets';
 import WallpaperBackground from '@/components/workspace/WallpaperBackground';
 import { SaaSConnectorsDirectory } from '@/components/connectors/SaaSConnectorsDirectory';
 import { loadConnectedSaasIds } from '@/data/saasConnectors';
@@ -261,6 +263,7 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
         if (reply) {
           const nextThread = appendThread(activeAgent.id, 'assistant', reply);
           setAgentThread(nextThread.slice(-6));
+          sovereignBridge.sendCompanionVoiceReply(reply, activeAgent.name);
           publishBus('message', {
             text: reply,
             agentId: activeAgent.id,
@@ -377,23 +380,26 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
               Carol Ann OS
             </span>
             <span className={`text-[11px] font-bold ${isLight ? 'text-slate-600' : 'text-white/70'}`}>
-              Phone Edition
+              Companion Co-Pilot
             </span>
           </div>
           <h1 className={`font-display text-2xl font-black tracking-tight ${isLight ? 'text-slate-950' : 'text-white'}`}>
             {profile.name ? `${profile.name} · Carol Ann OS` : 'Carol Ann OS Mobile'}
           </h1>
         </div>
-        <button
-          onClick={onBackToDesktop}
-          className={`flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-bold shadow-sm transition ${
-            isLight
-              ? 'border-slate-300/90 bg-white text-slate-800 hover:bg-slate-50 hover:text-slate-950'
-              : 'border-white/20 bg-white/[0.08] text-white/90 hover:bg-white/15 hover:text-white'
-          }`}
-        >
-          <Monitor className="h-3.5 w-3.5" /> Desktop
-        </button>
+        <div className="flex items-center gap-2">
+          <PWAInstallButton isLight={isLight} compact />
+          <button
+            onClick={onBackToDesktop}
+            className={`flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-bold shadow-sm transition ${
+              isLight
+                ? 'border-slate-300/90 bg-white text-slate-800 hover:bg-slate-50 hover:text-slate-950'
+                : 'border-white/20 bg-white/[0.08] text-white/90 hover:bg-white/15 hover:text-white'
+            }`}
+          >
+            <Monitor className="h-3.5 w-3.5" /> Desktop
+          </button>
+        </div>
       </header>
 
       <div className="flex flex-wrap items-center gap-2 px-5">
@@ -802,6 +808,17 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
           >
             {agentBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </button>
+        </div>
+
+        {/* Companion Mode Protocol: Conversational Voice Stream, Approval Action Cards & Top-3 Product Recommendation Picker */}
+        <div className="mt-4">
+          <CompanionProtocolPanel
+            isLight={isLight}
+            onVoiceCommand={(txt) => void communicateWithAgent(txt)}
+            listening={listening}
+            onToggleVoice={toggleVoice}
+            activeVoiceKey={activeAgent?.voiceKey || 'warm'}
+          />
         </div>
 
         {/* Lit-up Browser Agent Co-pilot Spotlight */}

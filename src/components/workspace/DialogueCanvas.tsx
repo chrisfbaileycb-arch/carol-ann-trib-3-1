@@ -37,7 +37,7 @@ interface DialogueCanvasProps {
   onExecuteToolAction: (action: HydrateFormAction) => void;
   onCancelToolAction?: (action: HydrateFormAction) => void;
   activeAgentId: string;
-  onSelectAgent: (agentId: string) => void;
+  onSelectAgent?: (agentId: string) => void;
   profile: UserProfile;
   isProcessing?: boolean;
   installedPluginIds?: string[];
@@ -51,7 +51,6 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
   onExecuteToolAction,
   onCancelToolAction,
   activeAgentId,
-  onSelectAgent,
   profile,
   isProcessing = false,
   installedPluginIds,
@@ -306,77 +305,23 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
             </p>
           </div>
         </div>
-
-        {/* Sub-Agent Quick Switcher Tabs (Carol Ann, Archivist, Muse, Keeper, Coach) */}
-        <div className="hidden items-center gap-1.5 sm:flex shrink-0">
-          {AGENT_PRESETS.map((ag) => {
-            const isSelected = ag.id === activeAgentId;
-            return (
-              <button
-                key={ag.id}
-                onClick={() => onSelectAgent(ag.id)}
-                title={`${ag.name}: ${ag.role}`}
-                className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition ${
-                  isSelected
-                    ? 'border border-[var(--m-accent)]/60 bg-[var(--m-accent)]/25 text-white font-semibold shadow-sm'
-                    : isLight
-                    ? 'border border-rose-200/80 bg-white/80 text-slate-700 hover:border-rose-300 hover:text-slate-900'
-                    : 'border border-white/10 bg-white/[0.03] text-white/70 hover:border-white/25 hover:text-white'
-                }`}
-              >
-                <span
-                  className="h-1.5 w-1.5 rounded-full"
-                  style={{ backgroundColor: isSelected ? 'var(--m-accent-soft)' : isLight ? '#f43f5e' : 'rgba(255,255,255,0.4)' }}
-                />
-                {ag.name}
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {/* Messages Scroll Area */}
       <div ref={scrollRef} className="m-scroll flex-1 overflow-y-auto px-4 py-6 md:px-8 lg:px-16 relative">
-        {/* Non-blocking Watermark Layer positioned directly over active Dialogue Canvas */}
-        <WatermarkLayer isAbsolute stickers={carol.stickers} />
-
         <div className="mx-auto max-w-3xl space-y-6 relative z-10">
-          {/* Welcome Card if first load */}
+          {/* Compact Ready Line if empty thread */}
           {messages.length === 0 && (
-            <div className={`rounded-2xl border p-8 text-center shadow-xl ${
-              isLight ? 'border-rose-200/80 bg-white/85 text-slate-800 shadow-md' : 'border-white/12 bg-white/[0.03]'
+            <div className={`flex items-center justify-center gap-2 py-2.5 text-xs ${
+              isLight ? 'text-slate-500' : 'text-white/55'
             }`}>
-              <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl m-gradient-bg shadow-md">
-                <Sparkles className="h-7 w-7 text-white" />
-              </div>
-              <h2 className={`mt-4 font-display text-xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                {execProfile.name}
-              </h2>
-              <p className={`mt-1 text-xs font-medium text-[var(--m-accent-soft)] uppercase tracking-wider`}>
-                {execProfile.role}
-              </p>
-              <p className={`mt-2 text-sm max-w-md mx-auto leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/75'}`}>
-                {execProfile.systemPersona.split('\n')[0]}
-              </p>
-
-              <div className="mt-6 flex flex-wrap justify-center gap-2">
-                {(execProfile.starters || currentAgent.starters).map((starter, i) => (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      setInput(starter);
-                      inputRef.current?.focus();
-                    }}
-                    className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition text-left sm:text-center max-w-full break-words leading-relaxed whitespace-normal ${
-                      isLight
-                        ? 'border-rose-200 bg-rose-50/60 text-slate-700 hover:bg-rose-100 hover:text-slate-900 hover:border-rose-300'
-                        : 'border-white/15 bg-white/[0.04] text-white/85 hover:border-[var(--m-accent)]/60 hover:bg-white/10 hover:text-white'
-                    }`}
-                  >
-                    &ldquo;{starter}&rdquo;
-                  </button>
-                ))}
-              </div>
+              <span className="h-2 w-2 rounded-full bg-emerald-500/80" />
+              <span>
+                <strong className={isLight ? 'font-semibold text-slate-800' : 'font-semibold text-white/85'}>
+                  {execProfile.name}
+                </strong>{' '}
+                is ready. Select an action or type below.
+              </span>
             </div>
           )}
 
@@ -652,20 +597,23 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
         isLight ? 'border-rose-200/60 bg-white/75' : 'border-white/10 bg-zinc-950/75'
       }`}>
         <div className="mx-auto max-w-3xl">
-          {/* Starters strip if active conversation is short */}
-          {messages.length > 0 && messages.length < 5 && (
+          {/* Lightweight Starter Chips right above the bottom prompt input bar */}
+          {messages.length < 5 && (
             <div className={`mb-2 flex items-center gap-1.5 overflow-x-auto pb-1 text-xs ${
               isLight ? 'text-slate-600' : 'text-white/60'
             }`}>
               <span className={`shrink-0 uppercase text-[10px] tracking-wider font-semibold ${
                 isLight ? 'text-slate-400' : 'text-white/45'
               }`}>Suggestions:</span>
-              {currentAgent.starters.map((st, i) => (
+              {(execProfile.starters || currentAgent.starters).map((st, i) => (
                 <button
                   key={i}
-                  onClick={() => setInput(st)}
+                  onClick={() => {
+                    setInput(st);
+                    inputRef.current?.focus();
+                  }}
                   title={st}
-                  className={`shrink-0 max-w-[280px] truncate rounded-full border px-3 py-1 text-xs transition ${
+                  className={`shrink-0 max-w-[300px] truncate rounded-full border px-3 py-1 text-xs transition ${
                     isLight
                       ? 'border-rose-200 bg-white/80 text-slate-700 hover:bg-white hover:text-slate-900'
                       : 'border-white/12 bg-white/[0.03] text-white/80 hover:border-white/25 hover:text-white'
@@ -685,12 +633,6 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
             isLight={isLight}
           />
 
-          {/* Connected Skills Pill Bar (Live status & instant connection controls) */}
-          <ConnectedSkillsPillBar
-            onOpenSkillsModal={() => setIsSkillsModalOpen(true)}
-            isLight={isLight}
-          />
-
           {/* Active Gemini Live Voice Orchestrator Waveform Banner */}
           {(liveAudioState === 'listening' || liveAudioState === 'speaking' || liveAudioState === 'connecting' || liveAudioState === 'requesting_mic') && (
             <div className="mb-2.5 animate-fadeIn">
@@ -704,9 +646,9 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
           )}
 
           {/* Input Box Card */}
-          <div className={`flex items-end gap-2.5 rounded-2xl border p-3 shadow-lg transition-all ${
+          <div className={`flex items-end gap-2 rounded-2xl border p-2.5 shadow-lg transition-all ${
             isLight
-              ? 'border-rose-200/80 bg-white/90 shadow-md focus-within:border-rose-400 focus-within:bg-white'
+              ? 'border-rose-200/80 bg-white/95 shadow-md focus-within:border-rose-400 focus-within:bg-white'
               : 'border-white/15 bg-white/[0.04] focus-within:border-[var(--m-accent)]/60 focus-within:bg-white/[0.06]'
           }`}>
             {/* Plus (+) Menu to add files, photos, video, context, connector, or skills */}
@@ -721,14 +663,6 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
               disabled={isProcessing}
             />
 
-            {/* Sub-Agent Pill */}
-            <div className={`hidden sm:flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold ${
-              isLight ? 'border-rose-200 bg-rose-50 text-slate-800' : 'border-white/12 bg-white/[0.06] text-white'
-            }`}>
-              <span className="h-2 w-2 rounded-full bg-[var(--m-accent-soft)]" />
-              <span>{execProfile.name}</span>
-            </div>
-
             {/* Input Textarea */}
             <textarea
               ref={inputRef}
@@ -741,9 +675,15 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
               onKeyDown={handleKeyDown}
               placeholder={`Message ${execProfile.name} (${execProfile.role})...`}
               rows={1}
-              className={`min-h-[38px] max-h-[140px] flex-1 resize-none bg-transparent px-2 py-1 text-sm outline-none leading-relaxed font-normal ${
+              className={`min-h-[38px] max-h-[140px] flex-1 resize-none bg-transparent px-2 py-1.5 text-sm outline-none leading-relaxed font-normal ${
                 isLight ? 'text-slate-900 placeholder:text-slate-400' : 'text-white placeholder:text-white/45'
               }`}
+            />
+
+            {/* Compact Skills Popover Toggle beside Send Button */}
+            <ConnectedSkillsPillBar
+              onOpenSkillsModal={() => setIsSkillsModalOpen(true)}
+              isLight={isLight}
             />
 
             {/* Inline Voice Orb (Breathing Pulse & Soundwave Visualizer) */}
@@ -767,13 +707,6 @@ export const DialogueCanvas: React.FC<DialogueCanvasProps> = ({
             >
               <Send className="h-4 w-4" />
             </button>
-          </div>
-
-          <div className={`mt-2 flex items-center justify-between px-1 text-[11px] ${
-            isLight ? 'text-slate-500' : 'text-white/50'
-          }`}>
-            <span>Press <strong>Enter</strong> to send, <strong>Shift+Enter</strong> for newline</span>
-            <span>Cloud Agent Native · Deployed Web Architecture · Gemini Live Voice</span>
           </div>
         </div>
       </div>

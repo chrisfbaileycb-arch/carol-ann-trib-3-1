@@ -169,4 +169,30 @@ app.post('/api/browser/screenshot', requireFirebaseAuth, verifyAppCheck, async (
   }
 });
 
+// Interactive AI Browser Tab: DOM Interceptor & Parallel Split-Pipeline Synthesizer
+// Dispatches Thread 1 (Direct Utility: Home Depot / Target / Whole Foods / Amazon with junk-review stripping)
+// and Thread 2 (Sovereign Discovery: Shopify Independent Indexes, Etsy Artisan Exports, Chamber/BiteLocal, Global Craft Guilds)
+app.post('/api/browser/split-pipeline', async (req, res) => {
+  try {
+    const { query, runtimeEngine } = (req.body || {}) as {
+      query?: string;
+      runtimeEngine?: 'Playwright Sandboxed Stream' | 'CEF Chromium Stream' | 'Tauri System Webview';
+    };
+    const { synthesizeSplitPipeline } = await import('../../src/lib/splitPipelineCatalog.ts');
+    const result = synthesizeSplitPipeline(
+      query || 'hand-stitched leather belt',
+      runtimeEngine || 'Playwright Sandboxed Stream'
+    );
+    return res.json({
+      ok: true,
+      pipeline: result,
+    });
+  } catch (error) {
+    console.error('Error in /api/browser/split-pipeline:', error);
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : 'Split pipeline failed',
+    });
+  }
+});
+
 }

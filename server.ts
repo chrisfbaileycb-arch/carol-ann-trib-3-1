@@ -12,6 +12,7 @@ import { registerBrowserRoutes } from './server/routes/browser.ts';
 import { registerTtsRoutes } from './server/routes/tts.ts';
 import { registerConnectorRoutes } from './server/routes/connectors.ts';
 import { attachLiveVoice } from './server/routes/liveVoice.ts';
+import { attachCompanionWebSocket } from './server/routes/companionWs.ts';
 
 const app = express();
 const PORT = 3000;
@@ -549,6 +550,9 @@ async function bootstrap() {
 
   // Attach Gemini Live Voice WebSocket using getAdminBackend()
   attachLiveVoice(server, getAdminBackend());
+
+  // Attach Companion Mode Real-Time WebSocket (/api/ws/companion)
+  attachCompanionWebSocket(server);
 
   // Vite middleware in dev or static files in production
   if (process.env.NODE_ENV !== 'production') {

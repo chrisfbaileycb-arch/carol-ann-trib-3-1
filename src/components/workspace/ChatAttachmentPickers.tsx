@@ -372,7 +372,7 @@ export const StagedAttachmentsBar: React.FC<StagedAttachmentsBarProps> = ({
   );
 };
 
-/* --- Connected Skills Pill Bar --- */
+/* --- Connected Skills Popover Toggle (Beside Send Button) --- */
 
 interface ConnectedSkillsPillBarProps {
   onOpenSkillsModal: () => void;
@@ -384,7 +384,7 @@ export const ConnectedSkillsPillBar: React.FC<ConnectedSkillsPillBarProps> = ({
   isLight,
 }) => {
   const [registryState, setRegistryState] = useState<SkillInstallState>(loadRegistry);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     return subscribeToSkills((nextState) => {
@@ -396,106 +396,103 @@ export const ConnectedSkillsPillBar: React.FC<ConnectedSkillsPillBarProps> = ({
     return AGENT_SKILLS.filter((s) => registryState.installed.includes(s.id));
   }, [registryState.installed]);
 
-  if (connectedSkills.length === 0) {
-    return (
-      <div className="mb-2 flex items-center justify-between px-1 text-[11px]">
-        <button
-          type="button"
-          onClick={onOpenSkillsModal}
-          className={`flex items-center gap-1.5 rounded-lg px-2 py-0.5 transition cursor-pointer ${
-            isLight
-              ? 'text-slate-500 hover:text-purple-700 hover:bg-purple-50'
-              : 'text-white/45 hover:text-purple-300 hover:bg-purple-500/10'
-          }`}
-          title="Connect skills for coding, chat, and browser agents"
-        >
-          <Wrench className="h-3 w-3 text-purple-400" />
-          <span>No skills connected · <strong className="font-semibold underline">Connect Skills (+)</strong></span>
-        </button>
-      </div>
-    );
-  }
-
-  const displayedSkills = isExpanded ? connectedSkills : connectedSkills.slice(0, 4);
-  const remainingCount = connectedSkills.length - 4;
-
   return (
-    <div
-      id="connected-skills-pill-bar"
-      className={`mb-2 flex flex-wrap items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs transition ${
-        isLight
-          ? 'border-purple-200/80 bg-purple-50/50 text-slate-800'
-          : 'border-purple-500/20 bg-purple-500/[0.04] text-white'
-      }`}
-    >
-      <div className="flex items-center gap-1 text-[10px] font-mono font-semibold uppercase tracking-wider text-purple-500 dark:text-purple-400 shrink-0">
-        <Wrench className="h-3 w-3" />
-        <span>Connected ({connectedSkills.length}):</span>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-1 flex-1 min-w-0">
-        {displayedSkills.map((skill) => (
-          <div
-            key={skill.id}
-            className={`group flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10.5px] font-medium border transition ${
-              isLight
-                ? 'border-purple-200 bg-white text-purple-900 shadow-2xs'
-                : 'border-purple-500/30 bg-purple-950/40 text-purple-200'
-            }`}
-          >
-            <span className="truncate max-w-[120px]" title={skill.name}>{skill.name}</span>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                disconnectSkill(skill.id);
-              }}
-              title={`Disconnect ${skill.name}`}
-              className="rounded p-0.5 hover:bg-rose-500/20 hover:text-rose-400 transition cursor-pointer"
-            >
-              <X className="h-2.5 w-2.5" />
-            </button>
-          </div>
-        ))}
-
-        {!isExpanded && remainingCount > 0 && (
-          <button
-            type="button"
-            onClick={() => setIsExpanded(true)}
-            className={`rounded-md px-1.5 py-0.5 text-[10px] font-mono font-semibold transition cursor-pointer ${
-              isLight
-                ? 'bg-purple-100 text-purple-800 hover:bg-purple-200'
-                : 'bg-purple-500/20 text-purple-300 hover:bg-purple-500/30'
-            }`}
-          >
-            +{remainingCount} more
-          </button>
-        )}
-
-        {isExpanded && connectedSkills.length > 4 && (
-          <button
-            type="button"
-            onClick={() => setIsExpanded(false)}
-            className="text-[10px] text-purple-400 hover:underline px-1 cursor-pointer"
-          >
-            Show less
-          </button>
-        )}
-      </div>
-
+    <div className="relative shrink-0 pb-0.5">
       <button
+        id="connected-skills-pill-bar"
         type="button"
-        onClick={onOpenSkillsModal}
-        className={`ml-auto flex items-center gap-1 rounded-md px-2 py-0.5 text-[10.5px] font-semibold transition shrink-0 cursor-pointer ${
-          isLight
-            ? 'bg-purple-600 text-white hover:bg-purple-700 shadow-2xs'
-            : 'bg-purple-500/30 text-purple-200 hover:bg-purple-500/40 border border-purple-400/30'
+        onClick={() => setIsOpen((v) => !v)}
+        title={`⚡ ${connectedSkills.length} Skills Active — Click to view or manage`}
+        className={`flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition cursor-pointer ${
+          isOpen
+            ? isLight
+              ? 'border-purple-400 bg-purple-100 text-purple-950 shadow-xs'
+              : 'border-purple-400/50 bg-purple-500/25 text-white shadow-sm'
+            : isLight
+            ? 'border-rose-200/80 bg-rose-50/70 text-slate-700 hover:border-purple-300 hover:bg-purple-50 hover:text-purple-900'
+            : 'border-white/12 bg-white/[0.05] text-white/80 hover:border-purple-400/40 hover:bg-purple-500/15 hover:text-white'
         }`}
-        title="Open Skills Connection Registry"
       >
-        <Plus className="h-3 w-3" />
-        <span>Manage</span>
+        <Zap className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+        <span className="hidden sm:inline whitespace-nowrap">
+          {connectedSkills.length} {connectedSkills.length === 1 ? 'Skill' : 'Skills'} Active
+        </span>
+        <span className="sm:hidden font-mono text-[11px] font-semibold">
+          {connectedSkills.length}
+        </span>
       </button>
+
+      {isOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setIsOpen(false)}
+          />
+          <div
+            className={`absolute bottom-full right-0 z-50 mb-2.5 w-80 rounded-2xl border p-3 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 duration-150 ${
+              isLight
+                ? 'border-rose-200 bg-white/95 text-slate-800 shadow-rose-950/10'
+                : 'border-white/15 bg-zinc-900/95 text-white shadow-black/70'
+            }`}
+          >
+            <div className="flex items-center justify-between border-b border-black/5 dark:border-white/10 pb-2 mb-2">
+              <div className="flex items-center gap-1.5 text-xs font-semibold">
+                <Zap className="h-3.5 w-3.5 text-amber-400" />
+                <span>⚡ {connectedSkills.length} Skills Active</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenSkillsModal();
+                }}
+                className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[10.5px] font-semibold transition cursor-pointer ${
+                  isLight
+                    ? 'bg-purple-600 text-white hover:bg-purple-700'
+                    : 'bg-purple-500/30 text-purple-200 hover:bg-purple-500/40 border border-purple-400/30'
+                }`}
+              >
+                <Plus className="h-3 w-3" />
+                <span>Manage All</span>
+              </button>
+            </div>
+
+            {connectedSkills.length === 0 ? (
+              <p className={`py-4 text-center text-xs ${isLight ? 'text-slate-500' : 'text-white/50'}`}>
+                No skills currently active. Click Manage All to connect capabilities.
+              </p>
+            ) : (
+              <div className="max-h-52 overflow-y-auto m-scroll flex flex-wrap gap-1.5 pr-1">
+                {connectedSkills.map((skill) => (
+                  <div
+                    key={skill.id}
+                    className={`group flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium border transition ${
+                      isLight
+                        ? 'border-purple-200 bg-purple-50/70 text-purple-900'
+                        : 'border-purple-500/30 bg-purple-950/40 text-purple-200'
+                    }`}
+                  >
+                    <span className="truncate max-w-[170px]" title={skill.name}>
+                      {skill.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        disconnectSkill(skill.id);
+                      }}
+                      title={`Disconnect ${skill.name}`}
+                      className="rounded p-0.5 hover:bg-rose-500/20 hover:text-rose-400 transition cursor-pointer"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

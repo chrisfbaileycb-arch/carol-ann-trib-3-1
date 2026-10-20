@@ -11,6 +11,7 @@ import AgentAvatar from '@/components/agents/AgentAvatar';
 import { useAgentRouting, detectRoleType } from '@/contexts/AgentRoutingContext';
 import { getSkill, SKILL_CATEGORIES } from '@/data/skills';
 import { loadRegistry, toggleSkill } from '@/lib/skillRegistry';
+import { SkillsEngine } from '@/components/skills/SkillsEngine';
 
 interface AgentRosterMCPProps {
   onSelectAgentForChat: (agentId: string) => void;
@@ -27,7 +28,7 @@ export const AgentRosterMCP: React.FC<AgentRosterMCPProps> = ({
   const isLight = isLightTheme(profile);
   const [selectedAgentId, setSelectedAgentId] = useState<string>('carol-anchor');
   const [testSpeaking, setTestSpeaking] = useState<string | null>(null);
-  const [activeSubTab, setActiveSubTab] = useState<'roster' | 'orchestrator_prompt' | 'tool_schema' | 'mcp_connectors'>('roster');
+  const [activeSubTab, setActiveSubTab] = useState<'roster' | 'skills' | 'orchestrator_prompt' | 'tool_schema' | 'mcp_connectors'>('roster');
   const [categoryFilter, setCategoryFilter] = useState<AgentCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [skillRegistry, setSkillRegistry] = useState(loadRegistry);
@@ -124,6 +125,16 @@ export const AgentRosterMCP: React.FC<AgentRosterMCPProps> = ({
             }`}
           >
             Sub-Agents ({AGENT_PRESETS.length})
+          </button>
+          <button
+            onClick={() => setActiveSubTab('skills')}
+            className={`rounded-lg px-3 py-1 text-[11px] font-medium transition ${
+              activeSubTab === 'skills'
+                ? isLight ? 'bg-rose-500/15 text-slate-900 font-semibold shadow-xs' : 'bg-white/15 text-white shadow'
+                : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-white/50 hover:text-white'
+            }`}
+          >
+            Skills & Directives
           </button>
           <button
             onClick={() => setActiveSubTab('orchestrator_prompt')}
@@ -631,6 +642,13 @@ export const AgentRosterMCP: React.FC<AgentRosterMCPProps> = ({
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* VIEW 5: Skills & Directives Engine */}
+        {activeSubTab === 'skills' && (
+          <div className="max-w-7xl mx-auto">
+            <SkillsEngine />
           </div>
         )}
       </div>

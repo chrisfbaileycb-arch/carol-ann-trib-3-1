@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { sovereignBridge, type ExecutionHost } from '@/lib/sovereignBridge';
 import { WorkspaceChat } from '@/components/workspace/WorkspaceChat';
+import { BrowserSandbox } from '@/components/workspace/BrowserSandbox';
 import { AgentRosterMCP } from '@/components/workspace/AgentRosterMCP';
 import { SovereignMemoryLedger } from '@/components/workspace/SovereignMemoryLedger';
 import { SettingsThemeEngine } from '@/components/workspace/SettingsThemeEngine';
@@ -17,17 +18,17 @@ import { useCarol } from '@/contexts/CarolContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAgentRouting } from '@/contexts/AgentRoutingContext';
 import { subscribeBus, isCloudBusLive, pullBusNow } from '@/lib/realtimeBus';
-import { loadStickers } from '@/lib/memoryStore';
-import type { StickerWatermark } from '@/data/schemas';
+import { PWAInstallButton } from '@/components/common/PWAInstallButton';
 import { isLightTheme } from '@/data/intake';
 
-type TabId = 'chat' | 'canvas' | 'roster' | 'ledger' | 'theme';
+type TabId = 'chat' | 'sandbox' | 'roster' | 'ledger' | 'canvas' | 'theme';
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
-  { id: 'chat', label: 'Workspace Chat', icon: MessagesSquare },
-  { id: 'canvas', label: 'Workspace Canvas', icon: Code2 },
+  { id: 'chat', label: 'Desk', icon: MessagesSquare },
+  { id: 'sandbox', label: 'Browser Sandbox', icon: Monitor },
   { id: 'roster', label: 'Agent Studio', icon: Users },
-  { id: 'ledger', label: 'Sovereign Memory', icon: Shield },
+  { id: 'ledger', label: 'Memory & Soul', icon: Shield },
+  { id: 'canvas', label: 'Workspace Canvas', icon: Code2 },
   { id: 'theme', label: 'Design & Wallpaper', icon: Palette },
 ];
 
@@ -59,9 +60,14 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
   const handleToggleExecutionHost = (targetHost: ExecutionHost) => {
     setExecutionHost(targetHost);
     sovereignBridge.setExecutionHost(targetHost, 'dashboard');
+    if (targetHost === 'dashboard') {
+      setTab('sandbox');
+    } else if (targetHost === 'phone') {
+      onOpenRemote();
+    }
     const msg =
       targetHost === 'dashboard'
-        ? '⚡ Switched to Local Browser Automation (Dashboard DOM Active)'
+        ? '⚡ Switched to Local Browser Sandbox (Full-Width Runner Active)'
         : targetHost === 'phone'
         ? '📱 Switched to Remote Phone Automation (Phone Co-Pilot Active)'
         : '✨ Switched to Dual Automation Link (Synced)';
@@ -248,6 +254,8 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
               </span>
             )}
 
+            <PWAInstallButton isLight={isLight} />
+
             <button
               onClick={onOpenRemote}
               className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition ${
@@ -335,7 +343,11 @@ export const CommandCenter: React.FC<{ onOpenRemote: () => void }> = ({ onOpenRe
             onUpdateProfile={updateProfile}
             theme={theme}
             onOpenAgentRoster={() => setTab('roster')}
+            onOpenBrowserSandbox={() => setTab('sandbox')}
           />
+        )}
+        {tab === 'sandbox' && (
+          <BrowserSandbox profile={profile} />
         )}
         {tab === 'canvas' && (
           <WorkspaceCanvas />

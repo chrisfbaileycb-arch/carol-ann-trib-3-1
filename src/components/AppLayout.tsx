@@ -15,6 +15,7 @@ import { FONT_OPTIONS, WALLPAPER_PRESETS, isLightTheme } from '@/data/intake';
 import { resolveColorPaletteReference } from '@/lib/colorEngine';
 import WallpaperBackground from '@/components/workspace/WallpaperBackground';
 import WatermarkLayer from '@/components/workspace/WatermarkLayer';
+import { OfflineIndicator } from '@/components/common/PWAInstallButton';
 
 const CarolShell: React.FC = () => {
   const { profile, updateProfile, theme, memories, checkIns, stickers } = useCarol();
@@ -133,6 +134,9 @@ const CarolShell: React.FC = () => {
 
       {/* Persistent Floating Watermark Layer */}
       <WatermarkLayer stickers={stickers} />
+
+      {/* Offline PWA Connectivity Indicator */}
+      <OfflineIndicator />
 
       {/* Active Route Surface Container */}
       <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent">

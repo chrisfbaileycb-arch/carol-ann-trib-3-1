@@ -86,10 +86,10 @@ export const SovereignMemoryLedger: React.FC<SovereignMemoryLedgerProps> = ({ pr
           </span>
           <div>
             <h1 className={`font-display text-sm font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-              Sovereign Memory Ledger
+              Memory & Soul Ledger
             </h1>
             <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-white/45'}`}>
-              Local-First On-Device Vault · Hardware-Bound Storage · Sovereign Operator Control
+              SOUL.md · MEMORY.md · Connected MCP Credentials · Hardware-Bound Vault
             </p>
           </div>
         </div>
@@ -116,13 +116,52 @@ export const SovereignMemoryLedger: React.FC<SovereignMemoryLedgerProps> = ({ pr
             }`}
           >
             <FileText className="h-3.5 w-3.5 text-amber-500" />
-            <span>Export Markdown</span>
+            <span>Export MEMORY.md</span>
           </button>
         </div>
       </div>
 
       {/* Main Content Area */}
       <div className="m-scroll flex-1 overflow-y-auto p-6 space-y-6 max-w-6xl mx-auto w-full">
+        {/* SOUL.md, MEMORY.md & Connected MCP Credentials Overview Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className={`rounded-2xl border p-4 space-y-2 backdrop-blur-md ${
+            isLight ? 'border-rose-200/80 bg-white/90 text-slate-800 shadow-xs' : 'border-white/10 bg-white/[0.03]'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-xs font-bold text-rose-500">SOUL.md</span>
+              <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-mono text-emerald-500">Mounted</span>
+            </div>
+            <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/70'}`}>
+              Anchor Persona: <strong>{profile.name || 'Sovereign Operator'}</strong> · Executive Warmth, Calm Orchestration, Zero Unverified Side-Effects.
+            </p>
+          </div>
+
+          <div className={`rounded-2xl border p-4 space-y-2 backdrop-blur-md ${
+            isLight ? 'border-rose-200/80 bg-white/90 text-slate-800 shadow-xs' : 'border-white/10 bg-white/[0.03]'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-xs font-bold text-amber-500">MEMORY.md</span>
+              <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[10px] font-mono text-sky-400">{memories.length} Entries</span>
+            </div>
+            <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/70'}`}>
+              Partitioned across Work (Archivist), Creative (Muse), Household (Keeper), and Wellness (Coach) sub-agents.
+            </p>
+          </div>
+
+          <div className={`rounded-2xl border p-4 space-y-2 backdrop-blur-md ${
+            isLight ? 'border-rose-200/80 bg-white/90 text-slate-800 shadow-xs' : 'border-white/10 bg-white/[0.03]'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-xs font-bold text-emerald-500">MCP Credentials</span>
+              <span className="rounded-full bg-purple-500/15 px-2 py-0.5 text-[10px] font-mono text-purple-400">Hardware-Bound</span>
+            </div>
+            <p className={`text-xs leading-relaxed font-mono truncate ${isLight ? 'text-slate-600' : 'text-white/70'}`}>
+              Key: {deviceKey}
+            </p>
+          </div>
+        </div>
+
         {/* Device & Encryption Status Bar */}
         <div className={`rounded-2xl border p-4 flex flex-wrap items-center justify-between gap-4 backdrop-blur-md ${
           isLight ? 'border-rose-200/80 bg-white/85 text-slate-800 shadow-sm' : 'border-white/10 bg-white/[0.02]'

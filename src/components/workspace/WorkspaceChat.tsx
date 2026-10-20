@@ -53,6 +53,7 @@ interface WorkspaceChatProps {
   onUpdateProfile: (patch: Partial<UserProfile>) => void;
   theme: AestheticTheme;
   onOpenAgentRoster: () => void;
+  onOpenBrowserSandbox?: () => void;
 }
 
 export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
@@ -60,6 +61,7 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
   onUpdateProfile,
   theme,
   onOpenAgentRoster,
+  onOpenBrowserSandbox,
 }) => {
   const { user } = useAuth();
   const {
@@ -70,9 +72,8 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
     toggleSticker: handleToggleSticker,
   } = useCarol();
 
-  // 3-Pane Layout Open / Collapse States
+  // Left Rail Open / Collapse State (Browser Co-Pilot moved to dedicated Browser Sandbox top tab)
   const [leftOpen, setLeftOpen] = useState<boolean>(true);
-  const [rightOpen, setRightOpen] = useState<boolean>(true);
 
   // Tabs for the Center Stage
   const [tabs, setTabs] = useState<WorkspaceTab[]>([
@@ -311,10 +312,6 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
         target: 'custom',
       });
     }
-
-    if (!rightOpen) {
-      setRightOpen(true);
-    }
   };
 
   // User cancellation of a staged action card
@@ -497,7 +494,7 @@ Operating Directives:
             agentId,
             agentName: agentExec.name,
             agentRole: agentExec.role,
-            systemPersona,
+            systemPersona: systemInstruction,
             memoryPartition: partitionInfo.partitionName,
             history: messages.slice(-10).map((m) => ({ role: m.role, content: m.content })),
             profile: {
@@ -594,6 +591,8 @@ Operating Directives:
             onOpenAgentRoster={onOpenAgentRoster}
             onOpenTab={handleOpenTab}
             installedPluginIds={installedPluginIds}
+            activeAgentId={activeAgentId}
+            onSelectAgent={setActiveAgentId}
           />
         </div>
       </div>
@@ -613,25 +612,12 @@ Operating Directives:
           {leftOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
         </button>
 
-        {/* Toggle Right Drawer Button Overlay */}
-        <button
-          onClick={() => setRightOpen(!rightOpen)}
-          title={rightOpen ? 'Collapse Automation Dock' : 'Expand Automation Dock'}
-          className={`absolute right-3 top-2.5 z-30 flex h-7 w-7 items-center justify-center rounded-lg border backdrop-blur-md transition shadow-md ${
-            isLight
-              ? 'border-rose-200/80 bg-white/80 text-slate-600 hover:text-slate-900 hover:border-rose-300'
-              : 'border-white/10 bg-zinc-900/80 text-white/50 hover:border-white/25 hover:text-white'
-          }`}
-        >
-          {rightOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRight className="h-4 w-4" />}
-        </button>
-
-        {/* 2. Center Stage (VS Code Multi-Tab Canvas) */}
+        {/* 2. Center Stage (Full-Width Desk Multi-Tab Canvas) */}
         <div className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden backdrop-blur-md ${
           isLight ? 'bg-white/65 text-slate-800' : 'bg-zinc-950/70 text-white'
         }`}>
           {/* VS Code-Style Top Tab Bar */}
-          <div className={`flex shrink-0 items-center justify-between border-b px-12 py-1 overflow-x-auto select-none backdrop-blur-md ${
+          <div className={`flex shrink-0 items-center justify-between border-b pl-12 pr-4 py-1 overflow-x-auto select-none backdrop-blur-md ${
             isLight
               ? 'border-rose-200/60 bg-white/75 text-slate-800'
               : 'border-white/8 bg-zinc-950/80 text-white'
@@ -893,28 +879,6 @@ Operating Directives:
                 </div>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* 3. Right Drawer (Embedded Co-Pilot & Automation Dock - in-line push/resize) */}
-        <div
-          className={`relative shrink-0 transition-all duration-300 ease-in-out border-l z-20 ${
-            isLight ? 'border-rose-200/60' : 'border-white/8'
-          } ${rightOpen ? 'w-80 sm:w-96 lg:w-[410px]' : 'w-0'}`}
-        >
-          <div className={`h-full w-80 sm:w-96 lg:w-[410px] overflow-hidden ${rightOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-            <RightDrawer
-              errands={errands}
-              onUpdateErrand={handleUpdateErrand}
-              onDeleteErrand={handleDeleteErrand}
-              onAddErrand={handleAddErrand}
-              actions={actions}
-              onConfirmAction={handleExecuteToolAction}
-              scratchpad={scratchpad}
-              onChangeScratchpad={setScratchpad}
-              onClose={() => setRightOpen(false)}
-              profile={profile}
-            />
           </div>
         </div>
       </div>

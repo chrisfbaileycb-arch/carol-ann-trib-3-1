@@ -28,8 +28,8 @@ export interface AgentRoutingContextType {
   activeAgentContext: ActiveAgentContext;
   setActiveAgent: (agent: Partial<ActiveAgentContext> & { id: string }) => void;
   transitionToCanvasWithAgent: (agentIdOrData: string | AgentPreset | AgentConfig, preferredFile?: CanvasFileKey) => void;
-  activeTab: 'chat' | 'canvas' | 'roster' | 'ledger' | 'theme';
-  setActiveTab: (tab: 'chat' | 'canvas' | 'roster' | 'ledger' | 'theme') => void;
+  activeTab: 'chat' | 'sandbox' | 'canvas' | 'roster' | 'ledger' | 'theme';
+  setActiveTab: (tab: 'chat' | 'sandbox' | 'canvas' | 'roster' | 'ledger' | 'theme') => void;
   viewMode: CanvasViewMode;
   setViewMode: (mode: CanvasViewMode) => void;
   activeFile: CanvasFileKey;
@@ -246,11 +246,11 @@ const INITIAL_AGENT_CONTEXT: ActiveAgentContext = {
 const AgentRoutingContext = createContext<AgentRoutingContextType | undefined>(undefined);
 
 export const AgentRoutingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [activeTab, setActiveTabState] = useState<'chat' | 'canvas' | 'roster' | 'ledger' | 'theme'>(() => {
+  const [activeTab, setActiveTabState] = useState<'chat' | 'sandbox' | 'canvas' | 'roster' | 'ledger' | 'theme'>(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const tabParam = urlParams.get('tab');
-      if (tabParam === 'canvas' || tabParam === 'chat' || tabParam === 'roster' || tabParam === 'ledger' || tabParam === 'theme') {
+      if (tabParam === 'canvas' || tabParam === 'chat' || tabParam === 'sandbox' || tabParam === 'roster' || tabParam === 'ledger' || tabParam === 'theme') {
         return tabParam;
       }
     }
@@ -383,7 +383,7 @@ export const AgentRoutingProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   }, []);
 
-  const setActiveTab = useCallback((tab: 'chat' | 'canvas' | 'roster' | 'ledger' | 'theme') => {
+  const setActiveTab = useCallback((tab: 'chat' | 'sandbox' | 'canvas' | 'roster' | 'ledger' | 'theme') => {
     setActiveTabState(tab);
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);

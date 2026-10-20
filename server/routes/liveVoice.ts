@@ -5,7 +5,20 @@ import { getGenAI, ANCHOR_SYSTEM_INSTRUCTION } from '../lib/inference.ts';
 import { GoogleGenAI, Modality, type LiveServerMessage } from '@google/genai';
 
 export function attachLiveVoice(server: HttpServer, customBackend?: ReturnType<typeof getAdminBackend>) {
-  const wss = new WebSocketServer({ server, path: '/api/gemini/live' });
+  const wss = new WebSocketServer({ noServer: true });
+
+  server.on('upgrade', (req: IncomingMessage, socket, head) => {
+    try {
+      const url = new URL(req.url || '/', 'http://localhost');
+      if (url.pathname === '/api/gemini/live') {
+        wss.handleUpgrade(req, socket, head, (ws) => {
+          wss.emit('connection', ws, req);
+        });
+      }
+    } catch {
+      // ignore malformed URL
+    }
+  });
 
   wss.on('connection', async (clientWs: WebSocket, req: IncomingMessage) => {
       // wss://host/api/gemini/live?token=<idToken>

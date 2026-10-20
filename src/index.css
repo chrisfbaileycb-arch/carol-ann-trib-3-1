@@ -264,3 +264,38 @@
 .m-tab-underline {
   transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* ===================== Googlebook / Android Desktop Adaptive Shell (@container) ===================== */
+.adaptive-shell-container {
+  container-type: inline-size;
+  container-name: carol-shell;
+}
+
+.adaptive-mobile-companion {
+  display: block;
+}
+
+.adaptive-desktop-split {
+  display: none;
+}
+
+@container carol-shell (min-width: 640px) {
+  .adaptive-mobile-companion {
+    display: none;
+  }
+  .adaptive-desktop-split {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
+
+@container carol-shell (min-width: 1024px) {
+  .adaptive-mobile-companion {
+    display: none;
+  }
+  .adaptive-desktop-split {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+}
+

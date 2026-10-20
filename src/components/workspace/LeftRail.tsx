@@ -9,7 +9,7 @@ import {
 import type { DomainId, MemoryEntry, StickerWatermark, UserProfile } from '@/data/schemas';
 import { AESTHETIC_THEMES, type AestheticTheme, isLightTheme } from '@/data/intake';
 import AgentAvatar from '@/components/agents/AgentAvatar';
-import { AGENT_PRESETS } from '@/data/agents';
+import { AGENT_PRESETS, CORE_AGENT_PRESETS } from '@/data/agents';
 import { MCP_PLUGINS_DIRECTORY, loadInstalledPluginIds } from '@/data/mcpPlugins';
 
 export interface ChatThread {
@@ -33,8 +33,10 @@ interface LeftRailProps {
   stickers: StickerWatermark[];
   onToggleSticker: (id: string) => void;
   onOpenAgentRoster: () => void;
-  onOpenTab?: (tabType: 'chat' | 'agent' | 'connectors' | 'ledger' | 'customizer' | 'theme', meta?: { agentId?: string }) => void;
+  onOpenTab?: (tabType: 'chat' | 'agent' | 'connectors' | 'ledger' | 'customizer' | 'theme' | 'skills', meta?: { agentId?: string }) => void;
   installedPluginIds?: string[];
+  activeAgentId?: string;
+  onSelectAgent?: (agentId: string) => void;
 }
 
 export const LeftRail: React.FC<LeftRailProps> = ({
@@ -52,6 +54,8 @@ export const LeftRail: React.FC<LeftRailProps> = ({
   onOpenAgentRoster,
   onOpenTab,
   installedPluginIds: propInstalledPluginIds,
+  activeAgentId,
+  onSelectAgent,
 }) => {
   const activeInstalledIds = propInstalledPluginIds ?? loadInstalledPluginIds();
   const installedPluginsList = MCP_PLUGINS_DIRECTORY.filter((p) => activeInstalledIds.includes(p.id));
@@ -255,23 +259,48 @@ export const LeftRail: React.FC<LeftRailProps> = ({
 
           {sectionOpen.agents && (
             <div className="mt-1.5 space-y-1">
-              {AGENT_PRESETS.map((ag) => (
-                <button
-                  key={ag.id}
-                  onClick={() => onOpenTab?.('agent', { agentId: ag.id })}
-                  className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs transition ${
-                    isLight
-                      ? 'text-slate-700 hover:bg-rose-50/70 hover:text-slate-900'
-                      : 'text-white/80 hover:bg-white/[0.06] hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 truncate">
-                    <AgentAvatar skin={ag.skin} size={18} />
-                    <span className={`truncate font-medium ${isLight ? 'text-slate-800' : 'text-white/90'}`}>{ag.name}</span>
-                  </div>
-                  <span className={`text-[10px] font-mono capitalize ${isLight ? 'text-slate-500' : 'text-white/50'}`}>{ag.category}</span>
-                </button>
-              ))}
+              {CORE_AGENT_PRESETS.map((ag) => {
+                const isSelected = activeAgentId === ag.id;
+                return (
+                  <button
+                    key={ag.id}
+                    onClick={() => {
+                      if (onSelectAgent) {
+                        onSelectAgent(ag.id);
+                        onOpenTab?.('chat');
+                      } else {
+                        onOpenTab?.('agent', { agentId: ag.id });
+                      }
+                    }}
+                    className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs transition ${
+                      isSelected
+                        ? isLight
+                          ? 'bg-rose-100/90 text-rose-950 font-semibold border border-rose-300/80'
+                          : 'bg-[var(--m-accent)]/20 text-white font-semibold border border-[var(--m-accent)]/40'
+                        : isLight
+                        ? 'text-slate-700 hover:bg-rose-50/70 hover:text-slate-900'
+                        : 'text-white/80 hover:bg-white/[0.06] hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <AgentAvatar skin={ag.skin} size={18} />
+                      <span className={`truncate font-medium ${isLight ? 'text-slate-800' : 'text-white/90'}`}>{ag.name}</span>
+                    </div>
+                    <span className={`text-[10px] font-mono capitalize ${isLight ? 'text-slate-500' : 'text-white/50'}`}>{ag.category}</span>
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => onOpenAgentRoster()}
+                className={`mt-1.5 flex w-full items-center justify-between rounded-lg border px-2.5 py-1.5 text-left text-[11px] font-medium transition ${
+                  isLight
+                    ? 'border-rose-200/80 bg-white/70 text-slate-700 hover:bg-rose-50 hover:text-slate-900'
+                    : 'border-white/10 bg-white/[0.03] text-white/70 hover:border-white/20 hover:text-white'
+                }`}
+              >
+                <span>Explore All in Agent Studio</span>
+                <ChevronRight className="h-3.5 w-3.5 opacity-60" />
+              </button>
             </div>
           )}
         </div>
