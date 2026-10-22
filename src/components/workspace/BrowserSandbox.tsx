@@ -152,6 +152,9 @@ export const BrowserSandbox: React.FC<BrowserSandboxProps> = ({ profile }) => {
       }
       if (event.type === 'host_switch' && event.payload.executionHost) {
         setExecutionHost(event.payload.executionHost);
+        if (event.payload.executionHost === 'dashboard') {
+          setWindowMode((prev) => (prev === 'mobile_640' || (typeof window !== 'undefined' && window.innerWidth < 640) ? 'desktop_1024' : prev));
+        }
       }
       if (event.type === 'pipeline_step' && event.payload.stepIndex) {
         setPipelineSteps((prev) =>
@@ -193,6 +196,11 @@ export const BrowserSandbox: React.FC<BrowserSandboxProps> = ({ profile }) => {
   const handleSetHost = (host: ExecutionHost) => {
     setExecutionHost(host);
     sovereignBridge.setExecutionHost(host, 'dashboard');
+    if (host === 'dashboard') {
+      setWindowMode((prev) => (prev === 'mobile_640' || (typeof window !== 'undefined' && window.innerWidth < 640) ? 'desktop_1024' : prev));
+    } else if (host === 'phone') {
+      setWindowMode('mobile_640');
+    }
   };
 
   const handleDispatchSplitPipeline = (overrideQuery?: string) => {
@@ -572,7 +580,14 @@ export const BrowserSandbox: React.FC<BrowserSandboxProps> = ({ profile }) => {
         }
       >
         <div className="mx-auto max-w-xl">
-          <CompanionProtocolPanel isLight={isLight} />
+          <CompanionProtocolPanel
+            isLight={isLight}
+            onOpenMainDashboard={() => {
+              setWindowMode('desktop_1024');
+              setExecutionHost('dashboard');
+              sovereignBridge.setExecutionHost('dashboard', 'dashboard');
+            }}
+          />
         </div>
       </div>
 

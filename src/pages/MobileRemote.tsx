@@ -137,10 +137,20 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
     return () => unsubscribe();
   }, [activeAgentId, activeAgent?.name]);
 
+  const handleSwitchToMainDashboard = () => {
+    setExecutionHost('dashboard');
+    sovereignBridge.setExecutionHost('dashboard', 'mobile');
+    onBackToDesktop();
+  };
+
   const handleSetHost = (host: ExecutionHost) => {
     setExecutionHost(host);
     sovereignBridge.setExecutionHost(host, 'mobile');
-    flash(`Runner Switch: ${host === 'phone' ? 'Phone Co-Pilot' : host === 'dashboard' ? 'Main Dashboard' : 'Dual Link'}`);
+    if (host === 'dashboard') {
+      onBackToDesktop();
+      return;
+    }
+    flash(`Runner Switch: ${host === 'phone' ? 'Phone Co-Pilot' : 'Dual Link'}`);
   };
 
   // Sync thread on agent change
@@ -355,7 +365,7 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
 
   return (
     <div
-      className={`carol-ann-root ${isLight ? 'is-light text-slate-900' : 'text-white'} relative flex min-h-screen flex-col bg-transparent antialiased transition-colors duration-300`}
+      className={`carol-ann-root ${isLight ? 'is-light text-slate-900' : 'text-white'} relative flex h-full min-h-0 flex-1 flex-col overflow-y-auto m-scroll bg-transparent antialiased transition-colors duration-300`}
       style={{
         '--m-accent': profile.accentColor || theme.accent,
         '--m-accent-soft': theme.accentSoft,
@@ -390,14 +400,14 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
         <div className="flex items-center gap-2">
           <PWAInstallButton isLight={isLight} compact />
           <button
-            onClick={onBackToDesktop}
-            className={`flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-bold shadow-sm transition ${
+            onClick={handleSwitchToMainDashboard}
+            className={`flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-bold shadow-sm transition cursor-pointer ${
               isLight
                 ? 'border-slate-300/90 bg-white text-slate-800 hover:bg-slate-50 hover:text-slate-950'
                 : 'border-white/20 bg-white/[0.08] text-white/90 hover:bg-white/15 hover:text-white'
             }`}
           >
-            <Monitor className="h-3.5 w-3.5" /> Desktop
+            <Monitor className="h-3.5 w-3.5" /> Main Dashboard
           </button>
         </div>
       </header>
@@ -818,6 +828,7 @@ export const MobileRemote: React.FC<{ onBackToDesktop: () => void }> = ({ onBack
             listening={listening}
             onToggleVoice={toggleVoice}
             activeVoiceKey={activeAgent?.voiceKey || 'warm'}
+            onOpenMainDashboard={handleSwitchToMainDashboard}
           />
         </div>
 

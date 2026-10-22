@@ -72,8 +72,10 @@ export const WorkspaceChat: React.FC<WorkspaceChatProps> = ({
     toggleSticker: handleToggleSticker,
   } = useCarol();
 
-  // Left Rail Open / Collapse State (Browser Co-Pilot moved to dedicated Browser Sandbox top tab)
-  const [leftOpen, setLeftOpen] = useState<boolean>(true);
+  // Left Rail Open / Collapse State (auto-collapsed on mobile screens so main dashboard has full width)
+  const [leftOpen, setLeftOpen] = useState<boolean>(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
+  );
 
   // Tabs for the Center Stage
   const [tabs, setTabs] = useState<WorkspaceTab[]>([

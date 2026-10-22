@@ -267,6 +267,7 @@
 
 /* ===================== Googlebook / Android Desktop Adaptive Shell (@container) ===================== */
 .adaptive-shell-container {
+  width: 100%;
   container-type: inline-size;
   container-name: carol-shell;
 }

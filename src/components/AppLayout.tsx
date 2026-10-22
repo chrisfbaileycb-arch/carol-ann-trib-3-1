@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Monitor, Smartphone, Cloud, Sparkles, SlidersHorizontal, Shield, Bot, Palette, Code2 } from 'lucide-react';
 import { CarolProvider, useCarol } from '@/contexts/CarolContext';
@@ -11,6 +11,7 @@ import MobileRemote from '@/pages/MobileRemote';
 import Onboarding from '@/pages/Onboarding';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { initBus } from '@/lib/realtimeBus';
+import { sovereignBridge } from '@/lib/sovereignBridge';
 import { FONT_OPTIONS, WALLPAPER_PRESETS, isLightTheme } from '@/data/intake';
 import { resolveColorPaletteReference } from '@/lib/colorEngine';
 import WallpaperBackground from '@/components/workspace/WallpaperBackground';
@@ -26,17 +27,70 @@ const CarolShell: React.FC = () => {
   const isMobile = useIsMobile();
 
   const currentPath = location.pathname;
+  const hasAutoRedirectedRef = useRef(false);
+  const [preferDesktopOnMobile, setPreferDesktopOnMobile] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('carol_prefer_desktop') === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleOpenMainDashboard = useCallback(() => {
+    hasAutoRedirectedRef.current = true;
+    setPreferDesktopOnMobile(true);
+    try {
+      sessionStorage.setItem('carol_prefer_desktop', '1');
+    } catch {
+      // ignore storage errors
+    }
+    sovereignBridge.setExecutionHost('dashboard', 'mobile');
+    navigate('/');
+  }, [navigate]);
+
+  const handleOpenMobileRemote = useCallback(() => {
+    hasAutoRedirectedRef.current = true;
+    setPreferDesktopOnMobile(false);
+    try {
+      sessionStorage.removeItem('carol_prefer_desktop');
+    } catch {
+      // ignore storage errors
+    }
+    navigate('/remote');
+  }, [navigate]);
 
   useEffect(() => {
     initBus();
   }, []);
 
-  // Auto-switch to phone remote once on mobile screens if currently on root
+  // Listen for sovereignBridge host switches from mobile -> dashboard
   useEffect(() => {
-    if (isMobile && currentPath === '/') {
+    return sovereignBridge.subscribe((ev) => {
+      if (
+        ev.type === 'host_switch' &&
+        ev.payload.executionHost === 'dashboard' &&
+        ev.payload.source === 'mobile' &&
+        location.pathname === '/remote'
+      ) {
+        hasAutoRedirectedRef.current = true;
+        setPreferDesktopOnMobile(true);
+        try {
+          sessionStorage.setItem('carol_prefer_desktop', '1');
+        } catch {
+          // ignore
+        }
+        navigate('/');
+      }
+    });
+  }, [location.pathname, navigate]);
+
+  // Auto-switch to phone remote ONLY once on initial mobile visit if user hasn't opted for Main Dashboard
+  useEffect(() => {
+    if (isMobile && currentPath === '/' && !preferDesktopOnMobile && !hasAutoRedirectedRef.current) {
+      hasAutoRedirectedRef.current = true;
       navigate('/remote', { replace: true });
     }
-  }, [isMobile, currentPath, navigate]);
+  }, [isMobile, currentPath, preferDesktopOnMobile, navigate]);
 
   const currentFont = FONT_OPTIONS.find((f) => f.id === profile.fontFamily) || FONT_OPTIONS[0];
 
@@ -141,26 +195,26 @@ const CarolShell: React.FC = () => {
       {/* Active Route Surface Container */}
       <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent">
         {currentPath === '/remote' ? (
-          <MobileRemote onBackToDesktop={() => navigate('/')} />
+          <MobileRemote onBackToDesktop={handleOpenMainDashboard} />
         ) : currentPath === '/agent' ? (
           <AgentPage />
         ) : currentPath === '/memory' ? (
           <MemoryPage />
         ) : (
-          <CommandCenter onOpenRemote={() => navigate('/remote')} />
+          <CommandCenter onOpenRemote={handleOpenMobileRemote} />
         )}
       </div>
 
       {/* Global Sovereign Status Bar — Semi-transparent Docked at Bottom */}
       {currentPath !== '/remote' && (
         <footer
-          className={`shrink-0 z-30 hidden h-8 border-t px-4 select-none lg:flex items-center justify-between text-xs backdrop-blur-md transition-colors duration-300 ${
+          className={`shrink-0 z-30 flex h-8 border-t px-4 select-none items-center justify-between text-xs backdrop-blur-md transition-colors duration-300 overflow-x-auto ${
             isLight
               ? 'border-rose-200/50 bg-white/70 text-slate-700 shadow-sm'
               : 'border-white/10 bg-zinc-950/75 text-white/90'
           }`}
         >
-          <div className="flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-3">
             <span
               className={`flex items-center gap-1.5 text-[11px] font-semibold ${
                 isLight ? 'text-slate-800' : 'text-white/90'
@@ -189,7 +243,7 @@ const CarolShell: React.FC = () => {
 
           {/* Quick Route Switcher */}
           <div
-            className={`flex items-center gap-1 rounded-full p-0.5 border ${
+            className={`flex items-center gap-1 rounded-full p-0.5 border mx-auto lg:mx-0 ${
               isLight
                 ? 'bg-rose-50/80 border-rose-200/60'
                 : 'bg-white/[0.06] border-white/10'
@@ -198,7 +252,7 @@ const CarolShell: React.FC = () => {
             <button
               onClick={() => {
                 setActiveTab('chat');
-                navigate('/');
+                handleOpenMainDashboard();
               }}
               className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold transition ${
                 currentPath === '/' && activeTab !== 'canvas'
@@ -215,7 +269,7 @@ const CarolShell: React.FC = () => {
             <button
               onClick={() => {
                 setActiveTab('canvas');
-                if (currentPath !== '/') navigate('/?tab=canvas');
+                handleOpenMainDashboard();
               }}
               className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold transition ${
                 currentPath === '/' && activeTab === 'canvas'
@@ -258,7 +312,7 @@ const CarolShell: React.FC = () => {
               <Shield className="h-3 w-3" /> Memory
             </button>
             <button
-              onClick={() => navigate('/remote')}
+              onClick={handleOpenMobileRemote}
               className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10.5px] font-medium transition ${
                 currentPath === '/remote'
                   ? isLight

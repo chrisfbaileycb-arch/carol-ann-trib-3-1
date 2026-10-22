@@ -17,6 +17,7 @@ interface CompanionWidgetsProps {
   listening?: boolean;
   onToggleVoice?: () => void;
   activeVoiceKey?: string;
+  onOpenMainDashboard?: () => void;
 }
 
 export const CompanionProtocolPanel: React.FC<CompanionWidgetsProps> = ({
@@ -25,6 +26,7 @@ export const CompanionProtocolPanel: React.FC<CompanionWidgetsProps> = ({
   listening = false,
   onToggleVoice,
   activeVoiceKey = 'warm',
+  onOpenMainDashboard,
 }) => {
   const [companionState, setCompanionState] = useState<CompanionProtocolState>(() =>
     sovereignBridge.getCompanionState()
@@ -108,7 +110,16 @@ export const CompanionProtocolPanel: React.FC<CompanionWidgetsProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-[10.5px] font-semibold">
+          <div className="flex flex-wrap items-center gap-1.5 text-[10.5px] font-semibold">
+            {onOpenMainDashboard && (
+              <button
+                type="button"
+                onClick={onOpenMainDashboard}
+                className="inline-flex items-center gap-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white px-2.5 py-1 text-[11px] font-bold shadow-xs transition cursor-pointer"
+              >
+                <Monitor className="h-3 w-3" /> Open Main Dashboard
+              </button>
+            )}
             <span
               className={`inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 ${
                 isLight
